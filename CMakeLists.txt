@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(audio_util_build_settings INTERFACE)
 target_include_directories(audio_util_build_settings INTERFACE libs common)
+target_compile_definitions(audio_util_build_settings INTERFACE NOMINMAX)
 
 add_executable(offset_start_to_zero_crossing
                offset_start_to_zero_crossing/main.cpp common/common.cpp)

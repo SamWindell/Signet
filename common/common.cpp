@@ -5,55 +5,59 @@
 #include "dr_flac.h"
 #include "dr_wav.h"
 
-AudioFile ReadAudioFile(const std::string &filename) {
+std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
+    std::cout << "Reading file " << path << "\n";
     AudioFile result {};
-    const auto ext = GetExtension(filename);
+    const auto ext = path.extension();
     if (ext == ".wav") {
-        drwav wav;
-        if (!drwav_init_file(&wav, filename.data())) {
-            FatalErrorWithNewLine("could not open the WAV file ", filename);
+        std::unique_ptr<drwav, decltype(&drwav_close)> wav(drwav_open_file(path.generic_string().data()),
+                                                           &drwav_close);
+        if (!wav) {
+            WarningWithNewLine("could not open the WAV file ", path);
+            return {};
         }
 
-        result.num_channels = wav.channels;
-        result.sample_rate = wav.sampleRate;
-        result.interleaved_samples.resize(wav.totalPCMFrameCount * wav.channels);
+        result.num_channels = wav->channels;
+        result.sample_rate = wav->sampleRate;
+        result.interleaved_samples.resize(wav->totalPCMFrameCount * wav->channels);
         const auto frames_read =
-            drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, result.interleaved_samples.data());
-        if (frames_read != wav.totalPCMFrameCount) {
-            FatalErrorWithNewLine("failed to get all the frames from file ", filename);
+            drwav_read_pcm_frames_f32(wav.get(), wav->totalPCMFrameCount, result.interleaved_samples.data());
+        if (frames_read != wav->totalPCMFrameCount) {
+            WarningWithNewLine("failed to get all the frames from file ", path);
+            return {};
         }
-
-        drwav_uninit(&wav);
     } else if (ext == ".flac") {
-        auto flac = drflac_open_file(filename.data(), nullptr);
+        std::unique_ptr<drflac, decltype(&drflac_close)> flac(
+            drflac_open_file(path.generic_string().data(), nullptr), &drflac_close);
         if (!flac) {
-            FatalErrorWithNewLine("could not open the FLAC file ", filename);
+            WarningWithNewLine("could not open the FLAC file ", path);
+            return {};
         }
 
         result.num_channels = flac->channels;
         result.sample_rate = flac->sampleRate;
         result.interleaved_samples.resize(flac->totalPCMFrameCount * flac->channels);
-        const auto frames_read =
-            drflac_read_pcm_frames_f32(flac, flac->totalPCMFrameCount, result.interleaved_samples.data());
+        const auto frames_read = drflac_read_pcm_frames_f32(flac.get(), flac->totalPCMFrameCount,
+                                                            result.interleaved_samples.data());
         if (frames_read != flac->totalPCMFrameCount) {
-            FatalErrorWithNewLine("failed to get all the frames from file ", filename);
+            WarningWithNewLine("failed to get all the frames from file ", path);
+            return {};
         }
-
-        drflac_close(flac);
     } else {
-        FatalErrorWithNewLine("file '", filename, "' is not a WAV or a FLAC");
+        WarningWithNewLine("file ", path, " is not a WAV or a FLAC");
+        return {};
     }
     return result;
 }
 
-bool WriteWaveFile(const std::string &filename, const AudioFile &audio_file) {
+bool WriteWaveFile(const ghc::filesystem::path &path, const AudioFile &audio_file) {
     drwav_data_format format {};
     format.container = drwav_container_riff;
     format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
     format.channels = audio_file.num_channels;
     format.sampleRate = audio_file.sample_rate;
     format.bitsPerSample = sizeof(float) * 8;
-    drwav *wav = drwav_open_file_write(filename.data(), &format);
+    drwav *wav = drwav_open_file_write(path.generic_string().data(), &format);
     if (!wav) return false;
 
     const auto num_written =

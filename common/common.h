@@ -1,7 +1,10 @@
 #pragma once
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <vector>
+
+#include "filesystem.hpp"
 
 template <typename Arg, typename... Args>
 void FatalErrorWithNewLine(Arg &&arg, Args &&... args) {
@@ -10,6 +13,14 @@ void FatalErrorWithNewLine(Arg &&arg, Args &&... args) {
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
     exit(1);
+}
+
+template <typename Arg, typename... Args>
+void WarningWithNewLine(Arg &&arg, Args &&... args) {
+    std::cout << "WARNING: ";
+    std::cout << std::forward<Arg>(arg);
+    ((std::cout << std::forward<Args>(args)), ...);
+    std::cout << "\n";
 }
 
 std::string_view GetExtension(const std::string_view path);
@@ -22,5 +33,5 @@ struct AudioFile {
     unsigned sample_rate {};
 };
 
-AudioFile ReadAudioFile(const std::string &filename);
-bool WriteWaveFile(const std::string &filename, const AudioFile &audio_file);
+std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &filename);
+bool WriteWaveFile(const ghc::filesystem::path &filename, const AudioFile &audio_file);

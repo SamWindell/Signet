@@ -3,7 +3,7 @@
 #include <string_view>
 
 template <typename Arg, typename... Args>
-void FatalErrorWithNewLine(Arg&& arg, Args&&... args) {
+void FatalErrorWithNewLine(Arg &&arg, Args &&... args) {
     std::cout << "ERROR: ";
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);

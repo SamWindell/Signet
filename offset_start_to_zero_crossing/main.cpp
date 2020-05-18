@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <vector>
 #include <string>
-#include <string_view>
 #include <float.h>
 #include <cmath>
 #include <algorithm>
@@ -90,16 +89,16 @@ size_t FindFrameNearestToZeroInBuffer(const float *buffer, size_t num_frames) {
     return index_of_min;
 }
 
-AudioFile ImproveInitialStartLocation(const AudioFile &input, size_t frames_from_start_to_find_min, bool append_skipped_frames_to_end) {
-    std::cout << "Searching " << frames_from_start_to_find_min << " frames for a zero-crossing\n";
+AudioFile CreateNewFileWithStartingZeroCrossing(const AudioFile &input, size_t num_zero_crossing_search_frames, bool append_skipped_frames_on_end) {
+    std::cout << "Searching " << num_zero_crossing_search_frames << " frames for a zero-crossing\n";
 
     AudioFile result {};
     result.sample_rate = input.sample_rate;
     result.num_channels = input.num_channels;
 
-    frames_from_start_to_find_min = std::min(frames_from_start_to_find_min, input.NumFrames());
+    num_zero_crossing_search_frames = std::min(num_zero_crossing_search_frames, input.NumFrames());
 
-    const auto new_start_frame = FindFrameNearestToZeroInBuffer(input.interleaved_samples.data(), frames_from_start_to_find_min);
+    const auto new_start_frame = FindFrameNearestToZeroInBuffer(input.interleaved_samples.data(), num_zero_crossing_search_frames);
     if (new_start_frame == 0) {
         std::cout << "No start frame change needed\n";
         result.interleaved_samples = input.interleaved_samples;
@@ -110,7 +109,7 @@ AudioFile ImproveInitialStartLocation(const AudioFile &input, size_t frames_from
 
     auto interleaved_samples_new_start_it = input.interleaved_samples.begin() + new_start_frame *2;
     std::vector<float> new_interleaved_samples {interleaved_samples_new_start_it, input.interleaved_samples.end()};
-    if (append_skipped_frames_to_end) {
+    if (append_skipped_frames_on_end) {
         new_interleaved_samples.insert(new_interleaved_samples.end(), input.interleaved_samples.begin(), interleaved_samples_new_start_it);
         assert(new_interleaved_samples.size() == input.interleaved_samples.size());
     }
@@ -120,26 +119,26 @@ AudioFile ImproveInitialStartLocation(const AudioFile &input, size_t frames_from
 }
 
 int main(int argc, char *argv[]) {
-    CLI::App app{"Offset the start of a FLAC or WAV file to a zero crossing"};
+    CLI::App app{"Offset the start of a FLAC or WAV file to the nearest approximate zero crossing"};
 
     std::string input_filename;
     std::string output_filename;
-    bool append_skipped_frames_to_end = false;
-    size_t num_inital_frames_to_search = 44100;
+    bool append_skipped_frames_on_end = false;
+    size_t num_zero_crossing_search_frames = 44100;
 
     app.add_option("input-wave-or-flac-filename", input_filename, "the file to read from")->required()->check(CLI::ExistingFile);
     app.add_option("output-wave-filename", output_filename, "the file to write to")->required();
-    app.add_flag("-a,--append-skipped", append_skipped_frames_to_end, "append the frames offsetted to the end of the file - useful when the sample is a seamless loop");
-    app.add_option("-n,--search-frames", num_inital_frames_to_search, "the maximum number of frames to search for the zero crossing in")->required();
+    app.add_flag("-a,--append-skipped", append_skipped_frames_on_end, "append the frames offsetted to the end of the file - useful when the sample is a seamless loop");
+    app.add_option("-n,--search-frames", num_zero_crossing_search_frames, "the maximum number of frames from the start of the sample to search for the zero crossing in")->required();
 
     CLI11_PARSE(app, argc, argv);
 
     const auto audio_file = ReadAudioFile(input_filename);
-    const auto new_audio_file = ImproveInitialStartLocation(audio_file, num_inital_frames_to_search, append_skipped_frames_to_end);
+    const auto new_audio_file = CreateNewFileWithZeroCrossing(audio_file, num_zero_crossing_search_frames, append_skipped_frames_on_end);
     if (!WriteWaveFile(output_filename, new_audio_file)) {
         FatalErrorWithNewLine("could not write the wave file ", output_filename);
     }
-    std::cout << "Successfully wrote file " << output_filename << (append_skipped_frames_to_end ? " with appending\n" : " without appending\n");
+    std::cout << "Successfully wrote file " << output_filename << (append_skipped_frames_on_end ? " with appending\n" : " without appending\n");
 
     return 0;
 }

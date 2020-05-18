@@ -1,0 +1,9 @@
+{
+	"folders":
+	[
+		{
+            "folder_exclude_patterns": ["build"],
+			"path": "."
+		}
+	]
+}

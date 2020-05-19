@@ -5,9 +5,11 @@
 #include <stdio.h>
 #include <string>
 
+#include "audio_file.h"
+#include "audio_util_interface.h"
 #include "common.h"
 
-struct ZeroCrossingOffseter : public Processor {
+struct ZeroCrossingOffseter final : public Processor {
     static size_t FindFrameNearestToZeroInBuffer(const float *interleaved_buffer,
                                                  const size_t num_frames,
                                                  const unsigned num_channels) {

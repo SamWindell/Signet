@@ -5,5 +5,16 @@
             "folder_exclude_patterns": ["build"],
 			"path": "."
 		}
-	]
+	],
+    "build_systems":
+    [
+        {
+            "name": "Build",
+            "working_dir": "$project_path/build",
+            "shell_cmd": "ninja",
+            "windows": {
+                "file_regex": "^(?:\\x1b\\[[;\\d]*[A-Za-z])*(?:[^\\\\\\/]*\\\\\\/)*([^\\s].*)\\((\\d+),?(?:\\d+)?\\)\\s*:\\s+((?>error|warning|fatal error).+)"
+            },
+        }
+    ]
 }

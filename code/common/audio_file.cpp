@@ -1,7 +1,11 @@
-#include "common.h"
+#include "audio_file.h"
+
+#include <iostream>
 
 #define DR_WAV_IMPLEMENTATION
 #define DR_FLAC_IMPLEMENTATION
+
+#include "common.h"
 #include "dr_flac.h"
 #include "dr_wav.h"
 
@@ -67,35 +71,3 @@ bool WriteWaveFile(const ghc::filesystem::path &path, const AudioFile &audio_fil
     drwav_close(wav);
     return true;
 }
-
-template <typename DirectoryIterator>
-void ForEachAudioFileInDirectory(const std::string &directory,
-                                 std::function<void(const ghc::filesystem::path &)> callback) {
-    std::vector<ghc::filesystem::path> paths;
-    for (const auto &entry : DirectoryIterator(directory)) {
-        const auto &path = entry.path();
-        const auto ext = path.extension();
-        if (ext == ".flac" || ext == ".wav") {
-            paths.push_back(path);
-        }
-    }
-
-    // We do this in a separate loop because the callback might write a file. We do not want to then process
-    // it again.
-    for (const auto &path : paths) {
-        callback(path);
-    }
-    std::cout << "Processed " << paths.size() << (paths.size() == 1 ? " file\n\n" : " files\n\n");
-}
-
-void ForEachAudioFileInDirectory(const std::string &directory,
-                                 const bool recursive,
-                                 std::function<void(const ghc::filesystem::path &)> callback) {
-    if (recursive) {
-        ForEachAudioFileInDirectory<ghc::filesystem::recursive_directory_iterator>(directory, callback);
-    } else {
-        ForEachAudioFileInDirectory<ghc::filesystem::directory_iterator>(directory, callback);
-    }
-}
-
-float DBToAmp(const float d) { return std::pow(10.0f, d / 20.0f); }

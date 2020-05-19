@@ -71,17 +71,21 @@ bool WriteWaveFile(const ghc::filesystem::path &path, const AudioFile &audio_fil
 template <typename DirectoryIterator>
 void ForEachAudioFileInDirectory(const std::string &directory,
                                  std::function<void(const ghc::filesystem::path &)> callback) {
-    size_t num_files_processed = 0;
+    std::vector<ghc::filesystem::path> paths;
     for (const auto &entry : DirectoryIterator(directory)) {
         const auto &path = entry.path();
         const auto ext = path.extension();
         if (ext == ".flac" || ext == ".wav") {
-            callback(path);
-            num_files_processed++;
+            paths.push_back(path);
         }
     }
-    std::cout << "Processed " << num_files_processed
-              << (num_files_processed == 1 ? " file\n\n" : " files\n\n");
+
+    // We do this in a separate loop because the callback might write a file. We do not want to then process
+    // it again.
+    for (const auto &path : paths) {
+        callback(path);
+    }
+    std::cout << "Processed " << paths.size() << (paths.size() == 1 ? " file\n\n" : " files\n\n");
 }
 
 void ForEachAudioFileInDirectory(const std::string &directory,

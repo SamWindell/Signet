@@ -7,3 +7,4 @@ All tools can be run with the argument `--help` to see the full command line int
 
 ### Current tools
 - Zero crossing offsetter. Offsets the start of a audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file. If the sample is a seamless loop, this is neccessary to do to ensure the loop is still seamless.
+- Noramaliser. Normalise a sample to a set decibel level. Can be used on a directory, optionally recursively. With a directory you can normalise the samples to a common gain.

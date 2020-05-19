@@ -9,6 +9,7 @@ class Normaliser : public Processor {
                        "The target level in decibels to convert the sample(s) to");
         app.add_flag("-c,--common_gain", m_common_gain,
                      "When using on a directory, amplifiy all the samples by the same amount");
+        app.add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");
     }
 
     std::optional<AudioFile> Process(const AudioFile &input,
@@ -50,15 +51,38 @@ class Normaliser : public Processor {
         return max_value;
     }
 
-    AudioFile PerformNormalisation(const AudioFile &input_audio) const {
-        float max_magitude = m_max_sample_magnitude;
-        if (max_magitude == 0) {
-            max_magitude = GetMaxValueInBuffer(input_audio);
+    static float GetSumOfSampleSquares(const AudioFile &buffer) {
+        float sum_of_squares = 0;
+        for (const auto s : buffer.interleaved_samples) {
+            sum_of_squares += std::pow(s, 2.0f);
         }
+        return sum_of_squares;
+    }
 
+    static float GetLinearGainForTargetAmpRMS(float target_amp, float sum_of_squares, float num_samples) {
+        return std::sqrt((num_samples * std::pow(target_amp, 2.0f)) / sum_of_squares);
+    }
+
+    AudioFile PerformNormalisation(const AudioFile &input_audio) const {
         const auto target_amp = DBToAmp(m_target_decibels);
-        const auto gain = target_amp / max_magitude;
-        std::cout << "Max value is " << max_magitude << ", applying a gain of " << gain << "\n";
+        float gain = 0;
+        if (m_num_accumulated) {
+            if (m_use_rms) {
+                gain = GetLinearGainForTargetAmpRMS(target_amp, m_sample_accumululator,
+                                                    (float)m_num_accumulated);
+            } else {
+                const auto max_magitude = m_sample_accumululator;
+                gain = target_amp / max_magitude;
+            }
+        } else {
+            if (m_use_rms) {
+                const auto n = (float)input_audio.interleaved_samples.size();
+                gain = GetLinearGainForTargetAmpRMS(target_amp, GetSumOfSampleSquares(input_audio), n);
+            } else {
+                gain = target_amp / GetMaxValueInBuffer(input_audio);
+            }
+        }
+        std::cout << "Applying a gain of " << gain << "\n";
 
         AudioFile result = input_audio;
         for (auto &s : result.interleaved_samples) {
@@ -69,10 +93,15 @@ class Normaliser : public Processor {
     }
 
     void ReadFileForCommonGain(const AudioFile &audio) {
-        const auto max = GetMaxValueInBuffer(audio);
-        if (max > m_max_sample_magnitude) {
-            m_max_sample_magnitude = max;
+        if (m_use_rms) {
+            m_sample_accumululator += GetSumOfSampleSquares(audio);
+        } else {
+            const auto max = GetMaxValueInBuffer(audio);
+            if (max > m_sample_accumululator) {
+                m_sample_accumululator = max;
+            }
         }
+        m_num_accumulated += audio.interleaved_samples.size();
     }
 
     enum class Mode {
@@ -80,11 +109,13 @@ class Normaliser : public Processor {
         ApplyingGain,
     };
     Mode m_current_mode {};
-    float m_max_sample_magnitude = 0;
+    float m_sample_accumululator = {};
+    size_t m_num_accumulated = {};
     float m_gain = 0;
 
     bool m_common_gain = false;
     float m_target_decibels = 0.0f;
+    bool m_use_rms = false;
 };
 
 int main(const int argc, const char *argv[]) {

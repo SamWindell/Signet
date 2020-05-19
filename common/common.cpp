@@ -68,10 +68,30 @@ bool WriteWaveFile(const ghc::filesystem::path &path, const AudioFile &audio_fil
     return true;
 }
 
-std::string_view GetExtension(const std::string_view path) {
-    const auto index = path.find_last_of('.');
-    if (index == std::string::npos) {
-        return path;
+template <typename DirectoryIterator>
+void ForEachAudioFileInDirectory(const std::string &directory,
+                                 std::function<void(const ghc::filesystem::path &)> callback) {
+    size_t num_files_processed = 0;
+    for (const auto &entry : DirectoryIterator(directory)) {
+        const auto &path = entry.path();
+        const auto ext = path.extension();
+        if (ext == ".flac" || ext == ".wav") {
+            callback(path);
+            num_files_processed++;
+        }
     }
-    return path.substr(index);
+    std::cout << "Processed " << num_files_processed
+              << (num_files_processed == 1 ? " file\n\n" : " files\n\n");
 }
+
+void ForEachAudioFileInDirectory(const std::string &directory,
+                                 const bool recursive,
+                                 std::function<void(const ghc::filesystem::path &)> callback) {
+    if (recursive) {
+        ForEachAudioFileInDirectory<ghc::filesystem::recursive_directory_iterator>(directory, callback);
+    } else {
+        ForEachAudioFileInDirectory<ghc::filesystem::directory_iterator>(directory, callback);
+    }
+}
+
+float DBToAmp(const float d) { return std::pow(10.0f, d / 20.0f); }

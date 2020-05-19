@@ -4,7 +4,6 @@
 #include <float.h>
 #include <stdio.h>
 #include <string>
-#include <vector>
 
 #include "CLI11.hpp"
 #include "common.h"
@@ -92,19 +91,8 @@ struct ZeroCrossingOffseter {
         std::cout << "\n";
     }
 
-    template <typename DirectoryIterator>
-    void ProcessAllFilesInDir(const std::string &directory) const {
-        size_t num_files_processed = 0;
-        for (const auto &entry : DirectoryIterator(directory)) {
-            const auto &path = entry.path();
-            const auto ext = path.extension();
-            if (ext == ".flac" || ext == ".wav") {
-                ProcessFile(path.generic_string(), {});
-                num_files_processed++;
-            }
-        }
-        std::cout << "Processed " << num_files_processed
-                  << (num_files_processed == 1 ? " file\n" : " files\n");
+    void ProcessToAutomaticallyNamedOutput(const ghc::filesystem::path &input_filepath) const {
+        ProcessFile(input_filepath, {});
     }
 
     void Process() const {
@@ -115,11 +103,9 @@ struct ZeroCrossingOffseter {
                     "files will be placed adjacent to originals");
             }
 
-            if (recursive_directory_search) {
-                ProcessAllFilesInDir<ghc::filesystem::recursive_directory_iterator>(input_filepath);
-            } else {
-                ProcessAllFilesInDir<ghc::filesystem::directory_iterator>(input_filepath);
-            }
+            ForEachAudioFileInDirectory(
+                input_filepath, recursive_directory_search,
+                [this](const ghc::filesystem::path &path) { ProcessToAutomaticallyNamedOutput(path); });
         } else {
             if (recursive_directory_search) {
                 WarningWithNewLine("input path is a file, ignoring the recursive flag");

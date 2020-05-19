@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <string_view>
@@ -23,7 +24,9 @@ void WarningWithNewLine(Arg &&arg, Args &&... args) {
     std::cout << "\n";
 }
 
-std::string_view GetExtension(const std::string_view path);
+void ForEachAudioFileInDirectory(const std::string &directory,
+                                 const bool recursive,
+                                 std::function<void(const ghc::filesystem::path &)> callback);
 
 struct AudioFile {
     size_t NumFrames() const { return interleaved_samples.size() / num_channels; }
@@ -35,3 +38,5 @@ struct AudioFile {
 
 std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &filename);
 bool WriteWaveFile(const ghc::filesystem::path &filename, const AudioFile &audio_file);
+
+float DBToAmp(float d);

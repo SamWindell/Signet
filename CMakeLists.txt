@@ -12,3 +12,6 @@ add_executable(offset_start_to_zero_crossing
                offset_start_to_zero_crossing/main.cpp common/common.cpp)
 target_link_libraries(offset_start_to_zero_crossing
                       PRIVATE audio_util_build_settings)
+
+add_executable(normalise normalise/main.cpp common/common.cpp)
+target_link_libraries(normalise PRIVATE audio_util_build_settings)

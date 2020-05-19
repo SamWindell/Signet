@@ -5,14 +5,14 @@
 #include "CLI11.hpp"
 #include "common.h"
 
-class CommonGainAccumulator {
+class NormalisationGainCalculator {
   public:
-    virtual ~CommonGainAccumulator() {}
+    virtual ~NormalisationGainCalculator() {}
     virtual void AddBuffer(const AudioFile &audio) = 0;
     virtual float GetGain(float target_amp) = 0;
 };
 
-class CommonGainRMSAccumulator : public CommonGainAccumulator {
+class RMSGainCalculator : public NormalisationGainCalculator {
   public:
     void AddBuffer(const AudioFile &audio) override {
         if (!m_sum_of_squares_channels.size()) {
@@ -51,7 +51,7 @@ class CommonGainRMSAccumulator : public CommonGainAccumulator {
     std::vector<float> m_sum_of_squares_channels {};
 };
 
-class CommonGainPeakAccumulator : public CommonGainAccumulator {
+class PeakGainCalculator : public NormalisationGainCalculator {
   public:
     void AddBuffer(const AudioFile &audio) override {
         float max_value = 0;
@@ -100,9 +100,9 @@ class Normaliser : public Processor {
 
     void Run(AudioUtilInterface &audio_util) override {
         if (m_use_rms) {
-            m_processor = std::make_unique<CommonGainRMSAccumulator>();
+            m_processor = std::make_unique<RMSGainCalculator>();
         } else {
-            m_processor = std::make_unique<CommonGainPeakAccumulator>();
+            m_processor = std::make_unique<PeakGainCalculator>();
         }
 
         if (audio_util.IsProcessingMultipleFiles() && m_use_common_gain) {
@@ -141,7 +141,7 @@ class Normaliser : public Processor {
     };
     ProcessingStage m_current_stage {};
 
-    std::unique_ptr<CommonGainAccumulator> m_processor {};
+    std::unique_ptr<NormalisationGainCalculator> m_processor {};
 
     bool m_use_common_gain = false;
     float m_target_decibels = 0.0f;

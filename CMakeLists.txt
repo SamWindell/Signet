@@ -34,7 +34,8 @@ add_executable(offset_start_to_zero_crossing code/audio_utils/offset_start_to_ze
 target_link_libraries(offset_start_to_zero_crossing PRIVATE audio_util_common)
 
 # Normalise
-add_executable(normalise code/audio_utils/normalise/main.cpp code/audio_utils/normalise/normaliser.cpp)
+add_executable(normalise code/audio_utils/normalise/gain_calculators.cpp code/audio_utils/normalise/main.cpp
+                         code/audio_utils/normalise/normaliser.cpp)
 target_link_libraries(normalise PRIVATE audio_util_common)
 
 # Tests

@@ -15,6 +15,12 @@
             "windows": {
                 "file_regex": "^(?:\\x1b\\[[;\\d]*[A-Za-z])*(?:[^\\\\\\/]*\\\\\\/)*([^\\s].*)\\((\\d+),?(?:\\d+)?\\)\\s*:\\s+((?>error|warning|fatal error).+)"
             },
+            "variants": [
+                {
+                    "name": "Run Tests",
+                    "shell_cmd": "call ninja && call tests.exe"
+                }
+            ]
         }
     ]
 }

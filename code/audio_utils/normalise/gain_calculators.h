@@ -2,6 +2,7 @@
 
 #include "audio_file.h"
 #include "common.h"
+#include "doctest.hpp"
 
 class NormalisationGainCalculator {
   public:
@@ -41,8 +42,8 @@ class RMSGainCalculator : public NormalisationGainCalculator {
     }
 
   private:
-    static float GetLinearGainForTargetAmpRMS(float target_amp, float sum_of_squares, float num_samples) {
-        return std::sqrt((num_samples * std::pow(target_amp, 2.0f)) / sum_of_squares);
+    static float GetLinearGainForTargetAmpRMS(float target_rms_amp, float sum_of_squares, float num_samples) {
+        return std::sqrt((num_samples * std::pow(target_rms_amp, 2.0f)) / sum_of_squares);
     }
 
     size_t m_num_frames {};
@@ -64,7 +65,9 @@ class PeakGainCalculator : public NormalisationGainCalculator {
         }
     }
 
-    float GetGain(float target_amp) const override { return target_amp / m_max_magnitude; }
+    float GetGain(float target_max_magnitude) const override {
+        return target_max_magnitude / m_max_magnitude;
+    }
 
   private:
     float m_max_magnitude;

@@ -61,5 +61,3 @@ AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
 }
 
 void Normaliser::ReadFileForCommonGain(const AudioFile &audio) { m_processor->AddBuffer(audio); }
-
-TEST_CASE("foo bar") {}

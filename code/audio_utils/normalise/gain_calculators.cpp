@@ -1,5 +1,6 @@
 #include "gain_calculators.h"
 
+#include "doctest.hpp"
 #include <type_traits>
 
 TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {

@@ -1,6 +1,7 @@
 #pragma once
 #include <cmath>
 #include <iostream>
+#include <string_view>
 
 template <typename Arg, typename... Args>
 void FatalErrorWithNewLine(Arg &&arg, Args &&... args) {
@@ -19,4 +20,14 @@ void WarningWithNewLine(Arg &&arg, Args &&... args) {
     std::cout << "\n";
 }
 
+static constexpr auto half_pi = 1.57079632679f;
+
 inline float DBToAmp(const float d) { return std::pow(10.0f, d / 20.0f); }
+
+inline bool EndsWith(std::string_view str, std::string_view suffix) {
+    return suffix.size() <= str.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+inline bool StartsWith(std::string_view str, std::string_view prefix) {
+    return prefix.size() <= str.size() && str.compare(0, prefix.size(), prefix) == 0;
+}

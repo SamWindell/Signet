@@ -38,6 +38,10 @@ add_executable(normalise code/audio_utils/normalise/gain_calculators.cpp code/au
                          code/audio_utils/normalise/normaliser.cpp)
 target_link_libraries(normalise PRIVATE audio_util_common)
 
+# Fader
+add_executable(fader code/audio_utils/fader/main.cpp)
+target_link_libraries(fader PRIVATE audio_util_common)
+
 # Tests
 add_executable(tests code/audio_utils/normalise/normaliser.cpp code/tests/tests_main)
 target_link_libraries(tests PRIVATE audio_util_common)

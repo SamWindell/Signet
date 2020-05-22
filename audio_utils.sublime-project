@@ -15,10 +15,17 @@
             "windows": {
                 "file_regex": "^(?:\\x1b\\[[;\\d]*[A-Za-z])*(?:[^\\\\\\/]*\\\\\\/)*([^\\s].*)\\((\\d+),?(?:\\d+)?\\)\\s*:\\s+((?>error|warning|fatal error).+)"
             },
+            "osx": {
+                "file_regex": "^(?:\\x1b\\[[;\\d]*[A-Za-z])*([^\\s][\\/\\w -\\\\]+):([0-9]+):([0-9]+): (?>fatal error|error|warning): (.+)$"
+            },
             "variants": [
                 {
                     "name": "Run Tests",
                     "shell_cmd": "call ninja && call tests.exe"
+                },
+                {
+                    "name": "CMake",
+                    "shell_cmd": "cmake ../ -G Ninja"
                 }
             ]
         }

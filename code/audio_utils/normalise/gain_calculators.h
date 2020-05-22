@@ -1,8 +1,9 @@
 #pragma once
 
+#include <float.h>
+
 #include "audio_file.h"
 #include "common.h"
-#include "doctest.hpp"
 
 class NormalisationGainCalculator {
   public:

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string>
 
+#include "audio_duration.h"
 #include "audio_file.h"
 #include "audio_util_interface.h"
 #include "common.h"
@@ -31,7 +32,7 @@ struct ZeroCrossingOffseter final : public Processor {
 
     std::optional<AudioFile> Process(const AudioFile &input,
                                      ghc::filesystem::path &output_filepath) override {
-        const auto search_frames = std::min(m_num_zero_crossing_search_frames, input.NumFrames());
+        const auto search_frames = m_search_size.GetDurationAsFrames(input.sample_rate, input.NumFrames());
         std::cout << "Searching " << search_frames << " frames for a zero-crossing\n";
 
         AudioFile result {};
@@ -67,9 +68,9 @@ struct ZeroCrossingOffseter final : public Processor {
         app.add_flag(
             "-a,--append-skipped", m_append_skipped_frames_on_end,
             "Append the frames offsetted to the end of the file - useful when the sample is a seamless loop");
-        app.add_option(
-            "-n,--search-frames", m_num_zero_crossing_search_frames,
-            "The maximum number of frames from the start of the sample to search for the zero crossing in");
+        app.add_option("-n,--search-size", m_search_size,
+                       "The duration from the start of the sample to search for the zero crossing in")
+            ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
     }
 
     std::string GetDescription() override {
@@ -78,5 +79,5 @@ struct ZeroCrossingOffseter final : public Processor {
 
   private:
     bool m_append_skipped_frames_on_end = false;
-    size_t m_num_zero_crossing_search_frames = 44100;
+    AudioDuration m_search_size {AudioDuration::Unit::Seconds, 1.0f};
 };

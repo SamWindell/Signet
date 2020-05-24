@@ -21,7 +21,12 @@
             "variants": [
                 {
                     "name": "Run Tests",
-                    "shell_cmd": "call ninja && call tests.exe"
+                    "windows": {
+                        "shell_cmd": "call ninja && call tests.exe"
+                    },
+                    "osx": {
+                        "shell_cmd": "ninja && ./tests"
+                    }
                 },
                 {
                     "name": "CMake",

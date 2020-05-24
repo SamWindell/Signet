@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(audio_util_common STATIC code/common/audio_file.cpp code/common/audio_util_interface.cpp)
-target_include_directories(audio_util_common PUBLIC code/third_party_libs code/common)
+target_include_directories(audio_util_common PUBLIC code/third_party_libs code/common code/tests)
 target_compile_definitions(audio_util_common PUBLIC NOMINMAX)
 if (WIN32)
     set(WARNINGS_TO_ENABLE
@@ -39,9 +39,9 @@ add_executable(normalise code/audio_utils/normalise/gain_calculators.cpp code/au
 target_link_libraries(normalise PRIVATE audio_util_common)
 
 # Fader
-add_executable(fader code/audio_utils/fader/main.cpp)
+add_executable(fader code/audio_utils/fader/main.cpp code/audio_utils/fader/fader.cpp)
 target_link_libraries(fader PRIVATE audio_util_common)
 
 # Tests
-add_executable(tests code/audio_utils/normalise/normaliser.cpp code/tests/tests_main)
+add_executable(tests code/audio_utils/normalise/normaliser.cpp code/tests/tests_main code/audio_utils/normalise/gain_calculators.cpp code/audio_utils/fader/fader.cpp code/common/audio_duration.cpp)
 target_link_libraries(tests PRIVATE audio_util_common)

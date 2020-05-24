@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <cmath>
 #include <iostream>
 #include <string_view>
@@ -18,6 +19,11 @@ void WarningWithNewLine(Arg &&arg, Args &&... args) {
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
+}
+
+template <typename V, typename... T>
+constexpr auto MakeArray(T &&... t) -> std::array<V, sizeof...(T)> {
+    return {{std::forward<T>(t)...}};
 }
 
 static constexpr auto half_pi = 1.57079632679f;

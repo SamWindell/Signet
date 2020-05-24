@@ -46,7 +46,7 @@ std::string Normaliser::GetDescription() { return "Normalise a sample to a certa
 
 AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
     if (!m_use_common_gain) {
-        m_processor->AddBuffer(input_audio);
+        m_processor->RegisterBufferMagnitudes(input_audio);
     }
     const float gain = m_processor->GetGain(DBToAmp(m_target_decibels));
 
@@ -60,4 +60,6 @@ AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
     return result;
 }
 
-void Normaliser::ReadFileForCommonGain(const AudioFile &audio) { m_processor->AddBuffer(audio); }
+void Normaliser::ReadFileForCommonGain(const AudioFile &audio) {
+    m_processor->RegisterBufferMagnitudes(audio);
+}

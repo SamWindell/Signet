@@ -19,9 +19,10 @@ void Fader::AddCLI(CLI::App &app) {
                    "Add a fade in at the start of the sample. You must specify the unit of this value.")
         ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
     app.add_option("-s,--shape", m_shape, "The shape of the curve")
-        ->transform(CLI::CheckedTransformer(
-            std::map<std::string, Shape> {{"linear", Shape::Linear}, {"sine", Shape::Sine}},
-            CLI::ignore_case));
+        ->transform(CLI::CheckedTransformer(std::map<std::string, Shape> {{"linear", Shape::Linear},
+                                                                          {"sine", Shape::Sine},
+                                                                          {"scurve", Shape::SCurve}},
+                                            CLI::ignore_case));
 }
 
 std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
@@ -45,18 +46,23 @@ void Fader::PerformFade(AudioFile &audio,
                         const Shape shape,
                         const bool fade_in) {
     for (size_t frame = first; frame <= last; ++frame) {
-        const auto pos_through_fade = (float)(frame - first) / (float)(last - first);
-        assert(pos_through_fade >= 0 && pos_through_fade <= 1);
+        const auto x = (float)(frame - first) / (float)(last - first);
+        assert(x >= 0 && x <= 1);
 
         float multiplier = -1;
         switch (shape) {
             case Shape::Linear: {
-                multiplier = fade_in ? pos_through_fade : 1.0f - pos_through_fade;
+                multiplier = fade_in ? x : 1.0f - x;
                 break;
             }
             case Shape::Sine: {
-                const auto angle = pos_through_fade * half_pi;
+                const auto angle = x * half_pi;
                 multiplier = fade_in ? std::sin(angle) : std::cos(angle);
+                break;
+            }
+            case Shape::SCurve: {
+                const auto y = (-(std::cos(x * pi) - 1.0f)) / 2.0f;
+                multiplier = fade_in ? y : (1.0f - y);
                 break;
             }
             default: assert(0);
@@ -112,6 +118,7 @@ TEST_CASE("[Fader] args") {
 
     const auto TestSuite = [&](auto shape) {
         const std::string shape_str {shape};
+        CAPTURE(shape_str);
         TestArgs({"test.exe", "--out", "10smp", "--in", "10smp", "--shape", shape_str.data()}, 10, 10);
         TestArgs({"test.exe", "--out", "1smp", "--in", "1smp", "--shape", shape_str.data()}, 1, 1);
         TestArgs({"test.exe", "--out", "60smp", "--in", "60smp", "--shape", shape_str.data()}, 60, 60);

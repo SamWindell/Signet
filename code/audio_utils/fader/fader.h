@@ -9,6 +9,7 @@ class Fader final : public Processor {
     enum class Shape {
         Linear,
         Sine,
+        SCurve,
     };
 
     void AddCLI(CLI::App &app) override;

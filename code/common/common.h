@@ -27,6 +27,7 @@ constexpr auto MakeArray(T &&... t) -> std::array<V, sizeof...(T)> {
 }
 
 static constexpr auto half_pi = 1.57079632679f;
+static constexpr auto pi = 3.14159265359f;
 
 inline float DBToAmp(const float d) { return std::pow(10.0f, d / 20.0f); }
 

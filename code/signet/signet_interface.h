@@ -3,9 +3,9 @@
 #include "common.h"
 #include "subcommand_processor.h"
 
-class AudioUtilInterface {
+class SignetInterface {
   public:
-    AudioUtilInterface();
+    SignetInterface();
 
     int Main(const int argc, const char *argv[]);
     void ProcessAllFiles(Processor &processor);

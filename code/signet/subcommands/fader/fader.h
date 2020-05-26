@@ -1,7 +1,7 @@
 #pragma once
 
 #include "audio_duration.h"
-#include "audio_util_interface.h"
+#include "signet_interface.h"
 #include "span.hpp"
 
 class Fader final : public Processor {
@@ -10,7 +10,7 @@ class Fader final : public Processor {
 
     void AddCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
-    void Run(AudioUtilInterface &audio_util) override { audio_util.ProcessAllFiles(*this); }
+    void Run(SignetInterface &audio_util) override { audio_util.ProcessAllFiles(*this); }
 
     static tcb::span<const std::string_view> GetShapeNames();
 

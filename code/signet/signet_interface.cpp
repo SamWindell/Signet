@@ -1,4 +1,4 @@
-#include "audio_util_interface.h"
+#include "signet_interface.h"
 
 #include <cassert>
 #include <functional>
@@ -8,13 +8,13 @@
 #include "subcommands/normalise/normaliser.h"
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
 
-AudioUtilInterface::AudioUtilInterface() {
+SignetInterface::SignetInterface() {
     m_processors.push_back(new Fader());
     m_processors.push_back(new Normaliser());
     m_processors.push_back(new ZeroCrossingOffseter());
 }
 
-int AudioUtilInterface::Main(const int argc, const char *argv[]) {
+int SignetInterface::Main(const int argc, const char *argv[]) {
     CLI::App app {"Tools for processing audio files"};
 
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
@@ -85,7 +85,7 @@ static void ForEachAudioFileInDirectory(const std::string &directory,
     }
 }
 
-void AudioUtilInterface::ProcessAllFiles(Processor &processor) {
+void SignetInterface::ProcessAllFiles(Processor &processor) {
     if (IsProcessingMultipleFiles()) {
         ForEachAudioFileInDirectory(
             m_input_filepath, m_recursive_directory_search,
@@ -95,9 +95,9 @@ void AudioUtilInterface::ProcessAllFiles(Processor &processor) {
     }
 }
 
-void AudioUtilInterface::ProcessFile(Processor &processor,
-                                     const ghc::filesystem::path input_filepath,
-                                     ghc::filesystem::path output_filepath) {
+void SignetInterface::ProcessFile(Processor &processor,
+                                  const ghc::filesystem::path input_filepath,
+                                  ghc::filesystem::path output_filepath) {
     if (output_filepath.empty()) {
         output_filepath = input_filepath;
         if (!m_delete_input_files) {

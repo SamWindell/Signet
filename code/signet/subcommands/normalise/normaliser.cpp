@@ -26,7 +26,7 @@ std::optional<AudioFile> Normaliser::Process(const AudioFile &input, ghc::filesy
     return {};
 }
 
-void Normaliser::Run(AudioUtilInterface &audio_util) {
+void Normaliser::Run(SignetInterface &audio_util) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {

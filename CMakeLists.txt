@@ -35,7 +35,7 @@ add_library(subcommands STATIC code/signet/subcommands/fader/fader.cpp
 target_link_libraries(subcommands PUBLIC common)
 
 # Signet
-add_executable(signet code/signet/signet_main.cpp code/signet/audio_util_interface.cpp)
+add_executable(signet code/signet/signet_main.cpp code/signet/signet_interface.cpp)
 target_link_libraries(signet PRIVATE subcommands)
 
 # Tests

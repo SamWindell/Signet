@@ -7,8 +7,8 @@
 
 #include "audio_duration.h"
 #include "audio_file.h"
-#include "audio_util_interface.h"
 #include "common.h"
+#include "signet_interface.h"
 
 struct ZeroCrossingOffseter final : public Processor {
     static size_t FindFrameNearestToZeroInBuffer(const float *interleaved_buffer,
@@ -62,7 +62,7 @@ struct ZeroCrossingOffseter final : public Processor {
         return result;
     }
 
-    void Run(AudioUtilInterface &util) override { util.ProcessAllFiles(*this); }
+    void Run(SignetInterface &util) override { util.ProcessAllFiles(*this); }
 
     void AddCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand(

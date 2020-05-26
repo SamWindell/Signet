@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include "json.hpp"
+
 #include "common.h"
 #include "filesystem.hpp"
 #include "subcommand.h"
@@ -57,6 +59,57 @@ class PatternMatchingFilename {
     std::string str {};
 };
 
+class SignetBackup {
+  public:
+    SignetBackup() {
+        m_backup_dir = "signet-backup";
+        if (!ghc::filesystem::is_directory(m_backup_dir)) {
+            ghc::filesystem::create_directory(m_backup_dir);
+        }
+
+        m_backup_files_dir = m_backup_dir / "files";
+        m_database_file = m_backup_dir / "backup.json";
+        try {
+            std::ifstream i(m_database_file.generic_string());
+            i >> m_database;
+            m_parsed_json = true;
+        } catch (const nlohmann::detail::parse_error &e) {
+        } catch (...) {
+        }
+    }
+
+    bool LoadBackup() {
+        if (m_parsed_json) return false;
+        if (!ghc::filesystem::is_directory(m_backup_files_dir)) {
+            ghc::filesystem::create_directory(m_backup_files_dir);
+        }
+        for (auto [hash, path] : m_database["files"].items()) {
+            ghc::filesystem::copy_file(m_backup_files_dir / (hash + ".backup"), path);
+        }
+        return true;
+    }
+
+    void ResetBackup() {
+        ghc::filesystem::remove_all(m_backup_files_dir);
+        ghc::filesystem::create_directory(m_backup_files_dir);
+    }
+
+    void AddFileToBackup(const ghc::filesystem::path &path) {
+        const auto hash_string = std::to_string(ghc::filesystem::hash_value(path));
+        ghc::filesystem::copy_file(path, m_backup_files_dir / hash_string);
+        m_database["files"][hash_string] = path.generic_string();
+        std::ofstream o(m_database_file.generic_string());
+        o << m_database << std::endl;
+    }
+
+  private:
+    ghc::filesystem::path m_database_file {};
+    ghc::filesystem::path m_backup_dir {};
+    ghc::filesystem::path m_backup_files_dir {};
+    nlohmann::json m_database {};
+    bool m_parsed_json {};
+};
+
 class SignetInterface {
   public:
     SignetInterface();
@@ -71,8 +124,11 @@ class SignetInterface {
                      ghc::filesystem::path output_filepath);
 
     std::vector<std::unique_ptr<Subcommand>> m_subcommands {};
+
+    SignetBackup m_backup {};
+
     bool m_delete_input_files = false;
-    ghc::filesystem::path m_output_filepath;
     bool m_recursive_directory_search = false;
+    ghc::filesystem::path m_output_filepath;
     PatternMatchingFilename m_input_filepath_pattern {};
 };

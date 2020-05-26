@@ -226,3 +226,10 @@ TEST_CASE("[PatternMatchingFilename]") {
         REQUIRE(p.GetRootDirectory() == "c:/tools");
     }
 }
+
+TEST_CASE("[SignetBackup]") {
+    SUBCASE("") {
+        SignetBackup b;
+        b.AddFileToBackup(TEST_DATA_DIRECTORY "/test.wav");
+    }
+}

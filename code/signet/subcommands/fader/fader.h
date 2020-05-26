@@ -10,7 +10,7 @@ class Fader final : public Subcommand {
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
-    void Run(SignetInterface &audio_util) override { audio_util.ProcessAllFiles(*this); }
+    void Run(SignetInterface &signet) override { signet.ProcessAllFiles(*this); }
 
     static tcb::span<const std::string_view> GetShapeNames();
 

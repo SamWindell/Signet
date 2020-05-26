@@ -27,20 +27,20 @@ std::optional<AudioFile> Normaliser::Process(const AudioFile &input, ghc::filesy
     return {};
 }
 
-void Normaliser::Run(SignetInterface &audio_util) {
+void Normaliser::Run(SignetInterface &signet) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {
         m_processor = std::make_unique<PeakGainCalculator>();
     }
 
-    if (audio_util.IsProcessingMultipleFiles() && m_use_common_gain) {
+    if (signet.IsProcessingMultipleFiles() && m_use_common_gain) {
         m_current_stage = ProcessingStage::FindingCommonGain;
-        audio_util.ProcessAllFiles(*this);
+        signet.ProcessAllFiles(*this);
     }
 
     m_current_stage = ProcessingStage::ApplyingGain;
-    audio_util.ProcessAllFiles(*this);
+    signet.ProcessAllFiles(*this);
 }
 
 AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {

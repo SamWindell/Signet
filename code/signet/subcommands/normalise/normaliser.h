@@ -10,7 +10,7 @@ class Normaliser final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
-    void Run(SignetInterface &audio_util) override;
+    void Run(SignetInterface &signet) override;
 
   private:
     AudioFile PerformNormalisation(const AudioFile &input_audio) const;

@@ -85,7 +85,7 @@ class SignetBackup {
     bool LoadBackup() {
         if (!m_parsed_json) return false;
         for (auto [hash, path] : m_database["files"].items()) {
-            std::cout << "Loading file " << path << "\n";
+            std::cout << "Loading backed-up file " << path << "\n";
             ghc::filesystem::copy_file(m_backup_files_dir / hash, path,
                                        ghc::filesystem::copy_options::update_existing);
         }
@@ -108,7 +108,7 @@ class SignetBackup {
         ghc::filesystem::copy_file(path, m_backup_files_dir / hash_string);
         m_database["files"][hash_string] = path.generic_string();
 
-        std::cout << "Writing file " << path << "\n";
+        std::cout << "Backing-up file " << path << "\n";
         std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
         o << m_database << std::endl;
         o.close();
@@ -139,8 +139,7 @@ class SignetInterface {
 
     SignetBackup m_backup {};
 
-    bool m_delete_input_files = false;
-    bool m_recursive_directory_search = false;
-    ghc::filesystem::path m_output_filepath;
+    bool m_overwrite {};
+    std::optional<ghc::filesystem::path> m_output_filepath {};
     PatternMatchingFilename m_input_filepath_pattern {};
 };

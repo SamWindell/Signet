@@ -27,10 +27,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         ->required();
     app.add_option("output-wave-filename", m_output_filepath,
                    "The filename to write to - only relevant if the input file is not a directory");
-    app.add_flag("-r,--recursive-directory-search", m_recursive_directory_search,
-                 "Search for files recursively in the given directory");
-    app.add_flag("-d,--delete-input-files", m_delete_input_files,
-                 "Delete the input files if the new file was successfully written");
+    app.add_flag("-o,--overwrite", m_overwrite, "Overwrite files with their processed versions");
 
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {
@@ -40,18 +37,23 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     CLI11_PARSE(app, argc, argv);
 
     if (IsProcessingMultipleFiles()) {
-        if (!m_output_filepath.empty()) {
+        if (m_output_filepath) {
             FatalErrorWithNewLine("the input path is a directory, there must be no output filepath - output "
                                   "files will be placed adjacent to originals");
         }
     } else {
-        if (m_recursive_directory_search) {
-            WarningWithNewLine("input path is a file, ignoring the recursive flag");
+        if (!m_overwrite && !m_output_filepath) {
+            FatalErrorWithNewLine(
+                "with a single input file you must specify either the --overwrite flag or an output file");
         }
-        if (ghc::filesystem::is_directory(m_output_filepath)) {
-            FatalErrorWithNewLine("output filepath cannot be a directory if the input filepath is a file");
-        } else if (!m_output_filepath.empty() && m_output_filepath.extension() != ".wav") {
-            FatalErrorWithNewLine("only WAV files can be written");
+
+        if (m_output_filepath) {
+            if (ghc::filesystem::is_directory(*m_output_filepath)) {
+                FatalErrorWithNewLine(
+                    "output filepath cannot be a directory if the input filepath is a file");
+            } else if (m_output_filepath->extension() != ".wav") {
+                FatalErrorWithNewLine("only WAV files can be written");
+            }
         }
     }
 
@@ -85,22 +87,17 @@ static void ForEachAudioFileInDirectory(const std::string &directory,
 }
 
 static void ForEachAudioFileInDirectory(const std::string &directory,
-                                        const bool recursive,
                                         std::function<void(const ghc::filesystem::path &)> callback) {
-    if (recursive) {
-        ForEachAudioFileInDirectory<ghc::filesystem::recursive_directory_iterator>(directory, callback);
-    } else {
-        ForEachAudioFileInDirectory<ghc::filesystem::directory_iterator>(directory, callback);
-    }
+    ForEachAudioFileInDirectory<ghc::filesystem::recursive_directory_iterator>(directory, callback);
 }
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
     if (IsProcessingMultipleFiles()) {
         ForEachAudioFileInDirectory(
-            m_input_filepath_pattern.GetRootDirectory(), m_recursive_directory_search,
+            m_input_filepath_pattern.GetRootDirectory(),
             [&](const ghc::filesystem::path &path) { ProcessFile(subcommand, path, {}); });
     } else {
-        ProcessFile(subcommand, m_input_filepath_pattern.GetPattern(), m_output_filepath);
+        ProcessFile(subcommand, m_input_filepath_pattern.GetPattern(), *m_output_filepath);
     }
 }
 
@@ -113,25 +110,19 @@ void SignetInterface::ProcessFile(Subcommand &subcommand,
 
     if (output_filepath.empty()) {
         output_filepath = input_filepath;
-        if (!m_delete_input_files) {
-            output_filepath.replace_extension();
-            output_filepath += "(edited)";
-        }
         output_filepath.replace_extension(".wav");
     }
     assert(!input_filepath.empty());
 
     if (const auto audio_file = ReadAudioFile(input_filepath)) {
         if (const auto new_audio_file = subcommand.Process(*audio_file, output_filepath)) {
+            if (output_filepath == input_filepath) {
+                m_backup.AddFileToBackup(input_filepath);
+            }
             if (!WriteWaveFile(output_filepath, *new_audio_file)) {
                 FatalErrorWithNewLine("could not write the wave file ", output_filepath);
             }
             std::cout << "Successfully wrote file " << output_filepath << "\n";
-
-            if (m_delete_input_files && input_filepath != output_filepath) {
-                std::cout << "Deleting file " << input_filepath << "\n";
-                ghc::filesystem::remove(input_filepath);
-            }
         }
     }
 
@@ -143,20 +134,20 @@ TEST_CASE("[SignetInterface]") {
 
     SUBCASE("args") {
         SUBCASE("single file absolute filename") {
-            const auto args = {"signet", TEST_DATA_DIRECTORY "/test.wav", "fade", "in", "50smp"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
-        }
-
-        SUBCASE("single file relative filename") {
-            const auto args = {"signet", "../test_data/test.wav", "norm", "3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
-        }
-
-        SUBCASE("single file with single output") {
             const auto args = {
                 "signet", TEST_DATA_DIRECTORY "/test.wav", TEST_DATA_DIRECTORY "/test-out.wav", "fade", "in",
                 "50smp"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+
+        SUBCASE("single file relative filename") {
+            const auto args = {"signet", "--overwrite", "../test_data/test-out.wav", "norm", "3"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+
+        SUBCASE("single file must specify either overwrite or an outfile") {
+            const auto args = {"signet", TEST_DATA_DIRECTORY "/test.wav", "norm", "3"};
+            REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
         }
 
         SUBCASE("single file with single output that is not a wav") {
@@ -166,18 +157,35 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
         }
 
+        std::string test_folder = "test-folder";
+        if (!ghc::filesystem::is_directory(test_folder)) {
+            ghc::filesystem::create_directory(test_folder);
+        }
+        ghc::filesystem::copy_file(TEST_DATA_DIRECTORY "/test.wav",
+                                   ghc::filesystem::path(test_folder) / "test.wav",
+                                   ghc::filesystem::copy_options::update_existing);
+        ghc::filesystem::copy_file(TEST_DATA_DIRECTORY "/test.wav",
+                                   ghc::filesystem::path(test_folder) / "test_other.wav",
+                                   ghc::filesystem::copy_options::update_existing);
+        ghc::filesystem::copy_file(TEST_DATA_DIRECTORY "/test.wav",
+                                   ghc::filesystem::path(test_folder) / "test_other2.wav",
+                                   ghc::filesystem::copy_options::update_existing);
+
         SUBCASE("match all WAVs by using a wildcard") {
-            const auto args = {"signet", TEST_DATA_DIRECTORY "/*.wav", "norm", "3"};
+            const auto wildcard = test_folder + "/*.wav";
+            const auto args = {"signet", wildcard.data(), "norm", "3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
         SUBCASE("when the input path is a pattern there cannot be an output file") {
-            const auto args = {"signet", TEST_DATA_DIRECTORY "/*.wav", "output.wav", "norm", "3"};
+            const auto wildcard = test_folder + "/*.wav";
+            const auto args = {"signet", wildcard.data(), "output.wav", "norm", "3"};
             REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
         }
 
         SUBCASE("when input path is a patternless directory scan all files in that") {
-            const auto args = {"signet", TEST_DATA_DIRECTORY, "norm", "3"};
+            const auto wildcard = test_folder;
+            const auto args = {"signet", wildcard.data(), "norm", "3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
     }

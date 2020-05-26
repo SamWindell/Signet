@@ -6,7 +6,7 @@
 
 class Fader final : public Processor {
   public:
-    enum class Shape { Linear, Sine, SCurve, Log };
+    enum class Shape { Linear, Sine, SCurve, Log, Exp, Sqrt };
 
     void AddCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;

@@ -18,18 +18,21 @@ void Fader::AddCLI(CLI::App &app) {
     app.add_option("-i,--in", m_fade_in,
                    "Add a fade in at the start of the sample. You must specify the unit of this value.")
         ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+
+    std::map<std::string, Shape> map;
+    for (const auto e : magic_enum::enum_entries<Shape>()) {
+        map[std::string(e.second)] = e.first;
+    }
     app.add_option("-s,--shape", m_shape, "The shape of the curve")
-        ->transform(CLI::CheckedTransformer(std::map<std::string, Shape> {{"linear", Shape::Linear},
-                                                                          {"sine", Shape::Sine},
-                                                                          {"scurve", Shape::SCurve},
-                                                                          {"log", Shape::Log}},
-                                            CLI::ignore_case));
+        ->transform(CLI::CheckedTransformer(map, CLI::ignore_case));
 }
 
 static float GetFade(Fader::Shape shape, float x) {
     assert(x >= 0 && x <= 1);
     if (x == 0) return 0;
     if (x == 1) return 1;
+    static constexpr float silent_db = -90;
+    static constexpr float range_db = -silent_db;
     switch (shape) {
         case Fader::Shape::Linear: {
             return x;
@@ -40,25 +43,27 @@ static float GetFade(Fader::Shape shape, float x) {
         case Fader::Shape::SCurve: {
             return (-(std::cos(x * pi) - 1.0f)) / 2.0f;
         }
-        case Fader::Shape::Log: {
-            constexpr float silent_db = -90;
-            constexpr float range_db = -silent_db;
+        case Fader::Shape::Exp: {
             return DBToAmp(silent_db + range_db * x);
+        }
+        case Fader::Shape::Log: {
+            return std::clamp((AmpToDB(x) + range_db) / range_db, 0.0f, 1.0f);
+        }
+        case Fader::Shape::Sqrt: {
+            return std::sqrt(x);
         }
         default: assert(0);
     }
     return 0;
 }
 
-void PerformFade(AudioFile &audio,
-                 const s64 silent_frame,
-                 const s64 fullvol_frame,
-                 const Fader::Shape shape) {
+static void
+PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
     const float delta_x = 1.0f / ((float)std::abs(fullvol_frame - silent_frame) + 1);
     float x = 0;
 
-    for (s64 frame = silent_frame; frame <= fullvol_frame; frame += increment) {
+    for (s64 frame = silent_frame; frame != fullvol_frame + increment; frame += increment) {
         const auto gain = GetFade(shape, x);
         for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
             audio.GetSample(channel, frame) *= gain;

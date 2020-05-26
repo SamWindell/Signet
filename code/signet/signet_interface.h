@@ -70,21 +70,24 @@ class SignetBackup {
         m_backup_files_dir = m_backup_dir / "files";
         m_database_file = m_backup_dir / "backup.json";
         try {
-            std::ifstream i(m_database_file.generic_string());
+            std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
             i >> m_database;
             m_parsed_json = true;
+            i.close();
         } catch (const nlohmann::detail::parse_error &e) {
+            std::cout << e.what() << "\n";
         } catch (...) {
+            std::cout << "other exception\n";
+            throw;
         }
     }
 
     bool LoadBackup() {
-        if (m_parsed_json) return false;
-        if (!ghc::filesystem::is_directory(m_backup_files_dir)) {
-            ghc::filesystem::create_directory(m_backup_files_dir);
-        }
+        if (!m_parsed_json) return false;
         for (auto [hash, path] : m_database["files"].items()) {
-            ghc::filesystem::copy_file(m_backup_files_dir / (hash + ".backup"), path);
+            std::cout << "Loading file " << path << "\n";
+            ghc::filesystem::copy_file(m_backup_files_dir / hash, path,
+                                       ghc::filesystem::copy_options::update_existing);
         }
         return true;
     }
@@ -92,14 +95,23 @@ class SignetBackup {
     void ResetBackup() {
         ghc::filesystem::remove_all(m_backup_files_dir);
         ghc::filesystem::create_directory(m_backup_files_dir);
+        ghc::filesystem::remove(m_database_file);
+        m_database = {};
     }
 
     void AddFileToBackup(const ghc::filesystem::path &path) {
+        if (!ghc::filesystem::is_directory(m_backup_files_dir)) {
+            ghc::filesystem::create_directory(m_backup_files_dir);
+        }
+
         const auto hash_string = std::to_string(ghc::filesystem::hash_value(path));
         ghc::filesystem::copy_file(path, m_backup_files_dir / hash_string);
         m_database["files"][hash_string] = path.generic_string();
-        std::ofstream o(m_database_file.generic_string());
+
+        std::cout << "Writing file " << path << "\n";
+        std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
         o << m_database << std::endl;
+        o.close();
     }
 
   private:

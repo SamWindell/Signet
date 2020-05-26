@@ -228,8 +228,14 @@ TEST_CASE("[PatternMatchingFilename]") {
 }
 
 TEST_CASE("[SignetBackup]") {
-    SUBCASE("") {
+    {
         SignetBackup b;
-        b.AddFileToBackup(TEST_DATA_DIRECTORY "/test.wav");
+        b.ResetBackup();
+        b.AddFileToBackup(TEST_DATA_DIRECTORY "/test(edited).wav");
+        b.AddFileToBackup(TEST_DATA_DIRECTORY "/test-out(edited).wav");
+    }
+    {
+        SignetBackup b;
+        REQUIRE(b.LoadBackup());
     }
 }

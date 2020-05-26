@@ -1,0 +1,2 @@
+#pragma once
+#define TEST_DATA_DIRECTORY "@PROJECT_SOURCE_DIR@/test_data"

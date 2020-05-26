@@ -3,10 +3,13 @@
 #include <cassert>
 #include <functional>
 
+#include "doctest.hpp"
+
 #include "audio_file.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
+#include "tests_config.h"
 
 SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Fader>());
@@ -14,7 +17,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
 }
 
-int SignetInterface::Main(const int argc, const char *argv[]) {
+int SignetInterface::Main(const int argc, const char *const argv[]) {
     CLI::App app {"Tools for processing audio files"};
 
     app.require_subcommand();
@@ -128,4 +131,20 @@ void SignetInterface::ProcessFile(Subcommand &subcommand,
     }
 
     std::cout << "\n";
+}
+
+TEST_CASE("[SignetInterface]") {
+    SignetInterface signet;
+
+    SUBCASE("args") {
+        SUBCASE("single file absolute filename") {
+            const auto args = {"signet", TEST_DATA_DIRECTORY "/test.wav", "fade", "in", "50smp"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+
+        SUBCASE("single file relative filename") {
+            const auto args = {"signet", "../test_data/test.wav", "norm", "3"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+    }
 }

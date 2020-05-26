@@ -1,3 +1,4 @@
 build/
 *.sublime-workspace
 *.DS_Store
+tests_config.h

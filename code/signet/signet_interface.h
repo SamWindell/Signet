@@ -12,7 +12,7 @@ class SignetInterface {
   public:
     SignetInterface();
 
-    int Main(const int argc, const char *argv[]);
+    int Main(const int argc, const char *const argv[]);
     void ProcessAllFiles(Subcommand &subcommand);
     bool IsProcessingMultipleFiles() const { return ghc::filesystem::is_directory(m_input_filepath); }
 

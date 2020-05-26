@@ -12,19 +12,27 @@ tcb::span<const std::string_view> Fader::GetShapeNames() {
 }
 
 void Fader::AddCLI(CLI::App &app) {
-    app.add_option("-o,--out", m_fade_out,
-                   "Add a fade out at the end of the sample. You must specify the unit of this value.")
-        ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
-    app.add_option("-i,--in", m_fade_in,
-                   "Add a fade in at the start of the sample. You must specify the unit of this value.")
-        ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+    auto fade = app.add_subcommand("fade", "Add a fade to the start or and of the audio.");
+    fade->require_subcommand();
 
-    std::map<std::string, Shape> map;
+    std::map<std::string, Shape> shape_name_dictionary;
     for (const auto e : magic_enum::enum_entries<Shape>()) {
-        map[std::string(e.second)] = e.first;
+        shape_name_dictionary[std::string(e.second)] = e.first;
     }
-    app.add_option("-s,--shape", m_shape, "The shape of the curve")
-        ->transform(CLI::CheckedTransformer(map, CLI::ignore_case));
+
+    auto in = fade->add_subcommand("in", "Fade in the volume at the start of the audio.");
+    in->add_option("length", m_fade_in_duration,
+                   "The length of the fade in. You must specify the unit for this value.")
+        ->required();
+    in->add_option("shape", m_fade_in_shape, "The shape of the fade-in curve")
+        ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
+
+    auto out = fade->add_subcommand("out", "Fade out the volume at the end of the audio.");
+    out->add_option("length", m_fade_out_duration,
+                    "The length of the fade out. You must specify the unit for this value.")
+        ->required();
+    out->add_option("shape", m_fade_out_shape, "The shape of the fade-out curve")
+        ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
 }
 
 static float GetFade(Fader::Shape shape, float x) {
@@ -74,15 +82,17 @@ PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, c
 
 std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
     AudioFile output = input;
-    if (m_fade_out) {
-        const auto fade_out_frames = m_fade_out->GetDurationAsFrames(output.sample_rate, output.NumFrames());
+    if (m_fade_in_duration) {
+        const auto fade_in_frames =
+            m_fade_in_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames());
+        PerformFade(output, 0, (s64)fade_in_frames, m_fade_in_shape);
+    }
+    if (m_fade_out_duration) {
+        const auto fade_out_frames =
+            m_fade_out_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames());
         const auto last = std::max<s64>(0, (s64)output.NumFrames() - 1);
         const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
-        PerformFade(output, last, start_frame, m_shape);
-    }
-    if (m_fade_in) {
-        const auto fade_in_frames = m_fade_in->GetDurationAsFrames(output.sample_rate, output.NumFrames());
-        PerformFade(output, 0, (s64)fade_in_frames, m_shape);
+        PerformFade(output, last, start_frame, m_fade_out_shape);
     }
     return output;
 }
@@ -99,15 +109,13 @@ TEST_CASE("[Fader] args") {
         CLI::App app;
         fader.AddCLI(app);
         REQUIRE_NOTHROW(app.parse((int)args.size(), args.begin()));
-        const bool has_out = app.count("--out") == 1;
-        const bool has_in = app.count("--in") == 1;
 
         ghc::filesystem::path filename {};
         const auto output = fader.Process(buf, filename);
         REQUIRE(output);
 
         SUBCASE("audio fades in from 0 to 1") {
-            if (has_in) {
+            if (fader.HasFadeIn()) {
                 REQUIRE(buf.num_channels == 1);
                 REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0f);
                 for (size_t i = 0; i < expected_fade_in_samples; ++i) {
@@ -117,7 +125,7 @@ TEST_CASE("[Fader] args") {
         }
 
         SUBCASE("audio fades out to 0") {
-            if (has_out) {
+            if (fader.HasFadeOut()) {
                 REQUIRE(buf.num_channels == 1);
                 REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) ==
                         0.0f);
@@ -132,11 +140,13 @@ TEST_CASE("[Fader] args") {
     const auto TestSuite = [&](auto shape) {
         const std::string shape_str {shape};
         CAPTURE(shape_str);
-        TestArgs({"test.exe", "--out", "10smp", "--in", "10smp", "--shape", shape_str.data()}, 10, 10);
-        TestArgs({"test.exe", "--out", "1smp", "--in", "1smp", "--shape", shape_str.data()}, 1, 1);
-        TestArgs({"test.exe", "--out", "60smp", "--in", "60smp", "--shape", shape_str.data()}, 60, 60);
-        TestArgs({"test.exe", "--in", "200smp", "--shape", shape_str.data()}, 100, 0);
-        TestArgs({"test.exe", "--out", "200smp", "--shape", shape_str.data()}, 0, 100);
+        TestArgs({"signet", "fade", "out", "10smp", shape_str.data(), "in", "10smp", shape_str.data()}, 10,
+                 10);
+        TestArgs({"signet", "fade", "out", "1smp", shape_str.data(), "in", "1smp", shape_str.data()}, 1, 1);
+        TestArgs({"signet", "fade", "out", "60smp", shape_str.data(), "in", "60smp", shape_str.data()}, 60,
+                 60);
+        TestArgs({"signet", "fade", "in", "200smp", shape_str.data()}, 100, 0);
+        TestArgs({"signet", "fade", "out", "200smp", shape_str.data()}, 0, 100);
     };
 
     for (const auto n : Fader::GetShapeNames()) {

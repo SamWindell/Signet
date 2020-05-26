@@ -3,13 +3,13 @@
 #include "doctest.hpp"
 
 void Normaliser::AddCLI(CLI::App &app) {
-    app.add_option("-t,--target_decibels", m_target_decibels,
-                   "The target level in decibels to convert the sample(s) to");
-    app.add_flag("-c,--common_gain", m_use_common_gain,
-                 "When using on a directory, amplifiy all the samples by the same amount");
-    app.add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");
-
-    // add https://github.com/jiixyj/libebur128 too?
+    auto norm = app.add_subcommand("norm", "Normalise a sample to a certain level");
+    norm->add_option("target_decibels", m_target_decibels,
+                     "The target level in decibels to convert the sample(s) to")
+        ->required();
+    norm->add_flag("-c,--common_gain", m_use_common_gain,
+                   "When using on a directory, amplifiy all the samples by the same amount");
+    norm->add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");
 }
 
 std::optional<AudioFile> Normaliser::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
@@ -35,14 +35,12 @@ void Normaliser::Run(AudioUtilInterface &audio_util) {
 
     if (audio_util.IsProcessingMultipleFiles() && m_use_common_gain) {
         m_current_stage = ProcessingStage::FindingCommonGain;
-        audio_util.ProcessAllFiles();
+        audio_util.ProcessAllFiles(*this);
     }
 
     m_current_stage = ProcessingStage::ApplyingGain;
-    audio_util.ProcessAllFiles();
+    audio_util.ProcessAllFiles(*this);
 }
-
-std::string Normaliser::GetDescription() { return "Normalise a sample to a certain level"; }
 
 AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
     if (!m_use_common_gain) {

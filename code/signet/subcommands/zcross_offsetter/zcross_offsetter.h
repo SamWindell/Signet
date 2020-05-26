@@ -62,19 +62,20 @@ struct ZeroCrossingOffseter final : public Processor {
         return result;
     }
 
-    void Run(AudioUtilInterface &util) override { util.ProcessAllFiles(); }
+    void Run(AudioUtilInterface &util) override { util.ProcessAllFiles(*this); }
 
     void AddCLI(CLI::App &app) override {
-        app.add_flag(
+        auto zcross = app.add_subcommand(
+            "zcross-offset", "Offset the start of a FLAC or WAV file to the nearest zero-crossing");
+        zcross->add_flag(
             "-a,--append-skipped", m_append_skipped_frames_on_end,
             "Append the frames offsetted to the end of the file - useful when the sample is a seamless loop");
-        app.add_option("-n,--search-size", m_search_size,
-                       "The duration from the start of the sample to search for the zero crossing in")
-            ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
-    }
 
-    std::string GetDescription() override {
-        return "Offset the start of a FLAC or WAV file to the nearest approximate zero-crossing";
+        zcross
+            ->add_option("search_size", m_search_size,
+                         "The duration from the start of the sample to search for the zero crossing in")
+            ->required()
+            ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
     }
 
   private:

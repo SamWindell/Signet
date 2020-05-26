@@ -4,9 +4,20 @@
 #include <functional>
 
 #include "audio_file.h"
+#include "subcommands/fader/fader.h"
+#include "subcommands/normalise/normaliser.h"
+#include "subcommands/zcross_offsetter/zcross_offsetter.h"
+
+AudioUtilInterface::AudioUtilInterface() {
+    m_processors.push_back(new Fader());
+    m_processors.push_back(new Normaliser());
+    m_processors.push_back(new ZeroCrossingOffseter());
+}
 
 int AudioUtilInterface::Main(const int argc, const char *argv[]) {
-    CLI::App app {m_processor.GetDescription()};
+    CLI::App app {"Tools for processing audio files"};
+
+    app.set_help_all_flag("--help-all", "Print help message for all subcommands");
 
     app.add_option("input-file-or-directory", m_input_filepath, "The file or directory to read from")
         ->required()
@@ -17,7 +28,10 @@ int AudioUtilInterface::Main(const int argc, const char *argv[]) {
                  "Search for files recursively in the given directory");
     app.add_flag("-d,--delete-input-files", m_delete_input_files,
                  "Delete the input files if the new file was successfully written");
-    m_processor.AddCLI(app);
+
+    for (auto &p : m_processors) {
+        p->AddCLI(app);
+    }
 
     CLI11_PARSE(app, argc, argv);
 
@@ -35,7 +49,9 @@ int AudioUtilInterface::Main(const int argc, const char *argv[]) {
         }
     }
 
-    m_processor.Run(*this);
+    for (auto &p : m_processors) {
+        p->Run(*this);
+    }
     return 0;
 }
 
@@ -69,16 +85,18 @@ static void ForEachAudioFileInDirectory(const std::string &directory,
     }
 }
 
-void AudioUtilInterface::ProcessAllFiles() {
+void AudioUtilInterface::ProcessAllFiles(Processor &processor) {
     if (IsProcessingMultipleFiles()) {
-        ForEachAudioFileInDirectory(m_input_filepath, m_recursive_directory_search,
-                                    [this](const ghc::filesystem::path &path) { ProcessFile(path, {}); });
+        ForEachAudioFileInDirectory(
+            m_input_filepath, m_recursive_directory_search,
+            [&](const ghc::filesystem::path &path) { ProcessFile(processor, path, {}); });
     } else {
-        ProcessFile(m_input_filepath, m_output_filepath);
+        ProcessFile(processor, m_input_filepath, m_output_filepath);
     }
 }
 
-void AudioUtilInterface::ProcessFile(const ghc::filesystem::path input_filepath,
+void AudioUtilInterface::ProcessFile(Processor &processor,
+                                     const ghc::filesystem::path input_filepath,
                                      ghc::filesystem::path output_filepath) {
     if (output_filepath.empty()) {
         output_filepath = input_filepath;
@@ -91,7 +109,7 @@ void AudioUtilInterface::ProcessFile(const ghc::filesystem::path input_filepath,
     assert(!input_filepath.empty());
 
     if (const auto audio_file = ReadAudioFile(input_filepath)) {
-        if (const auto new_audio_file = m_processor.Process(*audio_file, output_filepath)) {
+        if (const auto new_audio_file = processor.Process(*audio_file, output_filepath)) {
             if (!WriteWaveFile(output_filepath, *new_audio_file)) {
                 FatalErrorWithNewLine("could not write the wave file ", output_filepath);
             }

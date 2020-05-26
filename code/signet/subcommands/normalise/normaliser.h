@@ -7,11 +7,10 @@
 #include "gain_calculators.h"
 
 class Normaliser final : public Processor {
-public:
+  public:
     void AddCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
     void Run(AudioUtilInterface &audio_util) override;
-    std::string GetDescription() override;
 
   private:
     AudioFile PerformNormalisation(const AudioFile &input_audio) const;

@@ -1,4 +1,4 @@
-# AudioUtils
+# Signet
 ### Command line utilities for manipulating audio samples
 
 These are very simple programs that I have written to edit audio samples for use in a sampler. There are no library dependencies external to this repo. The tools have to be built from source at the moment. Run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.

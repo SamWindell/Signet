@@ -175,6 +175,11 @@ TEST_CASE("[SignetInterface]") {
             const auto args = {"signet", TEST_DATA_DIRECTORY "/*.wav", "output.wav", "norm", "3"};
             REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
         }
+
+        SUBCASE("when input path is a patternless directory scan all files in that") {
+            const auto args = {"signet", TEST_DATA_DIRECTORY, "norm", "3"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
     }
 }
 
@@ -182,42 +187,42 @@ TEST_CASE("[PatternMatchingFilename]") {
     SUBCASE("absolute path with pattern in final dir") {
         PatternMatchingFilename p("/foo/bar/*.wav");
         REQUIRE(p.IsPattern());
-        REQUIRE(p.Matches("/foo/bar/file.wav"));
-        REQUIRE(!p.Matches("/foo/bbar/file.wav"));
+        REQUIRE(p.MatchesRaw("/foo/bar/file.wav"));
+        REQUIRE(!p.MatchesRaw("/foo/bbar/file.wav"));
         REQUIRE(p.GetRootDirectory() == "/foo/bar");
     }
     SUBCASE("match all wavs") {
         PatternMatchingFilename p("*.wav");
         REQUIRE(p.IsPattern());
-        REQUIRE(p.Matches("foodledoo.wav"));
-        REQUIRE(p.Matches("inside/dirs/foo.wav"));
-        REQUIRE(!p.Matches("notawav.flac"));
+        REQUIRE(p.MatchesRaw("foodledoo.wav"));
+        REQUIRE(p.MatchesRaw("inside/dirs/foo.wav"));
+        REQUIRE(!p.MatchesRaw("notawav.flac"));
         REQUIRE(p.GetRootDirectory() == ".");
     }
     SUBCASE("no pattern") {
         PatternMatchingFilename p("file.wav");
         REQUIRE(!p.IsPattern());
-        REQUIRE(p.Matches("file.wav"));
-        REQUIRE(!p.Matches("dir/file.wav"));
+        REQUIRE(p.MatchesRaw("file.wav"));
+        REQUIRE(!p.MatchesRaw("dir/file.wav"));
         REQUIRE(p.GetRootDirectory() == ".");
     }
     SUBCASE("dirs that have a subfolder called subdir") {
         PatternMatchingFilename p("*/subdir/*");
         REQUIRE(p.IsPattern());
-        REQUIRE(p.Matches("foo/subdir/file.wav"));
-        REQUIRE(p.Matches("bar/subdir/file.wav"));
-        REQUIRE(p.Matches("bar/subdir/subsubdir/file.wav"));
-        REQUIRE(!p.Matches("subdir/subsubdir/file.wav"));
-        REQUIRE(!p.Matches("foo/subdir"));
-        REQUIRE(!p.Matches("subdir/file.wav"));
+        REQUIRE(p.MatchesRaw("foo/subdir/file.wav"));
+        REQUIRE(p.MatchesRaw("bar/subdir/file.wav"));
+        REQUIRE(p.MatchesRaw("bar/subdir/subsubdir/file.wav"));
+        REQUIRE(!p.MatchesRaw("subdir/subsubdir/file.wav"));
+        REQUIRE(!p.MatchesRaw("foo/subdir"));
+        REQUIRE(!p.MatchesRaw("subdir/file.wav"));
         REQUIRE(p.GetRootDirectory() == ".");
     }
     SUBCASE("dir with no pattern") {
         PatternMatchingFilename p("c:/tools");
         REQUIRE(!p.IsPattern());
-        REQUIRE(p.Matches("c:/tools"));
-        REQUIRE(!p.Matches("c:/tools/file.wav"));
-        REQUIRE(!p.Matches("c:/tool"));
+        REQUIRE(p.MatchesRaw("c:/tools"));
+        REQUIRE(!p.MatchesRaw("c:/tools/file.wav"));
+        REQUIRE(!p.MatchesRaw("c:/tool"));
         REQUIRE(p.GetRootDirectory() == "c:/tools");
     }
 }

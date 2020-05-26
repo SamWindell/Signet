@@ -12,8 +12,21 @@ class PatternMatchingFilename {
   public:
     PatternMatchingFilename() {}
     PatternMatchingFilename(std::string n) : str(n) {}
-    bool Matches(std::string filepath) const { return PatternMatch(str, filepath); }
+    bool MatchesRaw(const std::string &filepath) const { return PatternMatch(str, filepath); }
     bool IsPattern() const { return str.find('*') != std::string::npos; }
+    bool IsSingleFile() const { return !IsPattern() && !ghc::filesystem::is_directory(GetPattern()); }
+    bool Matches(const std::string &filepath) const {
+        if (MatchesRaw(filepath)) {
+            return true;
+        }
+        if (IsPattern()) {
+            return false;
+        }
+        if (ghc::filesystem::is_directory(GetPattern()) && StartsWith(GetPattern(), filepath)) {
+            return true;
+        }
+        return false;
+    }
     std::string GetPattern() const { return str; }
     std::string GetRootDirectory() const {
         const auto slash_pos = str.rfind('/');
@@ -50,10 +63,7 @@ class SignetInterface {
 
     int Main(const int argc, const char *const argv[]);
     void ProcessAllFiles(Subcommand &subcommand);
-    bool IsProcessingMultipleFiles() const {
-        return m_input_filepath_pattern.IsPattern() ||
-               ghc::filesystem::is_directory(m_input_filepath_pattern.GetPattern());
-    }
+    bool IsProcessingMultipleFiles() const { return !m_input_filepath_pattern.IsSingleFile(); }
 
   private:
     void ProcessFile(Subcommand &subcommand,

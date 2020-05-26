@@ -9,14 +9,15 @@
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
 
 SignetInterface::SignetInterface() {
-    m_processors.push_back(new Fader());
-    m_processors.push_back(new Normaliser());
-    m_processors.push_back(new ZeroCrossingOffseter());
+    m_subcommands.push_back(std::make_unique<Fader>());
+    m_subcommands.push_back(std::make_unique<Normaliser>());
+    m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
 }
 
 int SignetInterface::Main(const int argc, const char *argv[]) {
     CLI::App app {"Tools for processing audio files"};
 
+    app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
 
     app.add_option("input-file-or-directory", m_input_filepath, "The file or directory to read from")
@@ -29,8 +30,9 @@ int SignetInterface::Main(const int argc, const char *argv[]) {
     app.add_flag("-d,--delete-input-files", m_delete_input_files,
                  "Delete the input files if the new file was successfully written");
 
-    for (auto &p : m_processors) {
-        p->AddCLI(app);
+    std::vector<CLI::App *> subcommand_clis;
+    for (auto &subcommand : m_subcommands) {
+        subcommand_clis.push_back(subcommand->CreateSubcommandCLI(app));
     }
 
     CLI11_PARSE(app, argc, argv);
@@ -49,9 +51,12 @@ int SignetInterface::Main(const int argc, const char *argv[]) {
         }
     }
 
-    for (auto &p : m_processors) {
-        p->Run(*this);
+    for (size_t i = 0; i < m_subcommands.size(); ++i) {
+        if (subcommand_clis[i]->parsed()) {
+            m_subcommands[i]->Run(*this);
+        }
     }
+
     return 0;
 }
 
@@ -85,17 +90,17 @@ static void ForEachAudioFileInDirectory(const std::string &directory,
     }
 }
 
-void SignetInterface::ProcessAllFiles(Processor &processor) {
+void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
     if (IsProcessingMultipleFiles()) {
         ForEachAudioFileInDirectory(
             m_input_filepath, m_recursive_directory_search,
-            [&](const ghc::filesystem::path &path) { ProcessFile(processor, path, {}); });
+            [&](const ghc::filesystem::path &path) { ProcessFile(subcommand, path, {}); });
     } else {
-        ProcessFile(processor, m_input_filepath, m_output_filepath);
+        ProcessFile(subcommand, m_input_filepath, m_output_filepath);
     }
 }
 
-void SignetInterface::ProcessFile(Processor &processor,
+void SignetInterface::ProcessFile(Subcommand &subcommand,
                                   const ghc::filesystem::path input_filepath,
                                   ghc::filesystem::path output_filepath) {
     if (output_filepath.empty()) {
@@ -109,7 +114,7 @@ void SignetInterface::ProcessFile(Processor &processor,
     assert(!input_filepath.empty());
 
     if (const auto audio_file = ReadAudioFile(input_filepath)) {
-        if (const auto new_audio_file = processor.Process(*audio_file, output_filepath)) {
+        if (const auto new_audio_file = subcommand.Process(*audio_file, output_filepath)) {
             if (!WriteWaveFile(output_filepath, *new_audio_file)) {
                 FatalErrorWithNewLine("could not write the wave file ", output_filepath);
             }

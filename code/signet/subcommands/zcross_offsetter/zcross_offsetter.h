@@ -10,7 +10,7 @@
 #include "common.h"
 #include "signet_interface.h"
 
-struct ZeroCrossingOffseter final : public Processor {
+struct ZeroCrossingOffsetter final : public Subcommand {
     static size_t FindFrameNearestToZeroInBuffer(const float *interleaved_buffer,
                                                  const size_t num_frames,
                                                  const unsigned num_channels) {
@@ -64,7 +64,7 @@ struct ZeroCrossingOffseter final : public Processor {
 
     void Run(SignetInterface &util) override { util.ProcessAllFiles(*this); }
 
-    void AddCLI(CLI::App &app) override {
+    CLI::App *CreateSubcommandCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand(
             "zcross-offset", "Offset the start of a FLAC or WAV file to the nearest zero-crossing");
         zcross->add_flag(
@@ -76,6 +76,7 @@ struct ZeroCrossingOffseter final : public Processor {
                          "The duration from the start of the sample to search for the zero crossing in")
             ->required()
             ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+        return zcross;
     }
 
   private:

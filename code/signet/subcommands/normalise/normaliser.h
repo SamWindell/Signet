@@ -6,9 +6,9 @@
 #include "gain_calculators.h"
 #include "signet_interface.h"
 
-class Normaliser final : public Processor {
+class Normaliser final : public Subcommand {
   public:
-    void AddCLI(CLI::App &app) override;
+    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
     void Run(SignetInterface &audio_util) override;
 

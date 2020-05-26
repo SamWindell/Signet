@@ -2,7 +2,7 @@
 
 #include "doctest.hpp"
 
-void Normaliser::AddCLI(CLI::App &app) {
+CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand("norm", "Normalise a sample to a certain level");
     norm->add_option("target_decibels", m_target_decibels,
                      "The target level in decibels to convert the sample(s) to")
@@ -10,6 +10,7 @@ void Normaliser::AddCLI(CLI::App &app) {
     norm->add_flag("-c,--common_gain", m_use_common_gain,
                    "When using on a directory, amplifiy all the samples by the same amount");
     norm->add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");
+    return norm;
 }
 
 std::optional<AudioFile> Normaliser::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {

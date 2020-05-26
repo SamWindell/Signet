@@ -11,7 +11,7 @@ tcb::span<const std::string_view> Fader::GetShapeNames() {
     return {names.data(), names.size()};
 }
 
-void Fader::AddCLI(CLI::App &app) {
+CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     auto fade = app.add_subcommand("fade", "Add a fade to the start or and of the audio.");
     fade->require_subcommand();
 
@@ -33,6 +33,8 @@ void Fader::AddCLI(CLI::App &app) {
         ->required();
     out->add_option("shape", m_fade_out_shape, "The shape of the fade-out curve")
         ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
+
+    return fade;
 }
 
 static float GetFade(Fader::Shape shape, float x) {
@@ -107,7 +109,7 @@ TEST_CASE("[Fader] args") {
                               const size_t expected_fade_in_samples, const size_t expected_fade_out_samples) {
         Fader fader {};
         CLI::App app;
-        fader.AddCLI(app);
+        fader.CreateSubcommandCLI(app);
         REQUIRE_NOTHROW(app.parse((int)args.size(), args.begin()));
 
         ghc::filesystem::path filename {};

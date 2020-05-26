@@ -6,11 +6,7 @@
 
 class Fader final : public Processor {
   public:
-    enum class Shape {
-        Linear,
-        Sine,
-        SCurve,
-    };
+    enum class Shape { Linear, Sine, SCurve, Log };
 
     void AddCLI(CLI::App &app) override;
     std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
@@ -20,8 +16,6 @@ class Fader final : public Processor {
     static tcb::span<const std::string_view> GetShapeNames();
 
   private:
-    void PerformFade(AudioFile &audio, size_t begin, size_t end, Shape shape, bool fade_in);
-
     Shape m_shape = Shape::Linear;
     std::optional<AudioDuration> m_fade_out {};
     std::optional<AudioDuration> m_fade_in {};

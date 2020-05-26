@@ -21,62 +21,65 @@ void Fader::AddCLI(CLI::App &app) {
     app.add_option("-s,--shape", m_shape, "The shape of the curve")
         ->transform(CLI::CheckedTransformer(std::map<std::string, Shape> {{"linear", Shape::Linear},
                                                                           {"sine", Shape::Sine},
-                                                                          {"scurve", Shape::SCurve}},
+                                                                          {"scurve", Shape::SCurve},
+                                                                          {"log", Shape::Log}},
                                             CLI::ignore_case));
+}
+
+static float GetFade(Fader::Shape shape, float x) {
+    assert(x >= 0 && x <= 1);
+    if (x == 0) return 0;
+    if (x == 1) return 1;
+    switch (shape) {
+        case Fader::Shape::Linear: {
+            return x;
+        }
+        case Fader::Shape::Sine: {
+            return std::sin(x * half_pi);
+        }
+        case Fader::Shape::SCurve: {
+            return (-(std::cos(x * pi) - 1.0f)) / 2.0f;
+        }
+        case Fader::Shape::Log: {
+            constexpr float silent_db = -90;
+            constexpr float range_db = -silent_db;
+            return DBToAmp(silent_db + range_db * x);
+        }
+        default: assert(0);
+    }
+    return 0;
+}
+
+void PerformFade(AudioFile &audio,
+                 const s64 silent_frame,
+                 const s64 fullvol_frame,
+                 const Fader::Shape shape) {
+    const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
+    const float delta_x = 1.0f / ((float)std::abs(fullvol_frame - silent_frame) + 1);
+    float x = 0;
+
+    for (s64 frame = silent_frame; frame <= fullvol_frame; frame += increment) {
+        const auto gain = GetFade(shape, x);
+        for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
+            audio.GetSample(channel, frame) *= gain;
+        }
+        x += delta_x;
+    }
 }
 
 std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
     AudioFile output = input;
     if (m_fade_out) {
         const auto fade_out_frames = m_fade_out->GetDurationAsFrames(output.sample_rate, output.NumFrames());
-        const auto last = (size_t)std::max(0, (int)output.NumFrames() - 1);
-        const auto start_frame = (size_t)std::max(0, (int)last - (int)fade_out_frames);
-        PerformFade(output, start_frame, last, m_shape, false);
+        const auto last = std::max<s64>(0, (s64)output.NumFrames() - 1);
+        const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
+        PerformFade(output, last, start_frame, m_shape);
     }
     if (m_fade_in) {
         const auto fade_in_frames = m_fade_in->GetDurationAsFrames(output.sample_rate, output.NumFrames());
-        PerformFade(output, 0, fade_in_frames, m_shape, true);
+        PerformFade(output, 0, (s64)fade_in_frames, m_shape);
     }
     return output;
-}
-
-void Fader::PerformFade(AudioFile &audio,
-                        const size_t first,
-                        const size_t last,
-                        const Shape shape,
-                        const bool fade_in) {
-    for (size_t frame = first; frame <= last; ++frame) {
-        const auto x = (float)(frame - first) / (float)(last - first);
-        assert(x >= 0 && x <= 1);
-
-        float multiplier = -1;
-        switch (shape) {
-            case Shape::Linear: {
-                multiplier = fade_in ? x : 1.0f - x;
-                break;
-            }
-            case Shape::Sine: {
-                const auto angle = x * half_pi;
-                multiplier = fade_in ? std::sin(angle) : std::cos(angle);
-                break;
-            }
-            case Shape::SCurve: {
-                const auto y = (-(std::cos(x * pi) - 1.0f)) / 2.0f;
-                multiplier = fade_in ? y : (1.0f - y);
-                break;
-            }
-            default: assert(0);
-        }
-        assert(multiplier != -1);
-
-        for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
-            // ensure the start and end are 0
-            if (fade_in && frame == 0) multiplier = 0;
-            if (!fade_in && frame == last) multiplier = 0;
-
-            audio.GetSample(channel, frame) *= multiplier;
-        }
-    }
 }
 
 TEST_CASE("[Fader] args") {
@@ -98,20 +101,25 @@ TEST_CASE("[Fader] args") {
         const auto output = fader.Process(buf, filename);
         REQUIRE(output);
 
-        if (has_in) {
-            assert(buf.num_channels == 1);
-            REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0f);
-            for (size_t i = 0; i < expected_fade_in_samples; ++i) {
-                REQUIRE(output->interleaved_samples[i] < 1.0f);
+        SUBCASE("audio fades in from 0 to 1") {
+            if (has_in) {
+                REQUIRE(buf.num_channels == 1);
+                REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0f);
+                for (size_t i = 0; i < expected_fade_in_samples; ++i) {
+                    REQUIRE(output->interleaved_samples[i] < 1.0f);
+                }
             }
         }
 
-        if (has_out) {
-            assert(buf.num_channels == 1);
-            REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) == 0.0f);
-            for (size_t i = output->interleaved_samples.size() - expected_fade_out_samples;
-                 i < output->interleaved_samples.size(); ++i) {
-                REQUIRE(output->interleaved_samples[i] < 1.0f);
+        SUBCASE("audio fades out to 0") {
+            if (has_out) {
+                REQUIRE(buf.num_channels == 1);
+                REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) ==
+                        0.0f);
+                for (size_t i = output->interleaved_samples.size() - expected_fade_out_samples;
+                     i < output->interleaved_samples.size(); ++i) {
+                    REQUIRE(output->interleaved_samples[i] < 1.0f);
+                }
             }
         }
     };

@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(common OBJECT
+            code/common/common.cpp
             code/common/audio_file.cpp
             code/common/audio_duration.cpp
             code/signet/signet_interface.cpp
@@ -34,6 +35,8 @@ if (WIN32)
     set(FULL_PATH_OF_SOURCE_CODE "/FC")
     target_compile_options(common PUBLIC /diagnostics:column ${FULL_PATH_OF_SOURCE_CODE}
                                                     ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
+else()
+    target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
 endif ()
 
 configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)

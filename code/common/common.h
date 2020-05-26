@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <stdexcept>
 #include <string_view>
 
 using u8 = uint8_t;
@@ -22,7 +23,7 @@ void FatalErrorWithNewLine(Arg &&arg, Args &&... args) {
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
-    exit(1);
+    throw std::runtime_error("Fatal error");
 }
 
 template <typename Arg, typename... Args>
@@ -51,3 +52,5 @@ inline bool EndsWith(std::string_view str, std::string_view suffix) {
 inline bool StartsWith(std::string_view str, std::string_view prefix) {
     return prefix.size() <= str.size() && str.compare(0, prefix.size(), prefix) == 0;
 }
+
+bool PatternMatch(std::string_view pattern, std::string_view name);

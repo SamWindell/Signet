@@ -23,9 +23,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
 
-    app.add_option("input-file-or-directory", m_input_filepath, "The file or directory to read from")
-        ->required()
-        ->check(CLI::ExistingPath);
+    app.add_option("input-file-or-directory", m_input_filepath_pattern, "The file or directory to read from")
+        ->required();
     app.add_option("output-wave-filename", m_output_filepath,
                    "The filename to write to - only relevant if the input file is not a directory");
     app.add_flag("-r,--recursive-directory-search", m_recursive_directory_search,
@@ -40,7 +39,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     CLI11_PARSE(app, argc, argv);
 
-    if (ghc::filesystem::is_directory(m_input_filepath)) {
+    if (IsProcessingMultipleFiles()) {
         if (!m_output_filepath.empty()) {
             FatalErrorWithNewLine("the input path is a directory, there must be no output filepath - output "
                                   "files will be placed adjacent to originals");
@@ -51,6 +50,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         }
         if (ghc::filesystem::is_directory(m_output_filepath)) {
             FatalErrorWithNewLine("output filepath cannot be a directory if the input filepath is a file");
+        } else if (!m_output_filepath.empty() && m_output_filepath.extension() != ".wav") {
+            FatalErrorWithNewLine("only WAV files can be written");
         }
     }
 
@@ -96,16 +97,20 @@ static void ForEachAudioFileInDirectory(const std::string &directory,
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
     if (IsProcessingMultipleFiles()) {
         ForEachAudioFileInDirectory(
-            m_input_filepath, m_recursive_directory_search,
+            m_input_filepath_pattern.GetRootDirectory(), m_recursive_directory_search,
             [&](const ghc::filesystem::path &path) { ProcessFile(subcommand, path, {}); });
     } else {
-        ProcessFile(subcommand, m_input_filepath, m_output_filepath);
+        ProcessFile(subcommand, m_input_filepath_pattern.GetPattern(), m_output_filepath);
     }
 }
 
 void SignetInterface::ProcessFile(Subcommand &subcommand,
                                   const ghc::filesystem::path input_filepath,
                                   ghc::filesystem::path output_filepath) {
+    if (!m_input_filepath_pattern.Matches(input_filepath.generic_string())) {
+        return;
+    }
+
     if (output_filepath.empty()) {
         output_filepath = input_filepath;
         if (!m_delete_input_files) {
@@ -146,5 +151,73 @@ TEST_CASE("[SignetInterface]") {
             const auto args = {"signet", "../test_data/test.wav", "norm", "3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
+
+        SUBCASE("single file with single output") {
+            const auto args = {
+                "signet", TEST_DATA_DIRECTORY "/test.wav", TEST_DATA_DIRECTORY "/test-out.wav", "fade", "in",
+                "50smp"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+
+        SUBCASE("single file with single output that is not a wav") {
+            const auto args = {
+                "signet", TEST_DATA_DIRECTORY "/test.wav", TEST_DATA_DIRECTORY "/test-out.ogg", "fade", "in",
+                "50smp"};
+            REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
+        }
+
+        SUBCASE("match all WAVs by using a wildcard") {
+            const auto args = {"signet", TEST_DATA_DIRECTORY "/*.wav", "norm", "3"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+
+        SUBCASE("when the input path is a pattern there cannot be an output file") {
+            const auto args = {"signet", TEST_DATA_DIRECTORY "/*.wav", "output.wav", "norm", "3"};
+            REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
+        }
+    }
+}
+
+TEST_CASE("[PatternMatchingFilename]") {
+    SUBCASE("absolute path with pattern in final dir") {
+        PatternMatchingFilename p("/foo/bar/*.wav");
+        REQUIRE(p.IsPattern());
+        REQUIRE(p.Matches("/foo/bar/file.wav"));
+        REQUIRE(!p.Matches("/foo/bbar/file.wav"));
+        REQUIRE(p.GetRootDirectory() == "/foo/bar");
+    }
+    SUBCASE("match all wavs") {
+        PatternMatchingFilename p("*.wav");
+        REQUIRE(p.IsPattern());
+        REQUIRE(p.Matches("foodledoo.wav"));
+        REQUIRE(p.Matches("inside/dirs/foo.wav"));
+        REQUIRE(!p.Matches("notawav.flac"));
+        REQUIRE(p.GetRootDirectory() == ".");
+    }
+    SUBCASE("no pattern") {
+        PatternMatchingFilename p("file.wav");
+        REQUIRE(!p.IsPattern());
+        REQUIRE(p.Matches("file.wav"));
+        REQUIRE(!p.Matches("dir/file.wav"));
+        REQUIRE(p.GetRootDirectory() == ".");
+    }
+    SUBCASE("dirs that have a subfolder called subdir") {
+        PatternMatchingFilename p("*/subdir/*");
+        REQUIRE(p.IsPattern());
+        REQUIRE(p.Matches("foo/subdir/file.wav"));
+        REQUIRE(p.Matches("bar/subdir/file.wav"));
+        REQUIRE(p.Matches("bar/subdir/subsubdir/file.wav"));
+        REQUIRE(!p.Matches("subdir/subsubdir/file.wav"));
+        REQUIRE(!p.Matches("foo/subdir"));
+        REQUIRE(!p.Matches("subdir/file.wav"));
+        REQUIRE(p.GetRootDirectory() == ".");
+    }
+    SUBCASE("dir with no pattern") {
+        PatternMatchingFilename p("c:/tools");
+        REQUIRE(!p.IsPattern());
+        REQUIRE(p.Matches("c:/tools"));
+        REQUIRE(!p.Matches("c:/tools/file.wav"));
+        REQUIRE(!p.Matches("c:/tool"));
+        REQUIRE(p.GetRootDirectory() == "c:/tools");
     }
 }

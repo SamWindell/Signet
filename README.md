@@ -5,6 +5,11 @@ Signet is a cross-platform command line tool with a few subcommands that I have 
 
 Signet can work on both single audio files and whole directories. Run with the argument `--help` or `--help-all` to see the full set of options.
 
+### Examples
+`signet MyAudioFile.wav norm 3`
+
+`signet MyFolder fade in 0.5s out 2s log`
+
 ### Current tools
 #### Zero crossing offsetter
 Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file. This is useful when used with samples that are seamless loops.

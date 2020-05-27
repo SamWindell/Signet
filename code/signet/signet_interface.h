@@ -5,8 +5,10 @@
 #include "doctest.hpp"
 #include "json.hpp"
 
+#include "backup.h"
 #include "common.h"
 #include "filesystem.hpp"
+#include "pathname_expansion.h"
 #include "subcommand.h"
 
 class Subcommand;
@@ -91,29 +93,6 @@ class PatternMatchingFilename {
             }
         }
         return "<invalid>";
-
-        // const auto slash_pos = m_str.rfind('/');
-        // const auto pattern_pos = m_str.find('*');
-        // const auto has_slash = slash_pos != std::string::npos;
-        // const auto has_pattern = pattern_pos != std::string::npos;
-
-        // if (has_slash && !has_pattern) {
-        //     return std::string(m_str);
-        // }
-
-        // if (!has_slash && !has_pattern) {
-        //     return ".";
-        // }
-
-        // if (!has_slash && has_pattern) {
-        //     return ".";
-        // }
-
-        // assert(has_pattern && has_slash);
-        // if (pattern_pos < slash_pos) {
-        //     return ".";
-        // }
-        // return std::string(m_str.substr(0, slash_pos));
     }
 
   private:
@@ -165,11 +144,47 @@ class MultiplePatternMatchingFilenames {
     bool IsSingleFile() const {
         return m_patterns.size() == 1 && m_patterns[0].GetMode() == PatternMode::File;
     }
-    bool IsPattern() const {
-        return m_patterns.size() > 1 || m_patterns[0].GetMode() == PatternMode::Pattern;
+
+    auto GetAllMatchingPaths() {
+        std::vector<ghc::filesystem::path> result;
+        REQUIRE(GetNumPatterns() != 0);
+        for (usize i = 0; i < GetNumPatterns(); ++i) {
+            switch (GetMode(i)) {
+                case PatternMode::Pattern:
+                case PatternMode::Directory: {
+                    const auto root_dir = GetRootDirectory(i);
+                    std::cout << root_dir << " root dir\n";
+                    const auto paths = GetAllAudioFilesInDirectoryRecursively(root_dir);
+                    for (const auto &p : paths) {
+                        if (Matches(i, p) == MultiplePatternMatchingFilenames<>::MatchResult::Yes)
+                            result.push_back(p);
+                    }
+                    break;
+                }
+                case PatternMode::File: {
+                    result.push_back(GetPattern(i));
+                    break;
+                }
+                default: WarningWithNewLine("pattern is not valid ", GetPattern(i), "\n");
+            }
+        }
+        return result;
     }
 
   private:
+    static std::vector<ghc::filesystem::path>
+    GetAllAudioFilesInDirectoryRecursively(const std::string &directory) {
+        std::vector<ghc::filesystem::path> paths;
+        for (const auto &entry : ghc::filesystem::recursive_directory_iterator(directory)) {
+            const auto &path = entry.path();
+            const auto ext = path.extension();
+            if (ext == ".flac" || ext == ".wav") {
+                paths.push_back(path);
+            }
+        }
+        return paths;
+    }
+
     bool IsPathHashPresent(const usize hash) const {
         return std::find(m_already_matched_path_hashes.begin(), m_already_matched_path_hashes.end(), hash) !=
                m_already_matched_path_hashes.end();
@@ -178,74 +193,6 @@ class MultiplePatternMatchingFilenames {
     std::vector<size_t> m_already_matched_path_hashes {};
     std::vector<PatternMatchingFilename<FilepathCheck>> m_patterns {};
     std::string m_whole_str {};
-};
-
-class SignetBackup {
-  public:
-    SignetBackup() {
-        m_backup_dir = "signet-backup";
-        if (!ghc::filesystem::is_directory(m_backup_dir)) {
-            ghc::filesystem::create_directory(m_backup_dir);
-        }
-
-        m_backup_files_dir = m_backup_dir / "files";
-        m_database_file = m_backup_dir / "backup.json";
-        try {
-            std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
-            i >> m_database;
-            m_parsed_json = true;
-            i.close();
-        } catch (const nlohmann::detail::parse_error &e) {
-            std::cout << e.what() << "\n";
-        } catch (...) {
-            std::cout << "other exception\n";
-            throw;
-        }
-    }
-
-    bool LoadBackup() {
-        if (!m_parsed_json) return false;
-        for (auto [hash, path] : m_database["files"].items()) {
-            std::cout << "Loading backed-up file " << path << "\n";
-            ghc::filesystem::copy_file(m_backup_files_dir / hash, path,
-                                       ghc::filesystem::copy_options::update_existing);
-        }
-        return true;
-    }
-
-    void ResetBackup() {
-        if (ghc::filesystem::is_directory(m_backup_files_dir)) {
-            ghc::filesystem::remove_all(m_backup_files_dir);
-            ghc::filesystem::create_directory(m_backup_files_dir);
-        }
-        if (ghc::filesystem::is_regular_file(m_database_file)) {
-            ghc::filesystem::remove(m_database_file);
-        }
-        m_database = {};
-    }
-
-    void AddFileToBackup(const ghc::filesystem::path &path) {
-        if (!ghc::filesystem::is_directory(m_backup_files_dir)) {
-            ghc::filesystem::create_directory(m_backup_files_dir);
-        }
-
-        const auto hash_string = std::to_string(ghc::filesystem::hash_value(path));
-        ghc::filesystem::copy_file(path, m_backup_files_dir / hash_string,
-                                   ghc::filesystem::copy_options::update_existing);
-        m_database["files"][hash_string] = path.generic_string();
-
-        std::cout << "Backing-up file " << path << "\n";
-        std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
-        o << std::setw(2) << m_database << std::endl;
-        o.close();
-    }
-
-  private:
-    ghc::filesystem::path m_database_file {};
-    ghc::filesystem::path m_backup_dir {};
-    ghc::filesystem::path m_backup_files_dir {};
-    nlohmann::json m_database {};
-    bool m_parsed_json {};
 };
 
 class SignetInterface {

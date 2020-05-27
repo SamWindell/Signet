@@ -17,45 +17,6 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
 }
 
-static std::vector<ghc::filesystem::path>
-GetAllAudioFilesInDirectoryRecursively(const std::string &directory) {
-    std::vector<ghc::filesystem::path> paths;
-    for (const auto &entry : ghc::filesystem::recursive_directory_iterator(directory)) {
-        const auto &path = entry.path();
-        const auto ext = path.extension();
-        if (ext == ".flac" || ext == ".wav") {
-            paths.push_back(path);
-        }
-    }
-    return paths;
-}
-
-static auto GetAllMatchingPaths(MultiplePatternMatchingFilenames<> &patterns) {
-    std::vector<ghc::filesystem::path> result;
-    REQUIRE(patterns.GetNumPatterns() != 0);
-    for (usize i = 0; i < patterns.GetNumPatterns(); ++i) {
-        switch (patterns.GetMode(i)) {
-            case PatternMode::Pattern:
-            case PatternMode::Directory: {
-                const auto root_dir = patterns.GetRootDirectory(i);
-                std::cout << root_dir << " root dir\n";
-                const auto paths = GetAllAudioFilesInDirectoryRecursively(root_dir);
-                for (const auto &p : paths) {
-                    if (patterns.Matches(i, p) == MultiplePatternMatchingFilenames<>::MatchResult::Yes)
-                        result.push_back(p);
-                }
-                break;
-            }
-            case PatternMode::File: {
-                result.push_back(patterns.GetPattern(i));
-                break;
-            }
-            default: WarningWithNewLine("pattern is not valid ", patterns.GetPattern(i), "\n");
-        }
-    }
-    return result;
-}
-
 int SignetInterface::Main(const int argc, const char *const argv[]) {
     std::cout << "\n\n";
     CLI::App app {"Tools for processing audio files"};
@@ -102,7 +63,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         }
     }
 
-    m_all_matched_files = GetAllMatchingPaths(m_input_filepath_pattern);
+    m_all_matched_files = m_input_filepath_pattern.GetAllMatchingPaths();
     if (!m_all_matched_files.size()) {
         WarningWithNewLine("There are no matching files for this input\n");
         return 1;
@@ -273,7 +234,6 @@ TEST_CASE("[PatternMatchingFilename]") {
     }
     SUBCASE("multiple filenames") {
         MultiplePatternMatchingFilenames<CheckDummyFilesystem> p("foo.wav,bar.wav");
-        REQUIRE(p.IsPattern());
         REQUIRE(!p.IsSingleFile());
         REQUIRE(p.GetNumPatterns() == 2);
         REQUIRE(p.Matches(0, "foo.wav") ==
@@ -289,7 +249,6 @@ TEST_CASE("[PatternMatchingFilename]") {
     }
     SUBCASE("multiple patterns") {
         MultiplePatternMatchingFilenames<CheckDummyFilesystem> p("code/subdirs/*,build/*.wav,*.flac");
-        REQUIRE(p.IsPattern());
         REQUIRE(!p.IsSingleFile());
         REQUIRE(p.GetNumPatterns() == 3);
         REQUIRE(p.GetRootDirectory(0) == "code/subdirs");
@@ -309,7 +268,6 @@ TEST_CASE("[PatternMatchingFilename]") {
     SUBCASE("multiple-pattern object with just a single unpatterned filename") {
         MultiplePatternMatchingFilenames<CheckDummyFilesystem> p("file.wav");
         REQUIRE(p.GetNumPatterns() == 1);
-        REQUIRE(!p.IsPattern());
         REQUIRE(p.Matches(0, "file.wav") ==
                 MultiplePatternMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
         REQUIRE(p.Matches(0, "dir/file.wav") ==
@@ -320,7 +278,6 @@ TEST_CASE("[PatternMatchingFilename]") {
     SUBCASE("multiple-pattern object with just a single pattern") {
         MultiplePatternMatchingFilenames<CheckDummyFilesystem> p("test-folder/*.wav");
         REQUIRE(p.GetNumPatterns() == 1);
-        REQUIRE(p.IsPattern());
         REQUIRE(p.Matches(0, "test-folder/file.wav") ==
                 MultiplePatternMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
         REQUIRE(p.GetRootDirectory(0) == "test-folder");
@@ -330,23 +287,10 @@ TEST_CASE("[PatternMatchingFilename]") {
         MultiplePatternMatchingFilenames<CheckDummyFilesystem> p("test-folder/");
         REQUIRE(p.GetNumPatterns() == 1);
         REQUIRE(!p.IsSingleFile());
-        REQUIRE(!p.IsPattern());
         REQUIRE(p.GetRootDirectory(0) == "test-folder/");
         REQUIRE(p.Matches(0, "test-folder/file.wav") ==
                 MultiplePatternMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
         REQUIRE(p.Matches(0, "test-folder/foo.wav") ==
                 MultiplePatternMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-    }
-}
-
-TEST_CASE("[SignetBackup]") {
-    {
-        SignetBackup b;
-        b.ResetBackup();
-        b.AddFileToBackup(TEST_DATA_DIRECTORY "/test.wav");
-    }
-    {
-        SignetBackup b;
-        REQUIRE(b.LoadBackup());
     }
 }

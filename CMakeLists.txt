@@ -5,9 +5,10 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(common OBJECT
-            code/common/common.cpp
-            code/common/audio_file.cpp
             code/common/audio_duration.cpp
+            code/common/audio_file.cpp
+            code/common/common.cpp
+            code/signet/backup.cpp
             code/signet/signet_interface.cpp
             code/signet/subcommands/fader/fader.cpp
             code/signet/subcommands/normalise/gain_calculators.cpp

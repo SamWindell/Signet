@@ -54,9 +54,11 @@ static float GetFade(Fader::Shape shape, float x) {
             return (-(std::cos(x * pi) - 1.0f)) / 2.0f;
         }
         case Fader::Shape::Exp: {
+            // TODO: this and exp are the same thing??
             return DBToAmp(silent_db + range_db * x);
         }
         case Fader::Shape::Log: {
+            // TODO: this and log are the same thing??
             return std::clamp((AmpToDB(x) + range_db) / range_db, 0.0f, 1.0f);
         }
         case Fader::Shape::Sqrt: {

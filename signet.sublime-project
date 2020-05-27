@@ -25,7 +25,8 @@
                         "shell_cmd": "call ninja && call tests.exe"
                     },
                     "osx": {
-                        "shell_cmd": "ninja && ./tests"
+                        "shell_cmd": "ninja && ./tests",
+                        "file_regex": "^(?:\\x1b\\[[;\\d]*[A-Za-z])*([^\\s][\\/\\w -\\\\]+):([0-9]+):([0-9]+): (?>fatal error|error|warning): (.+)$"
                     }
                 },
                 {

@@ -1,5 +1,5 @@
 # Signet
-### Command line utilities for manipulating audio samples
+### Command line utilities for manipulating audio samples - still a work-in-progess
 
 Signet is a cross-platform command line tool with a few subcommands that I have written to edit audio samples for use in a sampler. There are no library dependencies external to this repo. Signet has to be built from source at the moment. However, this process is designed to be simple. Run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then just build using that.
 

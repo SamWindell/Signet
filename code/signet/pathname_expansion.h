@@ -26,6 +26,13 @@ class CanonicalPathSet {
         paths.insert(ghc::filesystem::canonical(path).generic_string());
     }
 
+    usize Size() const { return paths.size(); }
+
+    auto begin() { return paths.begin(); }
+    auto end() { return paths.end(); }
+    auto begin() const { return paths.begin(); }
+    auto end() const { return paths.end(); }
+
   private:
     std::unordered_set<std::string> paths {};
 };
@@ -33,14 +40,17 @@ class CanonicalPathSet {
 class ExpandablePathname {
   public:
     ExpandablePathname(const std::string_view str) : m_pathname(str) {}
+    virtual ~ExpandablePathname() {}
     virtual void AddMatchingPathsToSet(CanonicalPathSet &paths) = 0;
+    virtual bool IsSingleFile() const { return false; }
 
   protected:
     std::string m_pathname;
 };
 
-class ExpandablePatternPathname : public ExpandablePathname {
+class ExpandablePatternPathname final : public ExpandablePathname {
   public:
+    ExpandablePatternPathname(const std::string_view str) : ExpandablePathname(str) {}
     void AddMatchingPathsToSet(CanonicalPathSet &paths) override {
         ForEachAudioFilesInDirectoryRecursively(GetDirectoryToStartSearch(), [&](auto path) {
             if (PatternMatch(m_pathname, path.generic_string())) {
@@ -65,13 +75,16 @@ class ExpandablePatternPathname : public ExpandablePathname {
     }
 };
 
-class SingleFilePathname : public ExpandablePathname {
+class SingleFilePathname final : public ExpandablePathname {
   public:
+    SingleFilePathname(const std::string_view str) : ExpandablePathname(str) {}
     void AddMatchingPathsToSet(CanonicalPathSet &paths) override { paths.Add(m_pathname); }
+    bool IsSingleFile() const override { return true; }
 };
 
-class ExpandableDirectoryPathname : public ExpandablePathname {
+class ExpandableDirectoryPathname final : public ExpandablePathname {
   public:
+    ExpandableDirectoryPathname(const std::string_view str) : ExpandablePathname(str) {}
     void AddMatchingPathsToSet(CanonicalPathSet &paths) override {
         const auto parent_directory = ghc::filesystem::path(m_pathname);
         ForEachAudioFilesInDirectoryRecursively(m_pathname, [&](auto path) {
@@ -83,13 +96,17 @@ class ExpandableDirectoryPathname : public ExpandablePathname {
 };
 
 struct RealFilesystemFunctions {
-    static bool IsDirectory(std::string str) { return ghc::filesystem::is_directory(str); }
-    static bool IsRegularFile(std::string str) { return ghc::filesystem::is_regular_file(str); }
+    static bool IsDirectory(std::string_view str) { return ghc::filesystem::is_directory(std::string(str)); }
+    static bool IsRegularFile(std::string_view str) {
+        return ghc::filesystem::is_regular_file(std::string(str));
+    }
 };
 
 struct DummyFilesystemFunctions {
-    static bool IsDirectory(std::string str) { return str.find('/') != std::string::npos; }
-    static bool IsRegularFile(std::string str) { return ghc::filesystem::path(str).has_extension(); }
+    static bool IsDirectory(std::string_view str) { return str.find('/') != std::string::npos; }
+    static bool IsRegularFile(std::string_view str) {
+        return ghc::filesystem::path(std::string(str)).has_extension();
+    }
 };
 
 template <typename FilesystemFunctions>
@@ -101,16 +118,17 @@ class ExpandablePathnameListParser {
         std::vector<std::unique_ptr<ExpandablePathname>> result;
         ForEachCommaDelimitedSection(m_list, [&](std::string_view section) {
             if (section.find('*') != std::string::npos) {
-                result.push_back(std::make_unique<ExpandablePatternPathname>());
+                result.push_back(std::make_unique<ExpandablePatternPathname>(section));
             } else if (FilesystemFunctions::IsDirectory(section)) {
-                result.push_back(std::make_unique<ExpandableDirectoryPathname>());
+                result.push_back(std::make_unique<ExpandableDirectoryPathname>(section));
             } else if (FilesystemFunctions::IsRegularFile(section)) {
-                result.push_back(std::make_unique<SingleFilePathname>());
+                result.push_back(std::make_unique<SingleFilePathname>(section));
             } else {
                 // invalid, just do nothing?
-                // result.push_back({});
+                WarningWithNewLine("The input filename ", section, " is not valid");
             }
         });
+        return result;
     }
 
   private:
@@ -131,12 +149,13 @@ class ExpandablePathnameListParser {
 template <typename FilesystemFunctions = RealFilesystemFunctions>
 class ExpandedPathnames {
   public:
+    ExpandedPathnames() {}
     ExpandedPathnames(std::string_view pathnames) : m_whole_list(pathnames) {
         ExpandablePathnameListParser<FilesystemFunctions> parser(pathnames);
         m_expandables = std::move(parser.Parse());
     }
 
-    bool IsSingleFile() const { return m_expandables.size() == 1; } // TODO: and
+    bool IsSingleFile() const { return m_expandables.size() == 1 && m_expandables[0]->IsSingleFile(); }
 
     void BuildAllMatchesFilenames() {
         for (auto &e : m_expandables) {

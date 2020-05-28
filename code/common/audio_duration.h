@@ -26,7 +26,7 @@ class AudioDuration {
         return other.m_value == m_value && other.m_unit == m_unit;
     }
 
-    size_t GetDurationAsFrames(unsigned sample_rate, size_t num_frames) {
+    size_t GetDurationAsFrames(unsigned sample_rate, size_t num_frames) const {
         float result {};
         switch (m_unit) {
             case Unit::Seconds: result = sample_rate * m_value; break;

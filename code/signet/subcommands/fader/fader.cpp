@@ -88,7 +88,8 @@ std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem:
     AudioFile output = input;
     if (m_fade_in_duration) {
         const auto fade_in_frames =
-            m_fade_in_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames());
+            std::min(output.NumFrames() - 1,
+                     m_fade_in_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames()));
         PerformFade(output, 0, (s64)fade_in_frames, m_fade_in_shape);
     }
     if (m_fade_out_duration) {

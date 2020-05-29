@@ -57,17 +57,20 @@ AudioFile ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(const AudioFi
 }
 
 TEST_CASE("[ZCross Offset]") {
-    auto buf = TestHelpers::GetSine();
-    REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf.interleaved_samples, 10,
-                                                                  buf.num_channels) == 0);
+    SUBCASE("offsetting a sine wave") {
+        const auto buf = TestHelpers::GetSine();
+        REQUIRE(buf.interleaved_samples[0] == std::sin(0));
+        REQUIRE(buf.num_channels == 1);
 
-    // const tcb::span<const float> range = buf.interleaved_samples;
-    // constexpr usize silent_frame = 4;
-    // constexpr usize offset_frames = 2;
-    // for (unsigned chan = 0; chan < buf.num_channels; ++chan) {
-    //     buf.GetSample(chan, silent_frame) = 0;
-    // }
-
-    // REQUIRE(FindFrameNearestToZeroInBuffer(range.subspan(offset_frames * buf.num_channels), 10,
-    //                                        silent_frame) == silent_frame - offset_frames);
+        SUBCASE("finds a zero crossing at the start") {
+            REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf.interleaved_samples, 10,
+                                                                          buf.num_channels) == 0);
+        }
+        SUBCASE("finds a zero crossing at half pi") {
+            tcb::span<const float> span = buf.interleaved_samples;
+            span = span.subspan(buf.NumFrames() / 4);
+            REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(span, 60, buf.num_channels) ==
+                    buf.NumFrames() / 4);
+        }
+    }
 }

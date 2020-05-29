@@ -1,6 +1,5 @@
 #include "signet_interface.h"
 
-#include <cassert>
 #include <functional>
 
 #include "doctest.hpp"
@@ -88,10 +87,10 @@ void SignetInterface::ProcessFile(Subcommand &subcommand,
                                   const ghc::filesystem::path &input_filepath,
                                   std::optional<ghc::filesystem::path> output_filepath) {
     if (!output_filepath) {
-        *output_filepath = input_filepath;
+        output_filepath = input_filepath;
         output_filepath->replace_extension(".wav");
     }
-    assert(!input_filepath.empty());
+    REQUIRE(!input_filepath.empty());
 
     if (const auto audio_file = ReadAudioFile(input_filepath)) {
         if (const auto new_audio_file = subcommand.Process(*audio_file, *output_filepath)) {

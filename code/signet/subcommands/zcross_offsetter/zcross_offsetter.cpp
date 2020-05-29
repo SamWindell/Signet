@@ -49,7 +49,7 @@ AudioFile ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(const AudioFi
     if (append_skipped_frames_on_end) {
         new_interleaved_samples.insert(new_interleaved_samples.end(), input.interleaved_samples.begin(),
                                        interleaved_samples_new_start_it);
-        assert(new_interleaved_samples.size() == input.interleaved_samples.size());
+        REQUIRE(new_interleaved_samples.size() == input.interleaved_samples.size());
     }
 
     result.interleaved_samples = new_interleaved_samples;

@@ -38,7 +38,8 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
 }
 
 static float GetFade(Fader::Shape shape, float x) {
-    assert(x >= 0 && x <= 1);
+    REQUIRE(x >= 0);
+    REQUIRE(x <= 1);
     if (x == 0) return 0;
     if (x == 1) return 1;
     static constexpr float silent_db = -90;
@@ -64,7 +65,7 @@ static float GetFade(Fader::Shape shape, float x) {
         case Fader::Shape::Sqrt: {
             return std::sqrt(x);
         }
-        default: assert(0);
+        default: REQUIRE(0);
     }
     return 0;
 }

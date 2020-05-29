@@ -4,6 +4,8 @@
 #include <string>
 #include <utility>
 
+#include "doctest.hpp"
+
 #include "common.h"
 
 class AudioDuration {
@@ -33,7 +35,7 @@ class AudioDuration {
             case Unit::Milliseconds: result = sample_rate * (m_value / 1000.0f); break;
             case Unit::Percent: result = num_frames * (std::clamp(m_value, 0.0f, 100.0f) / 100.0f); break;
             case Unit::Samples: result = m_value; break;
-            default: assert(0);
+            default: REQUIRE(0);
         }
         return std::min(num_frames, (size_t)result);
     }

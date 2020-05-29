@@ -1,5 +1,4 @@
 #pragma once
-#include <cassert>
 #include <memory>
 
 #include "common.h"

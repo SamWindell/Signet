@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "doctest.hpp"
 #include "filesystem.hpp"
 
 static void
@@ -63,7 +64,7 @@ class ExpandablePatternPathname final : public ExpandablePathname {
     std::string GetDirectoryToStartSearch() {
         if (const auto slash_pos = m_pathname.rfind('/'); slash_pos != std::string::npos) {
             const auto pattern_pos = m_pathname.find('*');
-            assert(pattern_pos != std::string::npos);
+            REQUIRE(pattern_pos != std::string::npos);
             if (pattern_pos < slash_pos) {
                 return ".";
             } else {

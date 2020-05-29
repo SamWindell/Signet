@@ -1,8 +1,7 @@
 #include <algorithm>
-#include <assert.h>
+#include <cfloat>
 #include <cmath>
-#include <float.h>
-#include <stdio.h>
+#include <cstdio>
 #include <string>
 
 #include "span.hpp"

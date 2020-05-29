@@ -22,7 +22,7 @@ std::optional<AudioFile> Normaliser::Process(const AudioFile &input, ghc::filesy
         case ProcessingStage::ApplyingGain: {
             return PerformNormalisation(input);
         }
-        default: assert(0);
+        default: REQUIRE(0);
     }
     return {};
 }

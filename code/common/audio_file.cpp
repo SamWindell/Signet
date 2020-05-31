@@ -60,18 +60,29 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
 
 template <typename SignedIntType>
 SignedIntType ScaleSampleToSignedInt(const float s, const unsigned bits_per_sample) {
-    const auto negative_max = (1 << bits_per_sample) / 2;
+    const auto negative_max = std::pow(2, bits_per_sample) / 2;
     const auto positive_max = negative_max - 1;
     return static_cast<SignedIntType>(std::round(s < 0 ? s * negative_max : s * positive_max));
 }
 
 template <typename SignedIntType>
-std::vector<SignedIntType> CreateIntSamplesFromFloat(const std::vector<float> &buf,
-                                                     const unsigned bits_per_sample) {
+std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<float> &buf,
+                                                           const unsigned bits_per_sample) {
     std::vector<SignedIntType> result;
     result.reserve(buf.size());
     for (const auto s : buf) {
         result.push_back(ScaleSampleToSignedInt<SignedIntType>(s, bits_per_sample));
+    }
+    return result;
+}
+
+template <typename UnsignedIntType>
+std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector<float> &buf,
+                                                               const unsigned bits_per_sample) {
+    std::vector<UnsignedIntType> result;
+    result.reserve(buf.size());
+    for (const auto s : buf) {
+        result.push_back(static_cast<UnsignedIntType>(s * ((1 << bits_per_sample) - 1)));
     }
     return result;
 }
@@ -101,12 +112,13 @@ static bool WriteWaveFile(const ghc::filesystem::path &path,
     u64 num_written = 0;
     switch (bits_per_sample) {
         case 8: {
-            const auto buf = CreateIntSamplesFromFloat<s8>(audio_file.interleaved_samples, 8);
+            // 8-bit is the exception in that it uses unsigned ints
+            const auto buf = CreateUnsignedIntSamplesFromFloat<u8>(audio_file.interleaved_samples, 8);
             num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
             break;
         }
         case 16: {
-            const auto buf = CreateIntSamplesFromFloat<s16>(audio_file.interleaved_samples, 16);
+            const auto buf = CreateSignedIntSamplesFromFloat<s16>(audio_file.interleaved_samples, 16);
             num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
             break;
         }
@@ -275,7 +287,8 @@ static bool WriteFlacFile(const ghc::filesystem::path &filename,
         return false;
     }
 
-    const auto int32_buffer = CreateIntSamplesFromFloat<s32>(audio_file.interleaved_samples, bits_per_sample);
+    const auto int32_buffer =
+        CreateSignedIntSamplesFromFloat<s32>(audio_file.interleaved_samples, bits_per_sample);
     if (!FLAC__stream_encoder_process_interleaved(encoder.get(), int32_buffer.data(),
                                                   (unsigned)audio_file.NumFrames())) {
         WarningWithNewLine("could not write flac file - failed encoding samples");
@@ -305,6 +318,21 @@ bool WriteAudioFile(const ghc::filesystem::path &filename,
 }
 
 TEST_CASE("[AudioFile]") {
+    SUBCASE("conversion") {
+        SUBCASE("signed") {
+            REQUIRE(ScaleSampleToSignedInt<s16>(1, 16) == 32767);
+            REQUIRE(ScaleSampleToSignedInt<s16>(-1, 16) == -32768);
+            REQUIRE(ScaleSampleToSignedInt<s32>(1, 32) == 0x7FFFFFFF);
+            REQUIRE(ScaleSampleToSignedInt<s32>(-1, 32) == (-0x80000000ll));
+        }
+        SUBCASE("unsigned") {
+            const auto s = CreateUnsignedIntSamplesFromFloat<u8>({0.0f, 1.0f}, 8);
+            REQUIRE(s.size() == 2);
+            REQUIRE(s[0] == 0);
+            REQUIRE(s[1] == 255);
+        }
+    }
+
     const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, 44100, 1, 440);
     SUBCASE("wave") {
         for (const auto bit_depth : valid_wave_bit_depths) {

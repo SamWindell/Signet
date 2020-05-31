@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <float.h>
 
 #include "audio_file.h"

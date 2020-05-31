@@ -58,7 +58,7 @@ AudioFile ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(const AudioFi
 
 TEST_CASE("[ZCross Offset]") {
     SUBCASE("offsetting a sine wave") {
-        const auto buf = TestHelpers::GetSine();
+        const auto buf = TestHelpers::CreateSingleOscillationSineWave(1, 44100, 100);
         REQUIRE(buf.interleaved_samples[0] == std::sin(0));
         REQUIRE(buf.num_channels == 1);
 
@@ -66,7 +66,7 @@ TEST_CASE("[ZCross Offset]") {
             REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf.interleaved_samples, 10,
                                                                           buf.num_channels) == 0);
         }
-        SUBCASE("finds a zero crossing at half pi") {
+        SUBCASE("finds a zero crossing at pi radians") {
             tcb::span<const float> span = buf.interleaved_samples;
             span = span.subspan(buf.NumFrames() / 4);
             REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(span, 60, buf.num_channels) ==

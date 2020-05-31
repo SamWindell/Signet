@@ -11,6 +11,7 @@
 #include "flac/stream_encoder.h"
 
 #include "common.h"
+#include "test_helpers.h"
 
 std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
     std::cout << "Reading file " << path << "\n";
@@ -57,30 +58,204 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
     return result;
 }
 
-static bool WriteWaveFile(const ghc::filesystem::path &path, const AudioFile &audio_file) {
+template <typename SignedIntType>
+SignedIntType ScaleSampleToSignedInt(const float s, const unsigned bits_per_sample) {
+    const auto negative_max = (1 << bits_per_sample) / 2;
+    const auto positive_max = negative_max - 1;
+    return static_cast<SignedIntType>(std::round(s < 0 ? s * negative_max : s * positive_max));
+}
+
+template <typename SignedIntType>
+std::vector<SignedIntType> CreateIntSamplesFromFloat(const std::vector<float> &buf,
+                                                     const unsigned bits_per_sample) {
+    std::vector<SignedIntType> result;
+    result.reserve(buf.size());
+    for (const auto s : buf) {
+        result.push_back(ScaleSampleToSignedInt<SignedIntType>(s, bits_per_sample));
+    }
+    return result;
+}
+
+static bool WriteWaveFile(const ghc::filesystem::path &path,
+                          const AudioFile &audio_file,
+                          const unsigned bits_per_sample) {
+    if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
+        std::end(valid_wave_bit_depths)) {
+        WarningWithNewLine("could not write wave file - the given bit depth is invalid");
+        return false;
+    }
+
     drwav_data_format format {};
     format.container = drwav_container_riff;
-    format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
+    format.format = DR_WAVE_FORMAT_PCM;
     format.channels = audio_file.num_channels;
     format.sampleRate = audio_file.sample_rate;
-    format.bitsPerSample = sizeof(float) * 8;
-    drwav *wav = drwav_open_file_write(path.generic_string().data(), &format);
-    if (!wav) return false;
+    format.bitsPerSample = bits_per_sample;
+    std::unique_ptr<drwav, decltype(&drwav_close)> wav {
+        drwav_open_file_write(path.generic_string().data(), &format), &drwav_close};
+    if (!wav) {
+        WarningWithNewLine("could not write wave file - could not open file ", path);
+        return false;
+    }
 
-    const auto num_written =
-        drwav_write_pcm_frames(wav, audio_file.NumFrames(), audio_file.interleaved_samples.data());
-    if (num_written != audio_file.NumFrames()) return false;
+    u64 num_written = 0;
+    switch (bits_per_sample) {
+        case 8: {
+            const auto buf = CreateIntSamplesFromFloat<s8>(audio_file.interleaved_samples, 8);
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
+            break;
+        }
+        case 16: {
+            const auto buf = CreateIntSamplesFromFloat<s16>(audio_file.interleaved_samples, 16);
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
+            break;
+        }
+        case 24: {
+            std::vector<u8> buf;
+            buf.reserve(audio_file.interleaved_samples.size() * 3);
+            for (const auto &s : audio_file.interleaved_samples) {
+                const auto sample = ScaleSampleToSignedInt<s32>(s, 24);
 
-    drwav_close(wav);
+                u8 bytes[3];
+                bytes[0] = (u8)sample & 0xFF;
+                bytes[1] = (u8)(sample >> 8) & 0xFF;
+                bytes[2] = (u8)(sample >> 16) & 0xFF;
+
+                buf.push_back(bytes[0]);
+                buf.push_back(bytes[1]);
+                buf.push_back(bytes[2]);
+            }
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
+            break;
+        }
+        case 32: {
+            format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(),
+                                                 audio_file.interleaved_samples.data());
+            break;
+        }
+        case 64: {
+            format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
+            std::vector<double> buf;
+            buf.reserve(audio_file.interleaved_samples.size());
+            for (const auto s : audio_file.interleaved_samples) {
+                buf.push_back(static_cast<double>(s));
+            }
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
+            break;
+        }
+        default: {
+            REQUIRE(0);
+            return false;
+        }
+    }
+    if (num_written != audio_file.NumFrames()) {
+        WarningWithNewLine("could not write wave file - could not write all samples");
+        return false;
+    }
+
     return true;
 }
 
-static bool WriteFlacFile(const ghc::filesystem::path &filename, const AudioFile &audio_file) {
-    constexpr auto bits_per_sample = 16;
+static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
+    switch (code) {
+        case FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR\n";
+            return;
+            /**< General failure to set up encoder; call FLAC__stream_encoder_get_state() for cause. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER\n";
+            return;
+            /**< The library was not compiled with support for the given container
+             * format.
+             */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS\n";
+            return;
+            /**< A required callback was not supplied. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS\n";
+            return;
+            /**< The encoder has an invalid setting for number of channels. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE\n";
+            return;
+            /**< The encoder has an invalid setting for bits-per-sample.
+             * FLAC supports 4-32 bps but the reference encoder currently supports
+             * only up to 24 bps.
+             */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE\n";
+            return;
+            /**< The encoder has an invalid setting for the input sample rate. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE\n";
+            return;
+            /**< The encoder has an invalid setting for the block size. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER\n";
+            return;
+            /**< The encoder has an invalid setting for the maximum LPC order. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION\n";
+            return;
+            /**< The encoder has an invalid setting for the precision of the quantized linear predictor
+             * coefficients. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER\n";
+            return;
+            /**< The specified block size is less than the maximum LPC order. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE\n";
+            return;
+            /**< The encoder is bound to the <A HREF="../format.html#subset">Subset</A> but other settings
+             * violate it. */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA\n";
+            return;
+            /**< The metadata input to the encoder is invalid, in one of the following ways:
+             * - FLAC__stream_encoder_set_metadata() was called with a null pointer but a block count > 0
+             * - One of the metadata blocks contains an undefined type
+             * - It contains an illegal CUESHEET as checked by FLAC__format_cuesheet_is_legal()
+             * - It contains an illegal SEEKTABLE as checked by FLAC__format_seektable_is_legal()
+             * - It contains more than one SEEKTABLE block or more than one VORBIS_COMMENT block
+             */
+
+        case FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED:
+            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED\n";
+            return;
+            /**< FLAC__stream_encoder_init_*() was called when the encoder was
+             * already initialized, usually because
+             * FLAC__stream_encoder_finish() was not called.*/
+    }
+}
+
+static bool WriteFlacFile(const ghc::filesystem::path &filename,
+                          const AudioFile &audio_file,
+                          const unsigned bits_per_sample) {
+    if (std::find(std::begin(valid_flac_bit_depths), std::end(valid_flac_bit_depths), bits_per_sample) ==
+        std::end(valid_flac_bit_depths)) {
+        WarningWithNewLine("could not write flac file - the given bit depth is invalid");
+        return false;
+    }
 
     std::unique_ptr<FLAC__StreamEncoder, decltype(&FLAC__stream_encoder_delete)> encoder {
         FLAC__stream_encoder_new(), &FLAC__stream_encoder_delete};
-    if (!encoder) return false;
+    if (!encoder) {
+        WarningWithNewLine("could not write flac file - no memory");
+        return false;
+    }
 
     FLAC__stream_encoder_set_channels(encoder.get(), audio_file.num_channels);
     FLAC__stream_encoder_set_bits_per_sample(encoder.get(), bits_per_sample);
@@ -88,44 +263,65 @@ static bool WriteFlacFile(const ghc::filesystem::path &filename, const AudioFile
     FLAC__stream_encoder_set_total_samples_estimate(encoder.get(), audio_file.interleaved_samples.size());
 
     std::unique_ptr<FILE, decltype(&fclose)> f {std::fopen(filename.generic_string().data(), "w+b"), &fclose};
-    if (!f) return false;
+    if (!f) {
+        WarningWithNewLine("could not write flac file - could not open file ", filename);
+        return false;
+    }
 
     if (const auto o = FLAC__stream_encoder_init_FILE(encoder.get(), f.get(), nullptr, nullptr);
         o != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
+        WarningWithNewLine("could not write flac file:");
+        PrintFlacStatusCode(o);
         return false;
     }
 
-    std::vector<s32> int32_buffer;
-    int32_buffer.reserve(audio_file.interleaved_samples.size());
-    switch (bits_per_sample) {
-        case 16: {
-            for (const auto s : audio_file.interleaved_samples) {
-                if (s < 0) {
-                    int32_buffer.push_back(static_cast<s32>(s * 32768));
-                } else {
-                    int32_buffer.push_back(static_cast<s32>(s * 32767));
-                }
-            }
-            break;
-        }
-        default: REQUIRE(false);
-    }
-
+    const auto int32_buffer = CreateIntSamplesFromFloat<s32>(audio_file.interleaved_samples, bits_per_sample);
     if (!FLAC__stream_encoder_process_interleaved(encoder.get(), int32_buffer.data(),
                                                   (unsigned)audio_file.NumFrames())) {
+        WarningWithNewLine("could not write flac file - failed encoding samples");
         return false;
     }
 
-    FLAC__stream_encoder_finish(encoder.get());
+    if (!FLAC__stream_encoder_finish(encoder.get())) {
+        WarningWithNewLine("could not write flac file - error finishing encoding");
+        return false;
+    }
     return true;
 }
 
-bool WriteAudioFile(const ghc::filesystem::path &filename, const AudioFile &audio_file) {
+bool WriteAudioFile(const ghc::filesystem::path &filename,
+                    const AudioFile &audio_file,
+                    std::optional<unsigned> new_bits_per_sample) {
+    auto bits_per_sample = audio_file.bits_per_sample;
+    if (new_bits_per_sample) bits_per_sample = *new_bits_per_sample;
+
     const auto ext = filename.extension();
     if (ext == ".flac") {
-        return WriteFlacFile(filename, audio_file);
+        return WriteFlacFile(filename, audio_file, bits_per_sample);
     } else if (ext == ".wav") {
-        return WriteWaveFile(filename, audio_file);
+        return WriteWaveFile(filename, audio_file, bits_per_sample);
     }
     return false;
+}
+
+TEST_CASE("[AudioFile]") {
+    const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, 44100, 1, 440);
+    SUBCASE("wave") {
+        for (const auto bit_depth : valid_wave_bit_depths) {
+            CAPTURE(bit_depth);
+            const ghc::filesystem::path filename = "test_sine_440.wav";
+            REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
+            REQUIRE(ghc::filesystem::is_regular_file(filename));
+            REQUIRE(ReadAudioFile(filename));
+        }
+    }
+    SUBCASE("flac") {
+        for (const auto bit_depth : valid_flac_bit_depths) {
+            CAPTURE(bit_depth);
+            const ghc::filesystem::path filename = "test_sine_440.flac";
+            REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
+            REQUIRE(ghc::filesystem::is_regular_file(filename));
+            REQUIRE(ReadAudioFile(filename));
+        }
+    }
 }

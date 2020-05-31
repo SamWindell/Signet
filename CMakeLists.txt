@@ -27,7 +27,7 @@ if (WIN32)
 endif ()
 
 target_include_directories(flac PUBLIC code/third_party_libs/flac/src/include code/third_party_libs)
-target_compile_definitions(flac PRIVATE FLAC__NO_DLL)
+target_compile_definitions(flac PUBLIC FLAC__NO_DLL)
 
 #
 
@@ -43,6 +43,7 @@ add_library(
     code/signet/subcommands/normalise/normaliser.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
+target_compile_definitions(common PUBLIC NOMINMAX)
 if (WIN32)
     set(WARNINGS_TO_ENABLE
         /W4
@@ -66,14 +67,15 @@ if (WIN32)
 else ()
     target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
 endif ()
+target_link_libraries(common PRIVATE flac)
 
 configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
                ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)
 
 # Signet
 add_executable(signet code/signet/signet_main.cpp)
-target_link_libraries(signet PRIVATE common flac)
+target_link_libraries(signet PRIVATE common)
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)
-target_link_libraries(tests PRIVATE common flac)
+target_link_libraries(tests PRIVATE common)

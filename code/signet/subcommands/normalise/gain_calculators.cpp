@@ -7,7 +7,7 @@
 TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {
     T calc;
     INFO(calc.GetName());
-    auto buf = TestHelpers::GetSine();
+    auto buf = TestHelpers::CreateSingleOscillationSineWave(1, 44100, 100);
 
     SUBCASE("full volume sample with full volume target") {
         calc.RegisterBufferMagnitudes(buf);

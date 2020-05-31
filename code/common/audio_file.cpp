@@ -27,6 +27,7 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
 
         result.num_channels = wav->channels;
         result.sample_rate = wav->sampleRate;
+        result.bits_per_sample = wav->bitsPerSample;
         result.interleaved_samples.resize(wav->totalPCMFrameCount * wav->channels);
         const auto frames_read =
             drwav_read_pcm_frames_f32(wav.get(), wav->totalPCMFrameCount, result.interleaved_samples.data());
@@ -44,6 +45,7 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
 
         result.num_channels = flac->channels;
         result.sample_rate = flac->sampleRate;
+        result.bits_per_sample = flac->bitsPerSample;
         result.interleaved_samples.resize(flac->totalPCMFrameCount * flac->channels);
         const auto frames_read = drflac_read_pcm_frames_f32(flac.get(), flac->totalPCMFrameCount,
                                                             result.interleaved_samples.data());

@@ -1,4 +1,5 @@
 build/
 *.sublime-workspace
 *.DS_Store
+*.reapeaks
 tests_config.h

@@ -4,19 +4,45 @@ project(AudioUtils)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(common OBJECT
-            code/common/audio_duration.cpp
-            code/common/audio_file.cpp
-            code/common/common.cpp
-            code/signet/backup.cpp
-            code/signet/signet_interface.cpp
-            code/signet/subcommands/fader/fader.cpp
-            code/signet/subcommands/normalise/gain_calculators.cpp
-            code/signet/subcommands/normalise/normaliser.cpp
-            code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
-            )
+add_library(
+    flac STATIC
+    code/third_party_libs/flac/src/bitmath.c
+    code/third_party_libs/flac/src/bitreader.c
+    code/third_party_libs/flac/src/bitwriter.c
+    code/third_party_libs/flac/src/cpu.c
+    code/third_party_libs/flac/src/crc.c
+    code/third_party_libs/flac/src/fixed.c
+    code/third_party_libs/flac/src/float.c
+    code/third_party_libs/flac/src/format.c
+    code/third_party_libs/flac/src/lpc.c
+    code/third_party_libs/flac/src/md5.c
+    code/third_party_libs/flac/src/memory.c
+    code/third_party_libs/flac/src/stream_decoder.c
+    code/third_party_libs/flac/src/stream_encoder.c
+    code/third_party_libs/flac/src/stream_encoder_framing.c
+    code/third_party_libs/flac/src/window.c)
+
+if (WIN32)
+    target_sources(flac PRIVATE code/third_party_libs/flac/src/win_utf8_io.c)
+endif ()
+
+target_include_directories(flac PUBLIC code/third_party_libs/flac/src/include code/third_party_libs)
+target_compile_definitions(flac PRIVATE FLAC__NO_DLL)
+
+#
+
+add_library(
+    common OBJECT
+    code/common/audio_duration.cpp
+    code/common/audio_file.cpp
+    code/common/common.cpp
+    code/signet/backup.cpp
+    code/signet/signet_interface.cpp
+    code/signet/subcommands/fader/fader.cpp
+    code/signet/subcommands/normalise/gain_calculators.cpp
+    code/signet/subcommands/normalise/normaliser.cpp
+    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
-target_compile_definitions(common PUBLIC NOMINMAX)
 if (WIN32)
     set(WARNINGS_TO_ENABLE
         /W4
@@ -36,18 +62,18 @@ if (WIN32)
         /wd4324)
     set(FULL_PATH_OF_SOURCE_CODE "/FC")
     target_compile_options(common PUBLIC /diagnostics:column ${FULL_PATH_OF_SOURCE_CODE}
-                                                    ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
-else()
+                                         ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
+else ()
     target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
 endif ()
 
-configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)
+configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
+               ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)
 
 # Signet
 add_executable(signet code/signet/signet_main.cpp)
-target_link_libraries(signet PRIVATE common)
+target_link_libraries(signet PRIVATE common flac)
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)
-target_link_libraries(tests PRIVATE common)
-
+target_link_libraries(tests PRIVATE common flac)

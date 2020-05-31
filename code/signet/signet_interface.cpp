@@ -56,7 +56,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             if (ghc::filesystem::is_directory(*m_output_filepath)) {
                 FatalErrorWithNewLine(
                     "output filepath cannot be a directory if the input filepath is a file");
-            } else if (m_output_filepath->extension() != ".wav") {
+            } else if (m_output_filepath->extension() != ".wav" &&
+                       m_output_filepath->extension() != ".flac") {
                 FatalErrorWithNewLine("only WAV files can be written");
             }
         }
@@ -97,7 +98,7 @@ void SignetInterface::ProcessFile(Subcommand &subcommand,
             if (*output_filepath == input_filepath) {
                 m_backup.AddFileToBackup(input_filepath);
             }
-            if (!WriteWaveFile(*output_filepath, *new_audio_file)) {
+            if (!WriteAudioFile(*output_filepath, *new_audio_file)) {
                 FatalErrorWithNewLine("could not write the wave file ", *output_filepath);
             }
             std::cout << "Successfully wrote file " << *output_filepath << "\n";
@@ -124,7 +125,7 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
-        SUBCASE("single file with single output that is not a wav") {
+        SUBCASE("single file with single output that is not a wav or flac") {
             const auto args = {
                 "signet", TEST_DATA_DIRECTORY "/test.wav", TEST_DATA_DIRECTORY "/test-out.ogg", "fade", "in",
                 "50smp"};
@@ -184,6 +185,16 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("multiple comma separated files") {
             const auto wildcard = test_folder + "/test.wav," + test_folder + "/test_other.wav";
             const auto args = {"signet", wildcard.data(), "norm", "3"};
+            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+        }
+
+        SUBCASE("read and write a flac file") {
+            const auto args = {"signet",
+                               TEST_DATA_DIRECTORY "/test.flac",
+                               TEST_DATA_DIRECTORY "/test-out.flac",
+                               "fade",
+                               "in",
+                               "50smp"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
     }

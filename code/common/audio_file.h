@@ -16,4 +16,4 @@ struct AudioFile {
 };
 
 std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &filename);
-bool WriteWaveFile(const ghc::filesystem::path &filename, const AudioFile &audio_file);
+bool WriteAudioFile(const ghc::filesystem::path &filename, const AudioFile &audio_file);

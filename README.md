@@ -10,10 +10,12 @@ Signet can work on both single audio files and whole directories. Run with the a
 
 `signet MyFolder fade in 0.5s out 2s log`
 
+`signet Folder/*.wav zcross-offset 500ms`
+
 ### Current tools
 #### Zero crossing offsetter
 Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file. This is useful when used with samples that are seamless loops.
-#### Normaliser 
+#### Normaliser
 Normalise a sample to a particular decibel level. Can be used on a directory, optionally recursively. With a directory you can normalise the samples to a common gain.
 #### Fader
 Fade the start and/or end of the audio. The fade length must be specified. There are options for the shape of the fade curve.

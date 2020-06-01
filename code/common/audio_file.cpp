@@ -1,5 +1,6 @@
 #include "audio_file.h"
 
+#include <cstdint>
 #include <iostream>
 
 #define DR_WAV_IMPLEMENTATION
@@ -153,18 +154,18 @@ static bool WriteWaveFile(const ghc::filesystem::path &path,
         }
         case 32: {
             format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(),
-                                                 audio_file.interleaved_samples.data());
+            std::vector<float> buf;
+            buf.reserve(audio_file.interleaved_samples.size());
+            for (const auto s : audio_file.interleaved_samples) {
+                buf.push_back(static_cast<float>(s));
+            }
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
             break;
         }
         case 64: {
             format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
-            std::vector<double> buf;
-            buf.reserve(audio_file.interleaved_samples.size());
-            for (const auto s : audio_file.interleaved_samples) {
-                buf.push_back(static_cast<double>(s));
-            }
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(),
+                                                 audio_file.interleaved_samples.data());
             break;
         }
         default: {

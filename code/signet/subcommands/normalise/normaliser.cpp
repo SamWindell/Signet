@@ -47,7 +47,7 @@ AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
     if (!m_use_common_gain) {
         m_processor->RegisterBufferMagnitudes(input_audio);
     }
-    const float gain = m_processor->GetGain(DBToAmp(m_target_decibels));
+    const double gain = m_processor->GetGain(DBToAmp(m_target_decibels));
 
     std::cout << "Applying a gain of " << gain << "\n";
 

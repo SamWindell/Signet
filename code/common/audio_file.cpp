@@ -17,6 +17,7 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
     std::cout << "Reading file " << path << "\n";
     AudioFile result {};
     const auto ext = path.extension();
+    std::vector<float> f32_buf {};
     if (ext == ".wav") {
         std::unique_ptr<drwav, decltype(&drwav_close)> wav(drwav_open_file(path.generic_string().data()),
                                                            &drwav_close);
@@ -29,8 +30,9 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
         result.sample_rate = wav->sampleRate;
         result.bits_per_sample = wav->bitsPerSample;
         result.interleaved_samples.resize(wav->totalPCMFrameCount * wav->channels);
+        f32_buf.resize(result.interleaved_samples.size());
         const auto frames_read =
-            drwav_read_pcm_frames_f32(wav.get(), wav->totalPCMFrameCount, result.interleaved_samples.data());
+            drwav_read_pcm_frames_f32(wav.get(), wav->totalPCMFrameCount, f32_buf.data());
         if (frames_read != wav->totalPCMFrameCount) {
             WarningWithNewLine("failed to get all the frames from file ", path);
             return {};
@@ -47,8 +49,9 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
         result.sample_rate = flac->sampleRate;
         result.bits_per_sample = flac->bitsPerSample;
         result.interleaved_samples.resize(flac->totalPCMFrameCount * flac->channels);
-        const auto frames_read = drflac_read_pcm_frames_f32(flac.get(), flac->totalPCMFrameCount,
-                                                            result.interleaved_samples.data());
+        f32_buf.resize(result.interleaved_samples.size());
+        const auto frames_read =
+            drflac_read_pcm_frames_f32(flac.get(), flac->totalPCMFrameCount, f32_buf.data());
         if (frames_read != flac->totalPCMFrameCount) {
             WarningWithNewLine("failed to get all the frames from file ", path);
             return {};
@@ -57,18 +60,24 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
         WarningWithNewLine("file ", path, " is not a WAV or a FLAC");
         return {};
     }
+
+    // TODO: would be nice to have a way to get double values direct rather than just casting floats...
+    for (usize sample = 0; sample < f32_buf.size(); ++sample) {
+        result.interleaved_samples[sample] = (double)f32_buf[sample];
+    }
+
     return result;
 }
 
 template <typename SignedIntType>
-SignedIntType ScaleSampleToSignedInt(const float s, const unsigned bits_per_sample) {
+SignedIntType ScaleSampleToSignedInt(const double s, const unsigned bits_per_sample) {
     const auto negative_max = std::pow(2, bits_per_sample) / 2;
     const auto positive_max = negative_max - 1;
     return static_cast<SignedIntType>(std::round(s < 0 ? s * negative_max : s * positive_max));
 }
 
 template <typename SignedIntType>
-std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<float> &buf,
+std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<double> &buf,
                                                            const unsigned bits_per_sample) {
     std::vector<SignedIntType> result;
     result.reserve(buf.size());
@@ -79,7 +88,7 @@ std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<flo
 }
 
 template <typename UnsignedIntType>
-std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector<float> &buf,
+std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector<double> &buf,
                                                                const unsigned bits_per_sample) {
     std::vector<UnsignedIntType> result;
     result.reserve(buf.size());

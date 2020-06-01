@@ -37,13 +37,13 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     return fade;
 }
 
-static float GetFade(Fader::Shape shape, float x) {
+static double GetFade(Fader::Shape shape, double x) {
     REQUIRE(x >= 0);
     REQUIRE(x <= 1);
     if (x == 0) return 0;
     if (x == 1) return 1;
-    static constexpr float silent_db = -90;
-    static constexpr float range_db = -silent_db;
+    static constexpr double silent_db = -90;
+    static constexpr double range_db = -silent_db;
     switch (shape) {
         case Fader::Shape::Linear: {
             return x;
@@ -52,7 +52,7 @@ static float GetFade(Fader::Shape shape, float x) {
             return std::sin(x * half_pi);
         }
         case Fader::Shape::SCurve: {
-            return (-(std::cos(x * pi) - 1.0f)) / 2.0f;
+            return (-(std::cos(x * pi) - 1.0)) / 2.0;
         }
         case Fader::Shape::Exp: {
             // TODO: this and exp are the same thing??
@@ -60,7 +60,7 @@ static float GetFade(Fader::Shape shape, float x) {
         }
         case Fader::Shape::Log: {
             // TODO: this and log are the same thing??
-            return std::clamp((AmpToDB(x) + range_db) / range_db, 0.0f, 1.0f);
+            return std::clamp((AmpToDB(x) + range_db) / range_db, 0.0, 1.0);
         }
         case Fader::Shape::Sqrt: {
             return std::sqrt(x);
@@ -73,8 +73,8 @@ static float GetFade(Fader::Shape shape, float x) {
 static void
 PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
-    const float delta_x = 1.0f / ((float)std::abs(fullvol_frame - silent_frame) + 1);
-    float x = 0;
+    const double delta_x = 1.0f / ((double)std::abs(fullvol_frame - silent_frame) + 1);
+    double x = 0;
 
     for (s64 frame = silent_frame; frame != fullvol_frame + increment; frame += increment) {
         const auto gain = GetFade(shape, x);

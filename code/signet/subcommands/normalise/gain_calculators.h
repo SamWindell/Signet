@@ -1,7 +1,7 @@
 #pragma once
 
 #include <algorithm>
-#include <float.h>
+#include <cfloat>
 
 #include "audio_file.h"
 #include "common.h"
@@ -10,9 +10,9 @@ class NormalisationGainCalculator {
   public:
     virtual ~NormalisationGainCalculator() {}
     virtual void RegisterBufferMagnitudes(const AudioFile &audio) = 0;
-    virtual float GetGain(float target_amp) const = 0;
+    virtual double GetGain(double target_amp) const = 0;
     virtual const char *GetName() const = 0;
-    virtual float GetLargestRegisteredMagnitude() const = 0;
+    virtual double GetLargestRegisteredMagnitude() const = 0;
 };
 
 class RMSGainCalculator : public NormalisationGainCalculator {
@@ -34,20 +34,20 @@ class RMSGainCalculator : public NormalisationGainCalculator {
         m_num_frames += audio.NumFrames();
     }
 
-    float GetLargestRegisteredMagnitude() const override {
-        float max_rms = 0;
+    double GetLargestRegisteredMagnitude() const override {
+        double max_rms = 0;
         for (const auto sum_of_squares : m_sum_of_squares_channels) {
-            const auto rms = std::sqrt((1.0f / (float)m_num_frames) * sum_of_squares);
+            const auto rms = std::sqrt((1.0f / (double)m_num_frames) * sum_of_squares);
             max_rms = std::max(max_rms, rms);
         }
         return max_rms;
     }
 
-    float GetGain(float target_rms_amp) const override {
-        float smallest_gain = FLT_MAX;
+    double GetGain(double target_rms_amp) const override {
+        double smallest_gain = DBL_MAX;
         for (const auto sum_of_squares : m_sum_of_squares_channels) {
             const auto gain =
-                GetLinearGainForTargetAmpRMS(target_rms_amp, sum_of_squares, (float)m_num_frames);
+                GetLinearGainForTargetAmpRMS(target_rms_amp, sum_of_squares, (double)m_num_frames);
             smallest_gain = std::min(smallest_gain, gain);
         }
         return smallest_gain;
@@ -56,18 +56,19 @@ class RMSGainCalculator : public NormalisationGainCalculator {
     const char *GetName() const override { return "RMS"; };
 
   private:
-    static float GetLinearGainForTargetAmpRMS(float target_rms_amp, float sum_of_squares, float num_samples) {
+    static double
+    GetLinearGainForTargetAmpRMS(double target_rms_amp, double sum_of_squares, double num_samples) {
         return std::sqrt((num_samples * std::pow(target_rms_amp, 2.0f)) / sum_of_squares);
     }
 
     size_t m_num_frames {};
-    std::vector<float> m_sum_of_squares_channels {};
+    std::vector<double> m_sum_of_squares_channels {};
 };
 
 class PeakGainCalculator : public NormalisationGainCalculator {
   public:
     void RegisterBufferMagnitudes(const AudioFile &audio) override {
-        float max_magnitude = 0;
+        double max_magnitude = 0;
         for (const auto s : audio.interleaved_samples) {
             const auto magnitude = std::abs(s);
             max_magnitude = std::max(max_magnitude, magnitude);
@@ -75,14 +76,14 @@ class PeakGainCalculator : public NormalisationGainCalculator {
         m_max_magnitude = std::max(m_max_magnitude, max_magnitude);
     }
 
-    float GetLargestRegisteredMagnitude() const override { return m_max_magnitude; }
+    double GetLargestRegisteredMagnitude() const override { return m_max_magnitude; }
 
-    float GetGain(float target_max_magnitude) const override {
+    double GetGain(double target_max_magnitude) const override {
         return target_max_magnitude / m_max_magnitude;
     }
 
     const char *GetName() const override { return "Peak"; };
 
   private:
-    float m_max_magnitude;
+    double m_max_magnitude;
 };

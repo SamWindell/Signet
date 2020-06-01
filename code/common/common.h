@@ -42,8 +42,8 @@ constexpr auto MakeArray(T &&... t) -> std::array<V, sizeof...(T)> {
 static constexpr auto half_pi = 1.57079632679f;
 static constexpr auto pi = 3.14159265359f;
 
-inline float DBToAmp(const float d) { return std::pow(10.0f, d / 20.0f); }
-inline float AmpToDB(const float a) { return 20.0f * std::log10(a); }
+inline double DBToAmp(const double d) { return std::pow(10.0, d / 20.0); }
+inline double AmpToDB(const double a) { return 20.0 * std::log10(a); }
 
 inline bool EndsWith(std::string_view str, std::string_view suffix) {
     return suffix.size() <= str.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;

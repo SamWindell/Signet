@@ -11,7 +11,7 @@ TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalc
 
     SUBCASE("full volume sample with full volume target") {
         calc.RegisterBufferMagnitudes(buf);
-        const float magnitude = calc.GetLargestRegisteredMagnitude();
+        const auto magnitude = calc.GetLargestRegisteredMagnitude();
         REQUIRE(calc.GetGain(magnitude) == doctest::Approx(1.0f));
 
         SUBCASE("mulitple buffers") {
@@ -27,14 +27,14 @@ TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalc
             s *= 0.5f;
         }
         calc.RegisterBufferMagnitudes(buf);
-        const float magnitude = calc.GetLargestRegisteredMagnitude();
+        const auto magnitude = calc.GetLargestRegisteredMagnitude();
         REQUIRE(calc.GetGain(magnitude * 2) == doctest::Approx(2.0f));
     }
 
     SUBCASE("full volume sample with half volume target") {
         for (int i = 0; i < 10; ++i) {
             calc.RegisterBufferMagnitudes(buf);
-            const float magnitude = calc.GetLargestRegisteredMagnitude();
+            const auto magnitude = calc.GetLargestRegisteredMagnitude();
             REQUIRE(calc.GetGain(magnitude / 2) == doctest::Approx(0.5f));
         }
     }

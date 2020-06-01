@@ -13,7 +13,7 @@
 
 class ZeroCrossingOffsetter final : public Subcommand {
   public:
-    static size_t FindFrameNearestToZeroInBuffer(const tcb::span<const float> interleaved_buffer,
+    static size_t FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
                                                  const size_t num_frames,
                                                  const unsigned num_channels);
 

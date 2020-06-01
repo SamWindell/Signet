@@ -4,13 +4,13 @@
 
 #include "test_helpers.h"
 
-size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<const float> interleaved_buffer,
+size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
                                                              const size_t num_frames,
                                                              const unsigned num_channels) {
-    float minimum_range = FLT_MAX;
+    double minimum_range = DBL_MAX;
     size_t index_of_min = 0;
     for (size_t frame = 0; frame < num_frames; ++frame) {
-        float frame_distance = 0;
+        double frame_distance = 0;
         for (unsigned channel = 0; channel < num_channels; ++channel) {
             frame_distance += std::abs(interleaved_buffer[frame * num_channels + channel]);
         }
@@ -44,8 +44,8 @@ AudioFile ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(const AudioFi
     std::cout << "Found best approx zero-crossing frame at position " << new_start_frame << "\n";
 
     auto interleaved_samples_new_start_it = input.interleaved_samples.begin() + new_start_frame * 2;
-    std::vector<float> new_interleaved_samples {interleaved_samples_new_start_it,
-                                                input.interleaved_samples.end()};
+    std::vector<double> new_interleaved_samples {interleaved_samples_new_start_it,
+                                                 input.interleaved_samples.end()};
     if (append_skipped_frames_on_end) {
         new_interleaved_samples.insert(new_interleaved_samples.end(), input.interleaved_samples.begin(),
                                        interleaved_samples_new_start_it);
@@ -67,7 +67,7 @@ TEST_CASE("[ZCross Offset]") {
                                                                           buf.num_channels) == 0);
         }
         SUBCASE("finds a zero crossing at pi radians") {
-            tcb::span<const float> span = buf.interleaved_samples;
+            tcb::span<const double> span = buf.interleaved_samples;
             span = span.subspan(buf.NumFrames() / 4);
             REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(span, 60, buf.num_channels) ==
                     buf.NumFrames() / 4);

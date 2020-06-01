@@ -73,7 +73,7 @@ static double GetFade(Fader::Shape shape, double x) {
 static void
 PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
-    const double delta_x = 1.0f / ((double)std::abs(fullvol_frame - silent_frame) + 1);
+    const double delta_x = 1.0 / ((double)std::abs(fullvol_frame - silent_frame) + 1);
     double x = 0;
 
     for (s64 frame = silent_frame; frame != fullvol_frame + increment; frame += increment) {
@@ -107,7 +107,7 @@ TEST_CASE("[Fader] args") {
     AudioFile buf {};
     buf.sample_rate = 100;
     buf.num_channels = 1;
-    buf.interleaved_samples.resize(100, 1.0f);
+    buf.interleaved_samples.resize(100, 1.0);
 
     const auto TestArgs = [&](const std::initializer_list<const char *> args,
                               const size_t expected_fade_in_samples, const size_t expected_fade_out_samples) {
@@ -123,9 +123,9 @@ TEST_CASE("[Fader] args") {
         SUBCASE("audio fades in from 0 to 1") {
             if (fader.HasFadeIn()) {
                 REQUIRE(buf.num_channels == 1);
-                REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0f);
+                REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0);
                 for (size_t i = 0; i < expected_fade_in_samples; ++i) {
-                    REQUIRE(output->interleaved_samples[i] < 1.0f);
+                    REQUIRE(output->interleaved_samples[i] < 1.0);
                 }
             }
         }
@@ -133,11 +133,10 @@ TEST_CASE("[Fader] args") {
         SUBCASE("audio fades out to 0") {
             if (fader.HasFadeOut()) {
                 REQUIRE(buf.num_channels == 1);
-                REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) ==
-                        0.0f);
+                REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) == 0.0);
                 for (size_t i = output->interleaved_samples.size() - expected_fade_out_samples;
                      i < output->interleaved_samples.size(); ++i) {
-                    REQUIRE(output->interleaved_samples[i] < 1.0f);
+                    REQUIRE(output->interleaved_samples[i] < 1.0);
                 }
             }
         }

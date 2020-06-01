@@ -28,7 +28,7 @@ class RMSGainCalculator : public NormalisationGainCalculator {
         for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
             for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
                 const auto sample_index = frame * audio.num_channels + channel;
-                m_sum_of_squares_channels[channel] += std::pow(audio.interleaved_samples[sample_index], 2.0f);
+                m_sum_of_squares_channels[channel] += std::pow(audio.interleaved_samples[sample_index], 2.0);
             }
         }
         m_num_frames += audio.NumFrames();
@@ -37,7 +37,7 @@ class RMSGainCalculator : public NormalisationGainCalculator {
     double GetLargestRegisteredMagnitude() const override {
         double max_rms = 0;
         for (const auto sum_of_squares : m_sum_of_squares_channels) {
-            const auto rms = std::sqrt((1.0f / (double)m_num_frames) * sum_of_squares);
+            const auto rms = std::sqrt((1.0 / (double)m_num_frames) * sum_of_squares);
             max_rms = std::max(max_rms, rms);
         }
         return max_rms;
@@ -58,7 +58,7 @@ class RMSGainCalculator : public NormalisationGainCalculator {
   private:
     static double
     GetLinearGainForTargetAmpRMS(double target_rms_amp, double sum_of_squares, double num_samples) {
-        return std::sqrt((num_samples * std::pow(target_rms_amp, 2.0f)) / sum_of_squares);
+        return std::sqrt((num_samples * std::pow(target_rms_amp, 2.0)) / sum_of_squares);
     }
 
     size_t m_num_frames {};

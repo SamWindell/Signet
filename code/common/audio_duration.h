@@ -17,7 +17,7 @@ class AudioDuration {
         Samples,
     };
 
-    AudioDuration(Unit unit, float value) : m_unit(unit), m_value(value) {}
+    AudioDuration(Unit unit, double value) : m_unit(unit), m_value(value) {}
 
     AudioDuration(const std::string &string) {
         m_unit = *GetUnit(string);
@@ -29,11 +29,11 @@ class AudioDuration {
     }
 
     size_t GetDurationAsFrames(unsigned sample_rate, size_t num_frames) const {
-        float result {};
+        double result {};
         switch (m_unit) {
             case Unit::Seconds: result = sample_rate * m_value; break;
-            case Unit::Milliseconds: result = sample_rate * (m_value / 1000.0f); break;
-            case Unit::Percent: result = num_frames * (std::clamp(m_value, 0.0f, 100.0f) / 100.0f); break;
+            case Unit::Milliseconds: result = sample_rate * (m_value / 1000.0); break;
+            case Unit::Percent: result = num_frames * (std::clamp(m_value, 0.0, 100.0) / 100.0); break;
             case Unit::Samples: result = m_value; break;
             default: REQUIRE(0);
         }
@@ -70,5 +70,5 @@ class AudioDuration {
                                                                         {"%", Unit::Percent},
                                                                         {"smp", Unit::Samples}};
     Unit m_unit {};
-    float m_value {};
+    double m_value {};
 };

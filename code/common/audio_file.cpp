@@ -337,7 +337,7 @@ TEST_CASE("[AudioFile]") {
             REQUIRE(ScaleSampleToSignedInt<s32>(-1, 32) == (-0x80000000ll));
         }
         SUBCASE("unsigned") {
-            const auto s = CreateUnsignedIntSamplesFromFloat<u8>({0.0f, 1.0f}, 8);
+            const auto s = CreateUnsignedIntSamplesFromFloat<u8>({0.0, 1.0}, 8);
             REQUIRE(s.size() == 2);
             REQUIRE(s[0] == 0);
             REQUIRE(s[1] == 255);

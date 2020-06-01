@@ -45,5 +45,5 @@ class ZeroCrossingOffsetter final : public Subcommand {
 
   private:
     bool m_append_skipped_frames_on_end = false;
-    AudioDuration m_search_size {AudioDuration::Unit::Seconds, 1.0f};
+    AudioDuration m_search_size {AudioDuration::Unit::Seconds, 1.0};
 };

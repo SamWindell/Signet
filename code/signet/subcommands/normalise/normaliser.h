@@ -24,6 +24,6 @@ class Normaliser final : public Subcommand {
     std::unique_ptr<NormalisationGainCalculator> m_processor {};
 
     bool m_use_common_gain = false;
-    float m_target_decibels = 0.0f;
+    double m_target_decibels = 0.0;
     bool m_use_rms = false;
 };

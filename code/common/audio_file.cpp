@@ -276,7 +276,7 @@ static bool WriteFlacFile(const ghc::filesystem::path &filename,
     FLAC__stream_encoder_set_sample_rate(encoder.get(), audio_file.sample_rate);
     FLAC__stream_encoder_set_total_samples_estimate(encoder.get(), audio_file.interleaved_samples.size());
 
-    std::unique_ptr<FILE, decltype(&fclose)> f {std::fopen(filename.generic_string().data(), "w+b"), &fclose};
+    auto f = OpenFile(filename, "w+b");
     if (!f) {
         WarningWithNewLine("could not write flac file - could not open file ", filename);
         return false;

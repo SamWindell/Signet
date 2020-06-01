@@ -54,3 +54,11 @@ inline bool StartsWith(std::string_view str, std::string_view prefix) {
 }
 
 bool PatternMatch(std::string_view pattern, std::string_view name);
+
+namespace ghc {
+namespace filesystem {
+class path;
+}
+} // namespace ghc
+
+std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &path, const char *mode);

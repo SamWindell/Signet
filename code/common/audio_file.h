@@ -2,10 +2,14 @@
 #include <optional>
 #include <vector>
 
+#include "doctest.hpp"
 #include "filesystem.hpp"
 
 struct AudioFile {
-    size_t NumFrames() const { return interleaved_samples.size() / num_channels; }
+    size_t NumFrames() const {
+        REQUIRE(num_channels != 0);
+        return interleaved_samples.size() / num_channels;
+    }
     double &GetSample(unsigned channel, size_t frame) {
         return interleaved_samples[frame * num_channels + channel];
     }

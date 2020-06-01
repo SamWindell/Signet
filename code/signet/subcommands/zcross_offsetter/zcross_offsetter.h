@@ -23,6 +23,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
 
     std::optional<AudioFile> Process(const AudioFile &input,
                                      ghc::filesystem::path &output_filepath) override {
+        if (!input.interleaved_samples.size()) return {};
         return CreateSampleOffsetToNearestZCross(input, m_search_size, m_append_skipped_frames_on_end);
     }
 

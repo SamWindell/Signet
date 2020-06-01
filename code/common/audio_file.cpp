@@ -94,7 +94,7 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
     std::vector<UnsignedIntType> result;
     result.reserve(buf.size());
     for (const auto s : buf) {
-        result.push_back(static_cast<UnsignedIntType>(s * ((1 << bits_per_sample) - 1)));
+        result.push_back(static_cast<UnsignedIntType>(((s + 1.0) / 2.0f) * ((1 << bits_per_sample) - 1)));
     }
     return result;
 }
@@ -145,9 +145,9 @@ static bool WriteWaveFile(const ghc::filesystem::path &path,
                 bytes[1] = (u8)(sample >> 8) & 0xFF;
                 bytes[2] = (u8)(sample >> 16) & 0xFF;
 
-                buf.push_back(bytes[0]);
-                buf.push_back(bytes[1]);
-                buf.push_back(bytes[2]);
+                for (const auto byte : bytes) {
+                    buf.push_back(byte);
+                }
             }
             num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
             break;
@@ -331,17 +331,23 @@ bool WriteAudioFile(const ghc::filesystem::path &filename,
 
 TEST_CASE("[AudioFile]") {
     SUBCASE("conversion") {
-        SUBCASE("signed") {
-            REQUIRE(ScaleSampleToSignedInt<s16>(1, 16) == 32767);
-            REQUIRE(ScaleSampleToSignedInt<s16>(-1, 16) == -32768);
-            REQUIRE(ScaleSampleToSignedInt<s32>(1, 32) == 0x7FFFFFFF);
-            REQUIRE(ScaleSampleToSignedInt<s32>(-1, 32) == (-0x80000000ll));
+        SUBCASE("signed single samples") {
+            REQUIRE(ScaleSampleToSignedInt<s16>(1, 16) == INT16_MAX);
+            REQUIRE(ScaleSampleToSignedInt<s16>(-1, 16) == INT16_MIN);
+            REQUIRE(ScaleSampleToSignedInt<s32>(1, 32) == INT32_MAX);
+            REQUIRE(ScaleSampleToSignedInt<s32>(-1, 32) == INT32_MIN);
         }
-        SUBCASE("unsigned") {
-            const auto s = CreateUnsignedIntSamplesFromFloat<u8>({0.0, 1.0}, 8);
+        SUBCASE("to signed buffer") {
+            const auto s = CreateSignedIntSamplesFromFloat<s32>({-1.0, 1.0}, 32);
+            REQUIRE(s.size() == 2);
+            REQUIRE(s[0] == INT32_MIN);
+            REQUIRE(s[1] == INT32_MAX);
+        }
+        SUBCASE("to unsigned buffer") {
+            const auto s = CreateUnsignedIntSamplesFromFloat<u8>({-1.0, 1.0}, 8);
             REQUIRE(s.size() == 2);
             REQUIRE(s[0] == 0);
-            REQUIRE(s[1] == 255);
+            REQUIRE(s[1] == UINT8_MAX);
         }
     }
 

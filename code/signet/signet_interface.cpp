@@ -152,11 +152,6 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
-        SUBCASE("match all WAVs by using a wildcard") {
-            const auto args = TestHelpers::StringToArgs {"signet *.wav norm -3"};
-            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
-        }
-
         SUBCASE("when the input path is a pattern there cannot be an output file") {
             const auto args = TestHelpers::StringToArgs {"signet test-folder/*.wav output.wav norm -3"};
             REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));

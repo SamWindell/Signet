@@ -1,6 +1,7 @@
 #pragma once
 
 #include "audio_file.h"
+#include "r8brain-resampler/CDSPResampler.h"
 #include "signet_interface.h"
 
 class Converter final : public Subcommand {

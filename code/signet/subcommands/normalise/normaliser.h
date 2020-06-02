@@ -9,7 +9,7 @@ class Normaliser final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     bool Process(AudioFile &input) override;
-    void Run(SignetInterface &signet) override;
+    void Run(SubcommandProcessor &processor) override;
 
   private:
     bool PerformNormalisation(AudioFile &input_audio) const;

@@ -2,15 +2,22 @@
 #include <optional>
 
 #include "CLI11.hpp"
-#include "filesystem.hpp"
 
 struct AudioFile;
-class SignetInterface;
+
+class Subcommand;
+
+class SubcommandProcessor {
+  public:
+    virtual ~SubcommandProcessor() {}
+    virtual void ProcessAllFiles(Subcommand &subcommand) = 0;
+    virtual bool IsProcessingMultipleFiles() const = 0;
+};
 
 class Subcommand {
   public:
     virtual ~Subcommand() {}
-    virtual bool Process(AudioFile &input) = 0;
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
-    virtual void Run(SignetInterface &) = 0;
+    virtual void Run(SubcommandProcessor &) = 0;
+    virtual bool Process(AudioFile &input) = 0;
 };

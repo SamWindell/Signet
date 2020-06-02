@@ -1,8 +1,22 @@
 #include "converter.h"
 
+#include "magic_enum.hpp"
 #include "r8brain-resampler/CDSPResampler.h"
 
 #include "test_helpers.h"
+
+void Converter::Run(SubcommandProcessor &processor) {
+    m_files_can_be_converted = true;
+    m_mode = Mode::ValidatingCorrectFormat;
+    processor.ProcessAllFiles(*this);
+
+    if (m_files_can_be_converted) {
+        m_mode = Mode::Converting;
+        processor.ProcessAllFiles(*this);
+    } else {
+        WarningWithNewLine("one or more files cannot be converted therefore no conversion will take place");
+    }
+}
 
 CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
     auto convert = app.add_subcommand("convert", "Convert the bit depth and sample rate.");
@@ -11,47 +25,61 @@ CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
         ->check(CLI::Range(1llu, 4300000000llu));
     convert->add_option("bit_depth", m_bit_depth, "The target bit depth")
         ->required()
-        ->check(CLI::IsMember({4, 8, 11, 12, 16, 18, 20, 24, 32, 48, 64}));
+        ->check(CLI::IsMember({8, 16, 20, 24, 32, 64}));
     return convert;
 }
 
 bool Converter::Process(AudioFile &input) {
-    if (!input.interleaved_samples.size()) return false;
-    if (m_bit_depth == input.bits_per_sample && m_sample_rate == input.sample_rate) return false;
+    switch (m_mode) {
+        case Mode::ValidatingCorrectFormat: {
+            if (!CanFileBeConvertedToBitDepth(input, m_bit_depth)) {
+                WarningWithNewLine("files of type ", magic_enum::enum_name(input.format),
+                                   " cannot be converted to a bit depth of ", m_bit_depth);
+                m_files_can_be_converted = false;
+            }
+            return false;
+        }
+        case Mode::Converting: {
+            if (!input.interleaved_samples.size()) return false;
+            if (m_bit_depth == input.bits_per_sample && m_sample_rate == input.sample_rate) return false;
+            input.bits_per_sample = m_bit_depth;
+            if (input.sample_rate == m_sample_rate) {
+                input.sample_rate = m_sample_rate;
+                return true;
+            }
 
-    input.bits_per_sample = m_bit_depth;
-    if (input.sample_rate == m_sample_rate) {
-        input.sample_rate = m_sample_rate;
-        return true;
+            const auto result_num_frames =
+                (usize)(input.NumFrames() * ((double)m_sample_rate / (double)input.sample_rate));
+            std::vector<double> result_interleaved_samples(input.num_channels * result_num_frames);
+
+            r8b::CDSPResampler24 resampler(input.sample_rate, m_sample_rate, (int)input.NumFrames());
+
+            std::vector<double> channel_buffer;
+            channel_buffer.reserve(input.NumFrames());
+            for (unsigned chan = 0; chan < input.num_channels; ++chan) {
+                channel_buffer.clear();
+                for (size_t frame = 0; frame < input.NumFrames(); ++frame) {
+                    channel_buffer.push_back(input.GetSample(chan, frame));
+                }
+
+                std::vector<double> output_buffer(result_num_frames);
+                resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
+                                  (int)result_num_frames);
+                for (size_t frame = 0; frame < result_num_frames; ++frame) {
+                    result_interleaved_samples[frame * input.num_channels + chan] = output_buffer[frame];
+                }
+
+                resampler.clear();
+            }
+
+            input.sample_rate = m_sample_rate;
+            input.interleaved_samples = result_interleaved_samples;
+            return true;
+        }
     }
 
-    const auto result_num_frames =
-        (usize)(input.NumFrames() * ((double)m_sample_rate / (double)input.sample_rate));
-    std::vector<double> result_interleaved_samples(input.num_channels * result_num_frames);
-
-    r8b::CDSPResampler24 resampler(input.sample_rate, m_sample_rate, (int)input.NumFrames());
-
-    std::vector<double> channel_buffer;
-    channel_buffer.reserve(input.NumFrames());
-    for (unsigned chan = 0; chan < input.num_channels; ++chan) {
-        channel_buffer.clear();
-        for (size_t frame = 0; frame < input.NumFrames(); ++frame) {
-            channel_buffer.push_back(input.GetSample(chan, frame));
-        }
-
-        std::vector<double> output_buffer(result_num_frames);
-        resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
-                          (int)result_num_frames);
-        for (size_t frame = 0; frame < result_num_frames; ++frame) {
-            result_interleaved_samples[frame * input.num_channels + chan] = output_buffer[frame];
-        }
-
-        resampler.clear();
-    }
-
-    input.sample_rate = m_sample_rate;
-    input.interleaved_samples = result_interleaved_samples;
-    return true;
+    REQUIRE(false);
+    return false;
 }
 
 TEST_CASE("[Converter]") {
@@ -119,13 +147,13 @@ TEST_CASE("[Converter]") {
             }
 
             SUBCASE("resample from all common sample rates") {
-                const auto valid_sample_rates = {
+                const auto sample_rates = {
                     8000,  11025, 16000, 22050, 32000, 37800, 44056, 44100,
                     47250, 48000, 50000, 50400, 64000, 88200, 96000, 176400,
                 };
 
-                for (const auto s1 : valid_sample_rates) {
-                    for (const auto s2 : valid_sample_rates) {
+                for (const auto s1 : sample_rates) {
+                    for (const auto s2 : sample_rates) {
                         PerformResampling(s1, s2, 1, true);
                     }
                 }

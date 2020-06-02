@@ -28,20 +28,20 @@ bool Normaliser::Process(AudioFile &input) {
     return false;
 }
 
-void Normaliser::Run(SignetInterface &signet) {
+void Normaliser::Run(SubcommandProcessor &processor) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {
         m_processor = std::make_unique<PeakGainCalculator>();
     }
 
-    if (signet.IsProcessingMultipleFiles() && m_use_common_gain) {
+    if (processor.IsProcessingMultipleFiles() && m_use_common_gain) {
         m_current_stage = ProcessingStage::FindingCommonGain;
-        signet.ProcessAllFiles(*this);
+        processor.ProcessAllFiles(*this);
     }
 
     m_current_stage = ProcessingStage::ApplyingGain;
-    signet.ProcessAllFiles(*this);
+    processor.ProcessAllFiles(*this);
 }
 
 bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {

@@ -3,6 +3,7 @@
 
 #include "CLI11.hpp"
 #include "audio_file.h"
+#include "subcommand.h"
 
 namespace TestHelpers {
 
@@ -36,14 +37,34 @@ class StringToArgs {
     std::vector<std::string> args;
 };
 
-template <typename Subcommand>
+class TestSubcommandProcessor : public SubcommandProcessor {
+  public:
+    TestSubcommandProcessor(const AudioFile &buf, Subcommand &subcommand) : m_buf(buf) {
+        subcommand.Run(*this);
+    }
+    void ProcessAllFiles(Subcommand &subcommand) override { m_processed = subcommand.Process(m_buf); }
+    bool IsProcessingMultipleFiles() const override { return false; }
+
+    std::optional<AudioFile> GetBuf() const {
+        if (m_processed) {
+            return m_buf;
+        }
+        return {};
+    }
+
+  private:
+    bool m_processed {false};
+    AudioFile m_buf {};
+};
+
+template <typename SubcommandType>
 std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
                                                      const AudioFile &buf,
                                                      bool require_throws = false) {
     std::string whole_args = "signet-test " + std::string(subcommand_and_args_string);
     const auto args = TestHelpers::StringToArgs {whole_args};
 
-    Subcommand subcommand {};
+    SubcommandType subcommand {};
     CLI::App app;
     subcommand.CreateSubcommandCLI(app);
     try {
@@ -57,12 +78,8 @@ std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subc
         }
     }
 
-    AudioFile result = buf;
-    if (subcommand.Process(result)) {
-        return result;
-    } else {
-        return {};
-    }
+    TestSubcommandProcessor processor(buf, subcommand);
+    return processor.GetBuf();
 }
 
 } // namespace TestHelpers

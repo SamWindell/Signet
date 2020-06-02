@@ -66,7 +66,8 @@ if (WIN32)
         /wd4189
         /wd5054
         /wd4702
-        /wd4324)
+        /wd4324
+        /wd4127)
     set(FULL_PATH_OF_SOURCE_CODE "/FC")
     target_compile_options(common PUBLIC /diagnostics:column ${FULL_PATH_OF_SOURCE_CODE}
                                          ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})

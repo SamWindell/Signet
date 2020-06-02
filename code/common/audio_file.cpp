@@ -14,6 +14,24 @@
 #include "common.h"
 #include "test_helpers.h"
 
+static constexpr unsigned valid_wave_bit_depths[] = {8, 16, 24, 32, 64};
+static constexpr unsigned valid_flac_bit_depths[] = {8, 16, 20, 24};
+
+bool CanFileBeConvertedToBitDepth(const AudioFile &file, const unsigned bit_depth) {
+    switch (file.format) {
+        case AudioFileFormat::Wave: {
+            const auto &arr = valid_wave_bit_depths;
+            return std::find(std::begin(arr), std::end(arr), bit_depth) != std::end(arr);
+        }
+        case AudioFileFormat::Flac: {
+            const auto &arr = valid_flac_bit_depths;
+            return std::find(std::begin(arr), std::end(arr), bit_depth) != std::end(arr);
+        }
+        default: REQUIRE(false);
+    }
+    return false;
+}
+
 std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
     std::cout << "Reading file " << path << "\n";
     AudioFile result {};
@@ -38,6 +56,7 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
             WarningWithNewLine("failed to get all the frames from file ", path);
             return {};
         }
+        result.format = AudioFileFormat::Wave;
     } else if (ext == ".flac") {
         std::unique_ptr<drflac, decltype(&drflac_close)> flac(
             drflac_open_file(path.generic_string().data(), nullptr), &drflac_close);
@@ -57,6 +76,7 @@ std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
             WarningWithNewLine("failed to get all the frames from file ", path);
             return {};
         }
+        result.format = AudioFileFormat::Flac;
     } else {
         WarningWithNewLine("file ", path, " is not a WAV or a FLAC");
         return {};
@@ -82,11 +102,17 @@ std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<dou
                                                            const unsigned bits_per_sample) {
     std::vector<SignedIntType> result;
     result.reserve(buf.size());
+    bool buffer_clips = false;
     for (const auto s : buf) {
-        assert(s >= -1);
-        assert(s <= 1);
+        if (s < -1 || s > 1) buffer_clips = true;
         result.push_back(ScaleSampleToSignedInt<SignedIntType>(s, bits_per_sample));
     }
+
+    if (buffer_clips) {
+        WarningWithNewLine(
+            "this audio file contains samples outside of the valid range and therefore might be distorted");
+    }
+
     return result;
 }
 
@@ -95,12 +121,17 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
                                                                const unsigned bits_per_sample) {
     std::vector<UnsignedIntType> result;
     result.reserve(buf.size());
+    bool buffer_clips = false;
     for (const auto s : buf) {
-        assert(s >= -1);
-        assert(s <= 1);
         const auto scaled_val = ((s + 1.0) / 2.0f) * ((1 << bits_per_sample) - 1);
         result.push_back(static_cast<UnsignedIntType>(scaled_val));
     }
+
+    if (buffer_clips) {
+        WarningWithNewLine(
+            "this audio file contains samples outside of the valid range and therefore might be distorted");
+    }
+
     return result;
 }
 

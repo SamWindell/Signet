@@ -1,8 +1,8 @@
 #pragma once
 
 #include "audio_duration.h"
-#include "signet_interface.h"
 #include "span.hpp"
+#include "subcommand.h"
 
 class Fader final : public Subcommand {
   public:
@@ -10,7 +10,7 @@ class Fader final : public Subcommand {
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     bool Process(AudioFile &input) override;
-    void Run(SignetInterface &signet) override { signet.ProcessAllFiles(*this); }
+    void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
 
   private:
     Shape m_fade_out_shape = Shape::Sine;

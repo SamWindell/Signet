@@ -12,15 +12,13 @@
 #include "pathname_expansion.h"
 #include "subcommand.h"
 
-class Subcommand;
-
-class SignetInterface {
+class SignetInterface final : public SubcommandProcessor {
   public:
     SignetInterface();
 
     int Main(const int argc, const char *const argv[]);
-    void ProcessAllFiles(Subcommand &subcommand);
-    bool IsProcessingMultipleFiles() const { return !m_input_filepath_pattern.IsSingleFile(); }
+    void ProcessAllFiles(Subcommand &subcommand) override;
+    bool IsProcessingMultipleFiles() const override { return !m_input_filepath_pattern.IsSingleFile(); }
 
   private:
     std::vector<std::unique_ptr<Subcommand>> m_subcommands {};

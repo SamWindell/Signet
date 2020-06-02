@@ -13,13 +13,14 @@ class Normaliser final : public Subcommand {
 
   private:
     bool PerformNormalisation(AudioFile &input_audio) const;
-    void ReadFileForCommonGain(const AudioFile &audio);
+    bool ReadFileForCommonGain(const AudioFile &audio);
 
     enum class ProcessingStage {
         FindingCommonGain,
         ApplyingGain,
     };
     ProcessingStage m_current_stage {};
+    bool m_successfully_found_common_gain {};
 
     std::unique_ptr<NormalisationGainCalculator> m_processor {};
 

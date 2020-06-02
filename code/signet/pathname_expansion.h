@@ -166,6 +166,8 @@ class ExpandedPathnames {
 
     const CanonicalPathSet &GetAllMatchedFilenames() const { return m_all_matched_filesnames; }
 
+    std::string GetWholePattern() const { return m_whole_list; }
+
   private:
     CanonicalPathSet m_all_matched_filesnames {};
     std::string m_whole_list;

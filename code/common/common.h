@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <string_view>
 
+#include "rang.hpp"
+
 using u8 = uint8_t;
 using s8 = int8_t;
 using u16 = uint16_t;
@@ -18,17 +20,16 @@ using b8 = s8;
 using usize = size_t;
 
 template <typename Arg, typename... Args>
-void FatalErrorWithNewLine(Arg &&arg, Args &&... args) {
-    std::cout << "ERROR: ";
+void ErrorWithNewLine(Arg &&arg, Args &&... args) {
+    std::cout << rang::fg::red << "ERROR: " << rang::fg::reset;
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
-    throw std::runtime_error("Fatal error");
 }
 
 template <typename Arg, typename... Args>
 void WarningWithNewLine(Arg &&arg, Args &&... args) {
-    std::cout << "WARNING: ";
+    std::cout << rang::fg::yellow << "WARNING: " << rang::fg::reset;
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";

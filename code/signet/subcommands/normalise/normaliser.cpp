@@ -17,7 +17,9 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
 bool Normaliser::Process(AudioFile &input) {
     switch (m_current_stage) {
         case ProcessingStage::FindingCommonGain: {
-            ReadFileForCommonGain(input);
+            if (!ReadFileForCommonGain(input)) {
+                m_successfully_found_common_gain = false;
+            }
             return false;
         }
         case ProcessingStage::ApplyingGain: {
@@ -35,9 +37,16 @@ void Normaliser::Run(SubcommandProcessor &processor) {
         m_processor = std::make_unique<PeakGainCalculator>();
     }
 
+    m_successfully_found_common_gain = true;
     if (processor.IsProcessingMultipleFiles() && m_use_common_gain) {
         m_current_stage = ProcessingStage::FindingCommonGain;
         processor.ProcessAllFiles(*this);
+    }
+
+    if (!m_successfully_found_common_gain) {
+        ErrorWithNewLine(
+            "unable to perform normalisation because the common gain was not successfully found");
+        return;
     }
 
     m_current_stage = ProcessingStage::ApplyingGain;
@@ -59,6 +68,6 @@ bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
     return true;
 }
 
-void Normaliser::ReadFileForCommonGain(const AudioFile &audio) {
-    m_processor->RegisterBufferMagnitudes(audio);
+bool Normaliser::ReadFileForCommonGain(const AudioFile &audio) {
+    return m_processor->RegisterBufferMagnitudes(audio);
 }

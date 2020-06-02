@@ -20,7 +20,6 @@ SignetInterface::SignetInterface() {
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
-    std::cout << "\n\n";
     CLI::App app {"Tools for processing audio files"};
 
     app.require_subcommand();
@@ -51,24 +50,26 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     if (IsProcessingMultipleFiles()) {
         if (m_output_filepath) {
-            FatalErrorWithNewLine(
-                "the input path is a directory or pattern, there must be no output filepath");
+            ErrorWithNewLine("the input path is a directory or pattern, there must be no output filepath");
+            return 1;
         }
     } else {
         if (m_output_filepath) {
             if (ghc::filesystem::is_directory(*m_output_filepath)) {
-                FatalErrorWithNewLine(
-                    "output filepath cannot be a directory if the input filepath is a file");
+                ErrorWithNewLine("output filepath cannot be a directory if the input filepath is a file");
+                return 1;
             } else if (m_output_filepath->extension() != ".wav" &&
                        m_output_filepath->extension() != ".flac") {
-                FatalErrorWithNewLine("only WAV files can be written");
+                ErrorWithNewLine("only WAV files can be written");
+                return 1;
             }
         }
     }
 
     m_input_filepath_pattern.BuildAllMatchesFilenames();
     if (!m_input_filepath_pattern.GetAllMatchedFilenames().Size()) {
-        WarningWithNewLine("There are no matching files for this input\n");
+        ErrorWithNewLine("There are no matching files for the pattern ",
+                         m_input_filepath_pattern.GetWholePattern());
         return 1;
     }
 
@@ -102,7 +103,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             }
 
             if (!WriteAudioFile(filepath, file)) {
-                FatalErrorWithNewLine("could not write the wave file ", filepath);
+                ErrorWithNewLine("could not write the wave file ", filepath);
             }
         }
     }
@@ -144,13 +145,13 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("single file with single output that is not a wav or flac") {
             const auto args =
                 TestHelpers::StringToArgs {"signet " + in_file + " test-folder/test-out.ogg fade in 50smp"};
-            REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));
+            REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
         SUBCASE("when the input file is a single file the output cannot be a directory") {
             const auto args =
                 TestHelpers::StringToArgs {"signet test-folder/test-out.wav test-folder norm -3"};
-            REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));
+            REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
         SUBCASE("match all WAVs in a dir by using a wildcard") {
@@ -160,7 +161,7 @@ TEST_CASE("[SignetInterface]") {
 
         SUBCASE("when the input path is a pattern there cannot be an output file") {
             const auto args = TestHelpers::StringToArgs {"signet test-folder/*.wav output.wav norm -3"};
-            REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));
+            REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
         SUBCASE("when input path is a patternless directory scan all files in that") {

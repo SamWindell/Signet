@@ -9,7 +9,7 @@
 class NormalisationGainCalculator {
   public:
     virtual ~NormalisationGainCalculator() {}
-    virtual void RegisterBufferMagnitudes(const AudioFile &audio) = 0;
+    virtual bool RegisterBufferMagnitudes(const AudioFile &audio) = 0;
     virtual double GetGain(double target_amp) const = 0;
     virtual const char *GetName() const = 0;
     virtual double GetLargestRegisteredMagnitude() const = 0;
@@ -17,13 +17,14 @@ class NormalisationGainCalculator {
 
 class RMSGainCalculator : public NormalisationGainCalculator {
   public:
-    void RegisterBufferMagnitudes(const AudioFile &audio) override {
+    bool RegisterBufferMagnitudes(const AudioFile &audio) override {
         if (!m_sum_of_squares_channels.size()) {
             m_sum_of_squares_channels.resize(audio.num_channels);
         }
         if (m_sum_of_squares_channels.size() != audio.num_channels) {
-            FatalErrorWithNewLine("audio file has a different number of channels to a previous one - for RMS "
-                                  "normalisation, all files must have the same number of channels");
+            ErrorWithNewLine("audio file has a different number of channels to a previous one - for RMS "
+                             "normalisation, all files must have the same number of channels");
+            return false;
         }
         for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
             for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
@@ -32,6 +33,7 @@ class RMSGainCalculator : public NormalisationGainCalculator {
             }
         }
         m_num_frames += audio.NumFrames();
+        return true;
     }
 
     double GetLargestRegisteredMagnitude() const override {
@@ -67,13 +69,14 @@ class RMSGainCalculator : public NormalisationGainCalculator {
 
 class PeakGainCalculator : public NormalisationGainCalculator {
   public:
-    void RegisterBufferMagnitudes(const AudioFile &audio) override {
+    bool RegisterBufferMagnitudes(const AudioFile &audio) override {
         double max_magnitude = 0;
         for (const auto s : audio.interleaved_samples) {
             const auto magnitude = std::abs(s);
             max_magnitude = std::max(max_magnitude, magnitude);
         }
         m_max_magnitude = std::max(m_max_magnitude, max_magnitude);
+        return true;
     }
 
     double GetLargestRegisteredMagnitude() const override { return m_max_magnitude; }

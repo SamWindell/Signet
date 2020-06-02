@@ -123,6 +123,7 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
     result.reserve(buf.size());
     bool buffer_clips = false;
     for (const auto s : buf) {
+        if (s < -1 || s > 1) buffer_clips = true;
         const auto scaled_val = ((s + 1.0) / 2.0f) * ((1 << bits_per_sample) - 1);
         result.push_back(static_cast<UnsignedIntType>(scaled_val));
     }

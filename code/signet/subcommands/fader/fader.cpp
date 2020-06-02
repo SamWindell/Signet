@@ -38,9 +38,12 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     return fade;
 }
 
-static double GetFade(Fader::Shape shape, double x) {
-    if (x <= 0) return 0;
-    if (x >= 1) return 1;
+static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 size) {
+    REQUIRE(size);
+    if (x_index == 0) return 0;
+    if (x_index == size) return 1;
+
+    const double x = (1.0 / (double)size) * x_index;
     static constexpr double silent_db = -90;
     static constexpr double range_db = -silent_db;
     switch (shape) {
@@ -72,19 +75,20 @@ static double GetFade(Fader::Shape shape, double x) {
 static void
 PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
-    const double delta_x = 1.0 / ((double)std::abs(fullvol_frame - silent_frame));
+    const auto size = std::abs(fullvol_frame - silent_frame);
 
-    double x = 0;
-    for (s64 frame = silent_frame; frame != fullvol_frame + increment; frame += increment) {
-        const auto gain = GetFade(shape, x);
+    s64 pos = 0;
+    for (s64 frame = silent_frame; frame != fullvol_frame; frame += increment) {
+        const auto gain = GetFade(shape, pos++, size);
         for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
             audio.GetSample(channel, frame) *= gain;
         }
-        x += delta_x;
     }
 }
 
 std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
+    if (!input.interleaved_samples.size()) return {};
+
     AudioFile output = input;
     if (m_fade_in_duration) {
         const auto fade_in_frames =
@@ -95,7 +99,7 @@ std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem:
     if (m_fade_out_duration) {
         const auto fade_out_frames =
             m_fade_out_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames());
-        const auto last = std::max<s64>(0, (s64)output.NumFrames() - 1);
+        const auto last = (s64)output.NumFrames() - 1;
         const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
         PerformFade(output, last, start_frame, m_fade_out_shape);
     }
@@ -110,31 +114,28 @@ TEST_CASE("[Fader]") {
     buf.bits_per_sample = 16;
 
     SUBCASE("fade calculation") {
-        auto CheckRegion = [&](const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
-            CAPTURE(silent_frame);
-            CAPTURE(fullvol_frame);
-            PerformFade(buf, silent_frame, fullvol_frame, shape);
-            REQUIRE(buf.interleaved_samples[silent_frame] == doctest::Approx(0.0));
-            REQUIRE(buf.interleaved_samples[fullvol_frame] == doctest::Approx(1.0));
-            for (s64 i = std::min(silent_frame, fullvol_frame) + 1;
-                 i < std::max(fullvol_frame, silent_frame) - 1; ++i) {
-                REQUIRE(buf.interleaved_samples[i] > 0);
-                REQUIRE(buf.interleaved_samples[i] < 1);
+        const auto CheckRegion = [&](const s64 silent_frame, const s64 fullvol_frame) {
+            for (const auto &shape : magic_enum::enum_values<Fader::Shape>()) {
+                CAPTURE(silent_frame);
+                CAPTURE(fullvol_frame);
+                PerformFade(buf, silent_frame, fullvol_frame, shape);
+                REQUIRE(buf.interleaved_samples[silent_frame] == 0.0);
+                REQUIRE(buf.interleaved_samples[fullvol_frame] == 1.0);
+                for (s64 i = std::min(silent_frame, fullvol_frame) + 1;
+                     i < std::max(fullvol_frame, silent_frame) - 1; ++i) {
+                    REQUIRE(buf.interleaved_samples[i] > 0);
+                    REQUIRE(buf.interleaved_samples[i] < 1);
+                }
             }
         };
 
-        SUBCASE("") { CheckRegion(0, 10, Fader::Shape::Linear); }
-        SUBCASE("") { CheckRegion(10, 0, Fader::Shape::Linear); }
-        SUBCASE("") { CheckRegion(0, 99, Fader::Shape::Linear); }
-        SUBCASE("") { CheckRegion(99, 0, Fader::Shape::Linear); }
-        SUBCASE("") { CheckRegion(0, 10, Fader::Shape::Sqrt); }
-        SUBCASE("") { CheckRegion(10, 0, Fader::Shape::Sqrt); }
-        SUBCASE("") { CheckRegion(0, 99, Fader::Shape::Sqrt); }
-        SUBCASE("") { CheckRegion(99, 0, Fader::Shape::Sqrt); }
+        SUBCASE("forward partial") { CheckRegion(0, 10); }
+        SUBCASE("backward partial") { CheckRegion(10, 0); }
+        SUBCASE("forward whole") { CheckRegion(0, 99); }
+        SUBCASE("backward whole") { CheckRegion(99, 0); }
     }
 
     SUBCASE("subcommand") {
-
         const std::string dir = "fader-test-files";
         if (!ghc::filesystem::is_directory(dir)) {
             ghc::filesystem::create_directory(dir);
@@ -142,8 +143,8 @@ TEST_CASE("[Fader]") {
 
         const auto TestArgs = [&](std::string args, const size_t expected_fade_in_samples,
                                   const size_t expected_fade_out_samples) {
-            auto output = TestHelpers::ProcessBufferWithSubcommand<Fader>(args, buf);
             CAPTURE(args);
+            auto output = TestHelpers::ProcessBufferWithSubcommand<Fader>(args, buf);
             REQUIRE(output);
 
             SUBCASE("audio fades in from 0 to 1") {
@@ -184,9 +185,9 @@ TEST_CASE("[Fader]") {
         const auto TestSuite = [&](auto shape) {
             const std::string shape_str {shape};
             CAPTURE(shape_str);
-            TestArgs("fade out 10smp " + shape_str + " in 10smp" + shape_str, 10, 10);
-            TestArgs("fade out 1smp " + shape_str + " in 1smp" + shape_str, 1, 1);
-            TestArgs("fade out 60smp " + shape_str + " in 60smp" + shape_str, 60, 60);
+            TestArgs("fade out 10smp " + shape_str + " in 10smp " + shape_str, 10, 10);
+            TestArgs("fade out 1smp " + shape_str + " in 1smp " + shape_str, 1, 1);
+            TestArgs("fade out 60smp " + shape_str + " in 60smp " + shape_str, 60, 60);
             TestArgs("fade in 200smp " + shape_str, 100, 0);
             TestArgs("fade out 200smp " + shape_str, 0, 100);
         };

@@ -17,13 +17,12 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                                  const size_t num_frames,
                                                  const unsigned num_channels);
 
-    static AudioFile CreateSampleOffsetToNearestZCross(const AudioFile &input,
-                                                       const AudioDuration &search_size,
-                                                       const bool append_skipped_frames_on_end);
+    static bool CreateSampleOffsetToNearestZCross(AudioFile &input,
+                                                  const AudioDuration &search_size,
+                                                  const bool append_skipped_frames_on_end);
 
-    std::optional<AudioFile> Process(const AudioFile &input,
-                                     ghc::filesystem::path &output_filepath) override {
-        if (!input.interleaved_samples.size()) return {};
+    bool Process(AudioFile &input) override {
+        if (!input.interleaved_samples.size()) return false;
         return CreateSampleOffsetToNearestZCross(input, m_search_size, m_append_skipped_frames_on_end);
     }
 

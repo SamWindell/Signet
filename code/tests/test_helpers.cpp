@@ -13,7 +13,7 @@ AudioFile CreateSingleOscillationSineWave(const unsigned num_channels,
     buf.interleaved_samples.resize(num_frames * num_channels);
     for (size_t frame = 0; frame < num_frames; ++frame) {
         for (unsigned channel = 0; channel < num_channels; ++channel) {
-            constexpr float two_pi = 6.28318530718f;
+            constexpr double two_pi = 6.28318530718;
             buf.GetSample(channel, frame) = std::sin(frame * (two_pi / num_frames));
         }
     }
@@ -22,8 +22,8 @@ AudioFile CreateSingleOscillationSineWave(const unsigned num_channels,
 
 AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
                                     const unsigned sample_rate,
-                                    const float length_seconds,
-                                    const float frequency_hz) {
+                                    const double length_seconds,
+                                    const double frequency_hz) {
     const auto num_frames = (size_t)(length_seconds * sample_rate);
     const auto oscillations_per_sec = frequency_hz;
     const auto oscillations_in_whole = oscillations_per_sec * length_seconds;
@@ -34,9 +34,9 @@ AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
     buf.num_channels = num_channels;
     buf.sample_rate = sample_rate;
     buf.interleaved_samples.resize(num_frames * num_channels);
-    float phase = -pi * 2;
+    double phase = -pi * 2;
     for (size_t frame = 0; frame < num_frames; ++frame) {
-        const float value = (float)std::sin(phase);
+        const double value = (double)std::sin(phase);
         phase += taus_per_sample;
         for (unsigned channel = 0; channel < num_channels; ++channel) {
             buf.GetSample(channel, frame) = value;

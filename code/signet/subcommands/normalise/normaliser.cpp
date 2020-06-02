@@ -4,28 +4,28 @@
 
 CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand("norm", "Normalise a sample to a certain level");
-    norm->add_option("target_decibels", m_target_decibels,
+    norm->add_option("target-decibels", m_target_decibels,
                      "The target level in decibels to convert the sample(s) to")
         ->required()
         ->check(CLI::Range(-200, 0));
-    norm->add_flag("-c,--common_gain", m_use_common_gain,
+    norm->add_flag("-c,--common-gain", m_use_common_gain,
                    "When using on a directory, amplifiy all the samples by the same amount");
     norm->add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");
     return norm;
 }
 
-std::optional<AudioFile> Normaliser::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
+bool Normaliser::Process(AudioFile &input) {
     switch (m_current_stage) {
         case ProcessingStage::FindingCommonGain: {
             ReadFileForCommonGain(input);
-            return {};
+            return false;
         }
         case ProcessingStage::ApplyingGain: {
             return PerformNormalisation(input);
         }
         default: REQUIRE(0);
     }
-    return {};
+    return false;
 }
 
 void Normaliser::Run(SignetInterface &signet) {
@@ -44,7 +44,7 @@ void Normaliser::Run(SignetInterface &signet) {
     signet.ProcessAllFiles(*this);
 }
 
-AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
+bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
     if (!m_use_common_gain) {
         m_processor->RegisterBufferMagnitudes(input_audio);
     }
@@ -52,12 +52,11 @@ AudioFile Normaliser::PerformNormalisation(const AudioFile &input_audio) const {
 
     std::cout << "Applying a gain of " << gain << "\n";
 
-    AudioFile result = input_audio;
-    for (auto &s : result.interleaved_samples) {
+    for (auto &s : input_audio.interleaved_samples) {
         s *= gain;
     }
 
-    return result;
+    return true;
 }
 
 void Normaliser::ReadFileForCommonGain(const AudioFile &audio) {

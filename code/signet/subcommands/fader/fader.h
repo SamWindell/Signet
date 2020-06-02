@@ -9,7 +9,7 @@ class Fader final : public Subcommand {
     enum class Shape { Linear, Sine, SCurve, Log, Exp, Sqrt };
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
+    bool Process(AudioFile &input) override;
     void Run(SignetInterface &signet) override { signet.ProcessAllFiles(*this); }
 
   private:

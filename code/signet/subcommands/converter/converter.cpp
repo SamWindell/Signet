@@ -15,22 +15,19 @@ CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
     return convert;
 }
 
-std::optional<AudioFile> Converter::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
-    if (!input.interleaved_samples.size()) return {};
+bool Converter::Process(AudioFile &input) {
+    if (!input.interleaved_samples.size()) return false;
+    if (m_bit_depth == input.bits_per_sample && m_sample_rate == input.sample_rate) return false;
 
-    AudioFile result;
-    result.bits_per_sample = m_bit_depth;
-    result.num_channels = input.num_channels;
-    if (result.sample_rate == m_sample_rate) {
-        result.sample_rate = m_sample_rate;
-        result.interleaved_samples = input.interleaved_samples;
-        return result;
+    input.bits_per_sample = m_bit_depth;
+    if (input.sample_rate == m_sample_rate) {
+        input.sample_rate = m_sample_rate;
+        return true;
     }
-    result.sample_rate = m_sample_rate;
 
     const auto result_num_frames =
         (usize)(input.NumFrames() * ((double)m_sample_rate / (double)input.sample_rate));
-    result.interleaved_samples.resize(input.num_channels * result_num_frames);
+    std::vector<double> result_interleaved_samples(input.num_channels * result_num_frames);
 
     r8b::CDSPResampler24 resampler(input.sample_rate, m_sample_rate, (int)input.NumFrames());
 
@@ -46,13 +43,15 @@ std::optional<AudioFile> Converter::Process(const AudioFile &input, ghc::filesys
         resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
                           (int)result_num_frames);
         for (size_t frame = 0; frame < result_num_frames; ++frame) {
-            result.GetSample(chan, frame) = output_buffer[frame];
+            result_interleaved_samples[frame * input.num_channels + chan] = output_buffer[frame];
         }
 
         resampler.clear();
     }
 
-    return result;
+    input.sample_rate = m_sample_rate;
+    input.interleaved_samples = result_interleaved_samples;
+    return true;
 }
 
 TEST_CASE("[Converter]") {
@@ -97,13 +96,15 @@ TEST_CASE("[Converter]") {
                 const auto target_str = std::to_string(target_sample_rate);
                 const auto out =
                     TestHelpers::ProcessBufferWithSubcommand<Converter>("convert " + target_str + " 16", buf);
-                REQUIRE(out);
-                REQUIRE(out->sample_rate == target_sample_rate);
-                REQUIRE(out->bits_per_sample == 16);
-                const auto result_num_frames =
-                    (usize)(buf.NumFrames() * ((double)out->sample_rate / (double)buf.sample_rate));
-                REQUIRE(out->NumFrames() == result_num_frames);
-                REQUIRE(out->num_channels == buf.num_channels);
+                if (starting_sample_rate != target_sample_rate) {
+                    REQUIRE(out);
+                    REQUIRE(out->sample_rate == target_sample_rate);
+                    REQUIRE(out->bits_per_sample == 16);
+                    const auto result_num_frames =
+                        (usize)(buf.NumFrames() * ((double)out->sample_rate / (double)buf.sample_rate));
+                    REQUIRE(out->NumFrames() == result_num_frames);
+                    REQUIRE(out->num_channels == buf.num_channels);
+                }
 
                 if (write_to_file) {
                     std::string filename = folder + "/resampled_" + std::to_string(starting_sample_rate) +

@@ -11,8 +11,8 @@ AudioFile CreateSingleOscillationSineWave(const unsigned num_channels,
                                           const size_t num_frames);
 AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
                                     const unsigned sample_rate,
-                                    const float length_seconds,
-                                    const float frequency_hz);
+                                    const double length_seconds,
+                                    const double frequency_hz);
 class StringToArgs {
   public:
     StringToArgs(std::string_view s) {
@@ -57,8 +57,12 @@ std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subc
         }
     }
 
-    ghc::filesystem::path filename {};
-    return subcommand.Process(buf, filename);
+    AudioFile result = buf;
+    if (subcommand.Process(result)) {
+        return result;
+    } else {
+        return {};
+    }
 }
 
 } // namespace TestHelpers

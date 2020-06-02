@@ -23,22 +23,17 @@ size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<con
     return index_of_min;
 }
 
-AudioFile ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(const AudioFile &input,
-                                                                   const AudioDuration &search_size,
-                                                                   const bool append_skipped_frames_on_end) {
+bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioFile &input,
+                                                              const AudioDuration &search_size,
+                                                              const bool append_skipped_frames_on_end) {
     const auto search_frames = search_size.GetDurationAsFrames(input.sample_rate, input.NumFrames());
     std::cout << "Searching " << search_frames << " frames for a zero-crossing\n";
-
-    AudioFile result {};
-    result.sample_rate = input.sample_rate;
-    result.num_channels = input.num_channels;
 
     const auto new_start_frame =
         FindFrameNearestToZeroInBuffer(input.interleaved_samples, search_frames, input.num_channels);
     if (new_start_frame == 0) {
         std::cout << "No start frame change needed\n";
-        result.interleaved_samples = input.interleaved_samples;
-        return result;
+        return false;
     }
 
     std::cout << "Found best approx zero-crossing frame at position " << new_start_frame << "\n";
@@ -53,8 +48,8 @@ AudioFile ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(const AudioFi
         REQUIRE(new_interleaved_samples.size() == input.interleaved_samples.size());
     }
 
-    result.interleaved_samples = new_interleaved_samples;
-    return result;
+    input.interleaved_samples = new_interleaved_samples;
+    return true;
 }
 
 TEST_CASE("[ZCross Offset]") {
@@ -113,6 +108,5 @@ TEST_CASE("[ZCross Offset]") {
 
         auto result =
             TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>("zcross-offset 100s", buf);
-        REQUIRE(result);
     }
 }

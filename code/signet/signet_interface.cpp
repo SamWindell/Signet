@@ -72,9 +72,30 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         return 1;
     }
 
+    for (const auto &path : m_input_filepath_pattern.GetAllMatchedFilenames()) {
+        if (auto file = ReadAudioFile(path)) {
+            m_all_files.push_back({*file, path});
+        }
+    }
+
     for (size_t i = 0; i < m_subcommands.size(); ++i) {
         if (subcommand_clis[i]->parsed()) {
             m_subcommands[i]->Run(*this);
+        }
+    }
+    if (m_num_files_processed) {
+        for (auto &[file, path] : m_all_files) {
+            auto filepath = path;
+
+            if (m_output_filepath) {
+                filepath = *m_output_filepath;
+            } else {
+                m_backup.AddFileToBackup(filepath);
+            }
+
+            if (!WriteAudioFile(filepath, file)) {
+                FatalErrorWithNewLine("could not write the wave file ", filepath);
+            }
         }
     }
 
@@ -82,34 +103,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 }
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
-    for (const auto &p : m_input_filepath_pattern.GetAllMatchedFilenames()) {
-        ProcessFile(subcommand, p, m_output_filepath);
-    }
-}
-
-void SignetInterface::ProcessFile(Subcommand &subcommand,
-                                  const ghc::filesystem::path &input_filepath,
-                                  std::optional<ghc::filesystem::path> output_filepath) {
-    if (!output_filepath) {
-        output_filepath = input_filepath;
-        output_filepath->replace_extension(".wav");
-    }
-    REQUIRE(!input_filepath.empty());
-
-    if (const auto audio_file = ReadAudioFile(input_filepath)) {
-        if (const auto new_audio_file = subcommand.Process(*audio_file, *output_filepath)) {
-            if (*output_filepath == input_filepath) {
-                m_backup.AddFileToBackup(input_filepath);
-            }
-            if (!WriteAudioFile(*output_filepath, *new_audio_file)) {
-                FatalErrorWithNewLine("could not write the wave file ", *output_filepath);
-            }
-            std::cout << "Successfully wrote file " << *output_filepath << "\n";
+    for (auto &[file, path] : m_all_files) {
+        if (subcommand.Process(file)) {
             m_num_files_processed++;
         }
     }
-
-    std::cout << "\n";
 }
 
 TEST_CASE("[SignetInterface]") {

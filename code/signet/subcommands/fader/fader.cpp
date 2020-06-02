@@ -88,24 +88,24 @@ PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, c
     }
 }
 
-std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem::path &output_filename) {
-    if (!input.interleaved_samples.size()) return {};
+bool Fader::Process(AudioFile &input) {
+    if (!input.interleaved_samples.size()) return false;
 
-    AudioFile output = input;
     if (m_fade_in_duration) {
         const auto fade_in_frames =
-            std::min(output.NumFrames() - 1,
-                     m_fade_in_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames()));
-        PerformFade(output, 0, (s64)fade_in_frames, m_fade_in_shape);
+            std::min(input.NumFrames() - 1,
+                     m_fade_in_duration->GetDurationAsFrames(input.sample_rate, input.NumFrames()));
+        PerformFade(input, 0, (s64)fade_in_frames, m_fade_in_shape);
     }
     if (m_fade_out_duration) {
         const auto fade_out_frames =
-            m_fade_out_duration->GetDurationAsFrames(output.sample_rate, output.NumFrames());
-        const auto last = (s64)output.NumFrames() - 1;
+            m_fade_out_duration->GetDurationAsFrames(input.sample_rate, input.NumFrames());
+        const auto last = (s64)input.NumFrames() - 1;
         const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
-        PerformFade(output, last, start_frame, m_fade_out_shape);
+        PerformFade(input, last, start_frame, m_fade_out_shape);
     }
-    return output;
+
+    return true;
 }
 
 TEST_CASE("[Fader]") {

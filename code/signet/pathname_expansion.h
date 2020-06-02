@@ -125,7 +125,7 @@ class ExpandablePathnameListParser {
             } else if (FilesystemFunctions::IsRegularFile(section)) {
                 result.push_back(std::make_unique<SingleFilePathname>(section));
             } else {
-                // invalid, just do nothing?
+                // invalid, just do nothing
                 WarningWithNewLine("The input filename ", section, " is not valid");
             }
         });

@@ -340,13 +340,16 @@ bool WriteAudioFile(const ghc::filesystem::path &filename,
     auto bits_per_sample = audio_file.bits_per_sample;
     if (new_bits_per_sample) bits_per_sample = *new_bits_per_sample;
 
+    bool result = false;
     const auto ext = filename.extension();
     if (ext == ".flac") {
-        return WriteFlacFile(filename, audio_file, bits_per_sample);
+        result = WriteFlacFile(filename, audio_file, bits_per_sample);
     } else if (ext == ".wav") {
-        return WriteWaveFile(filename, audio_file, bits_per_sample);
+        result = WriteWaveFile(filename, audio_file, bits_per_sample);
     }
-    return false;
+
+    if (result) std::cout << "Successfully wrote file " << filename << "\n";
+    return result;
 }
 
 struct BufferConversionTest {

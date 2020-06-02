@@ -8,11 +8,11 @@
 class Normaliser final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    std::optional<AudioFile> Process(const AudioFile &input, ghc::filesystem::path &output_filename) override;
+    bool Process(AudioFile &input) override;
     void Run(SignetInterface &signet) override;
 
   private:
-    AudioFile PerformNormalisation(const AudioFile &input_audio) const;
+    bool PerformNormalisation(AudioFile &input_audio) const;
     void ReadFileForCommonGain(const AudioFile &audio);
 
     enum class ProcessingStage {

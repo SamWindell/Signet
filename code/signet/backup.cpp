@@ -5,6 +5,7 @@
 
 #include "doctest.hpp"
 
+#include "test_helpers.h"
 #include "tests_config.h"
 
 SignetBackup::SignetBackup() {
@@ -35,7 +36,7 @@ bool SignetBackup::LoadBackup() {
     for (auto [hash, path] : m_database["files"].items()) {
         std::cout << "Loading backed-up file " << path << "\n";
         ghc::filesystem::copy_file(m_backup_files_dir / hash, path,
-                                   ghc::filesystem::copy_options::update_existing);
+                                   ghc::filesystem::copy_options::overwrite_existing);
     }
     return true;
 }
@@ -68,13 +69,48 @@ void SignetBackup::AddFileToBackup(const ghc::filesystem::path &path) {
 }
 
 TEST_CASE("[SignetBackup]") {
+    const std::string filename = "backup_file.wav";
+
+    // create a sine wave file
+    {
+        const auto buf = TestHelpers::CreateSineWaveAtFrequency(1, 44100, 0.25, 440);
+        REQUIRE(WriteAudioFile(filename, buf));
+    }
+
+    // back it up
     {
         SignetBackup b;
         b.ResetBackup();
-        b.AddFileToBackup(TEST_DATA_DIRECTORY "/test.wav");
+        b.AddFileToBackup(filename);
     }
+
+    // process that same file
+    {
+        auto file_data = ReadAudioFile(filename);
+        REQUIRE(file_data);
+        for (auto &s : file_data->interleaved_samples) {
+            s = 0;
+        }
+        REQUIRE(WriteAudioFile(filename, *file_data));
+    }
+
+    // load the backup
     {
         SignetBackup b;
         REQUIRE(b.LoadBackup());
+    }
+
+    // assert that the backed up version is not processed
+    {
+        auto file_data = ReadAudioFile(filename);
+        REQUIRE(file_data);
+        bool silent = true;
+        for (auto &s : file_data->interleaved_samples) {
+            if (s != 0) {
+                silent = false;
+                break;
+            }
+        }
+        REQUIRE(!silent);
     }
 }

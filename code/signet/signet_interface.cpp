@@ -78,11 +78,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         }
     }
 
-    for (size_t i = 0; i < m_subcommands.size(); ++i) {
-        if (subcommand_clis[i]->parsed()) {
-            m_subcommands[i]->Run(*this);
+    for (auto &subcommand_cli : app.get_subcommands()) {
+        Subcommand *subcommand = nullptr;
+        for (usize i = 0; i < subcommand_clis.size(); ++i) {
+            if (subcommand_clis[i] == subcommand_cli) {
+                subcommand = m_subcommands[i].get();
+            }
+        }
+
+        if (subcommand) {
+            subcommand->Run(*this);
         }
     }
+
     if (m_num_files_processed) {
         for (auto &[file, path] : m_all_files) {
             auto filepath = path;

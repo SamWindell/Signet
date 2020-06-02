@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(
-    flac STATIC
+    third_party_libs STATIC
     code/third_party_libs/flac/src/bitmath.c
     code/third_party_libs/flac/src/bitreader.c
     code/third_party_libs/flac/src/bitwriter.c
@@ -20,14 +20,16 @@ add_library(
     code/third_party_libs/flac/src/stream_decoder.c
     code/third_party_libs/flac/src/stream_encoder.c
     code/third_party_libs/flac/src/stream_encoder_framing.c
-    code/third_party_libs/flac/src/window.c)
+    code/third_party_libs/flac/src/window.c
+    code/third_party_libs/r8brain-resampler/r8bbase.cpp)
 
 if (WIN32)
-    target_sources(flac PRIVATE code/third_party_libs/flac/src/win_utf8_io.c)
+    target_sources(third_party_libs PRIVATE code/third_party_libs/flac/src/win_utf8_io.c)
 endif ()
 
-target_include_directories(flac PUBLIC code/third_party_libs/flac/src/include code/third_party_libs)
-target_compile_definitions(flac PUBLIC FLAC__NO_DLL)
+target_include_directories(third_party_libs PUBLIC code/third_party_libs/flac/src/include
+                                                   code/third_party_libs)
+target_compile_definitions(third_party_libs PUBLIC FLAC__NO_DLL)
 
 #
 
@@ -67,7 +69,7 @@ if (WIN32)
 else ()
     target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
 endif ()
-target_link_libraries(common PRIVATE flac)
+target_link_libraries(common PRIVATE third_party_libs)
 
 configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
                ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)

@@ -104,6 +104,67 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
     return result;
 }
 
+static std::array<u8, 3> Convert24BitIntToBytes(const s32 sample) {
+    std::array<u8, 3> bytes;
+    bytes[0] = (u8)sample & 0xFF;
+    bytes[1] = (u8)(sample >> 8) & 0xFF;
+    bytes[2] = (u8)(sample >> 16) & 0xFF;
+    return bytes;
+}
+
+static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f64_buf,
+                                                     drwav_uint32 &format,
+                                                     unsigned bits_per_sample,
+                                                     std::function<void(const void *)> callback) {
+    switch (bits_per_sample) {
+        case 8: {
+            // 8-bit is the exception in that it uses unsigned ints
+            const auto buf = CreateUnsignedIntSamplesFromFloat<u8>(f64_buf, 8);
+            format = DR_WAVE_FORMAT_PCM;
+            callback(buf.data());
+            break;
+        }
+        case 16: {
+            const auto buf = CreateSignedIntSamplesFromFloat<s16>(f64_buf, 16);
+            format = DR_WAVE_FORMAT_PCM;
+            callback(buf.data());
+            break;
+        }
+        case 24: {
+            std::vector<u8> buf;
+            buf.reserve(f64_buf.size() * 3);
+            for (const auto &s : f64_buf) {
+                const auto sample = ScaleSampleToSignedInt<s32>(s, 24);
+                for (const auto byte : Convert24BitIntToBytes(sample)) {
+                    buf.push_back(byte);
+                }
+            }
+            format = DR_WAVE_FORMAT_PCM;
+            callback(buf.data());
+            break;
+        }
+        case 32: {
+            format = DR_WAVE_FORMAT_IEEE_FLOAT;
+            std::vector<float> buf;
+            buf.reserve(f64_buf.size());
+            for (const auto s : f64_buf) {
+                buf.push_back(static_cast<float>(s));
+            }
+            callback(buf.data());
+            break;
+        }
+        case 64: {
+            format = DR_WAVE_FORMAT_IEEE_FLOAT;
+            callback(f64_buf.data());
+            break;
+        }
+        default: {
+            REQUIRE(0);
+            return;
+        }
+    }
+}
+
 static bool WriteWaveFile(const ghc::filesystem::path &path,
                           const AudioFile &audio_file,
                           const unsigned bits_per_sample) {
@@ -127,57 +188,10 @@ static bool WriteWaveFile(const ghc::filesystem::path &path,
     }
 
     u64 num_written = 0;
-    switch (bits_per_sample) {
-        case 8: {
-            // 8-bit is the exception in that it uses unsigned ints
-            const auto buf = CreateUnsignedIntSamplesFromFloat<u8>(audio_file.interleaved_samples, 8);
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
-            break;
-        }
-        case 16: {
-            const auto buf = CreateSignedIntSamplesFromFloat<s16>(audio_file.interleaved_samples, 16);
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
-            break;
-        }
-        case 24: {
-            std::vector<u8> buf;
-            buf.reserve(audio_file.interleaved_samples.size() * 3);
-            for (const auto &s : audio_file.interleaved_samples) {
-                const auto sample = ScaleSampleToSignedInt<s32>(s, 24);
-
-                u8 bytes[3];
-                bytes[0] = (u8)sample & 0xFF;
-                bytes[1] = (u8)(sample >> 8) & 0xFF;
-                bytes[2] = (u8)(sample >> 16) & 0xFF;
-
-                for (const auto byte : bytes) {
-                    buf.push_back(byte);
-                }
-            }
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
-            break;
-        }
-        case 32: {
-            format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
-            std::vector<float> buf;
-            buf.reserve(audio_file.interleaved_samples.size());
-            for (const auto s : audio_file.interleaved_samples) {
-                buf.push_back(static_cast<float>(s));
-            }
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), buf.data());
-            break;
-        }
-        case 64: {
-            format.format = DR_WAVE_FORMAT_IEEE_FLOAT;
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(),
-                                                 audio_file.interleaved_samples.data());
-            break;
-        }
-        default: {
-            REQUIRE(0);
-            return false;
-        }
-    }
+    GetAudioDataConvertedAndScaledToBitDepth(
+        audio_file.interleaved_samples, format.format, bits_per_sample, [&](const void *raw_data) {
+            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), raw_data);
+        });
     if (num_written != audio_file.NumFrames()) {
         WarningWithNewLine("could not write wave file - could not write all samples");
         return false;
@@ -335,14 +349,39 @@ bool WriteAudioFile(const ghc::filesystem::path &filename,
     return false;
 }
 
+struct BufferConversionTest {
+    template <typename T>
+    static void Check(const std::vector<double> &buf,
+                      const unsigned bits_per_sample,
+                      const std::vector<T> expected,
+                      const u32 expected_format) {
+        u32 format;
+        GetAudioDataConvertedAndScaledToBitDepth(buf, format, bits_per_sample, [&](const void *raw_data) {
+            const auto data = (const T *)raw_data;
+            for (usize i = 0; i < expected.size(); ++i) {
+                REQUIRE(data[i] == expected[i]);
+            }
+        });
+        REQUIRE(format == expected_format);
+    };
+};
+
 TEST_CASE("[AudioFile]") {
     SUBCASE("conversion") {
         SUBCASE("signed single samples") {
             REQUIRE(ScaleSampleToSignedInt<s16>(1, 16) == INT16_MAX);
             REQUIRE(ScaleSampleToSignedInt<s16>(-1, 16) == INT16_MIN);
+            REQUIRE(ScaleSampleToSignedInt<s16>(0, 16) == 0);
+
             REQUIRE(ScaleSampleToSignedInt<s32>(1, 32) == INT32_MAX);
             REQUIRE(ScaleSampleToSignedInt<s32>(-1, 32) == INT32_MIN);
+            REQUIRE(ScaleSampleToSignedInt<s32>(0, 32) == 0);
+
+            REQUIRE(ScaleSampleToSignedInt<s32>(-1, 24) == -8388608);
+            REQUIRE(ScaleSampleToSignedInt<s32>(1, 24) == 8388607);
+            REQUIRE(ScaleSampleToSignedInt<s32>(0, 24) == 0);
         }
+
         SUBCASE("to signed buffer") {
             SUBCASE("s32") {
                 const auto s = CreateSignedIntSamplesFromFloat<s32>({-1.0, 1.0, 0}, 32);
@@ -359,31 +398,66 @@ TEST_CASE("[AudioFile]") {
                 REQUIRE(s[2] == 0);
             }
         }
+
         SUBCASE("to unsigned buffer") {
             const auto s = CreateUnsignedIntSamplesFromFloat<u8>({-1.0, 1.0}, 8);
             REQUIRE(s.size() == 2);
             REQUIRE(s[0] == 0);
             REQUIRE(s[1] == UINT8_MAX);
         }
-    }
 
-    const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, 44100, 1, 440);
-    SUBCASE("wave") {
-        for (const auto bit_depth : valid_wave_bit_depths) {
-            CAPTURE(bit_depth);
-            const ghc::filesystem::path filename = "test_sine_440.wav";
-            REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
-            REQUIRE(ghc::filesystem::is_regular_file(filename));
-            REQUIRE(ReadAudioFile(filename));
+        SUBCASE("wave f64 to other bit depth conversion") {
+            std::vector<double> buf = {-1.0, 0, 1.0, 0};
+
+            SUBCASE("to unsigned 8-bit data") {
+                BufferConversionTest::Check<u8>(buf, 8, {0, 127, 255, 127}, DR_WAVE_FORMAT_PCM);
+            }
+
+            SUBCASE("to signed 16-bit data") {
+                BufferConversionTest::Check<s16>(buf, 16, {INT16_MIN, 0, INT16_MAX, 0}, DR_WAVE_FORMAT_PCM);
+            }
+
+            SUBCASE("to signed 24-bit data") {
+                std::vector<u8> expected_bytes;
+                for (const auto s : buf) {
+                    for (const auto byte : Convert24BitIntToBytes(ScaleSampleToSignedInt<s32>(s, 24))) {
+                        expected_bytes.push_back(byte);
+                    }
+                }
+                BufferConversionTest::Check<u8>(buf, 24, expected_bytes, DR_WAVE_FORMAT_PCM);
+            }
+
+            SUBCASE("to 32-bit float data") {
+                BufferConversionTest::Check<float>(buf, 32, {-1.0f, 0.0f, 1.0f, 0.0f},
+                                                   DR_WAVE_FORMAT_IEEE_FLOAT);
+            }
+
+            SUBCASE("to 64-bit float data") {
+                BufferConversionTest::Check<double>(buf, 64, {-1.0, 0.0, 1.0, 0.0},
+                                                    DR_WAVE_FORMAT_IEEE_FLOAT);
+            }
         }
     }
-    SUBCASE("flac") {
-        for (const auto bit_depth : valid_flac_bit_depths) {
-            CAPTURE(bit_depth);
-            const ghc::filesystem::path filename = "test_sine_440.flac";
-            REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
-            REQUIRE(ghc::filesystem::is_regular_file(filename));
-            REQUIRE(ReadAudioFile(filename));
+
+    SUBCASE("writing and reading all bitdepths") {
+        const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, 44100, 1, 440);
+        SUBCASE("wave") {
+            for (const auto bit_depth : valid_wave_bit_depths) {
+                CAPTURE(bit_depth);
+                const ghc::filesystem::path filename = "test_sine_440.wav";
+                REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
+                REQUIRE(ghc::filesystem::is_regular_file(filename));
+                REQUIRE(ReadAudioFile(filename));
+            }
+        }
+        SUBCASE("flac") {
+            for (const auto bit_depth : valid_flac_bit_depths) {
+                CAPTURE(bit_depth);
+                const ghc::filesystem::path filename = "test_sine_440.flac";
+                REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
+                REQUIRE(ghc::filesystem::is_regular_file(filename));
+                REQUIRE(ReadAudioFile(filename));
+            }
         }
     }
 }

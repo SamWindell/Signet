@@ -13,6 +13,9 @@ struct AudioFile {
     double &GetSample(unsigned channel, size_t frame) {
         return interleaved_samples[frame * num_channels + channel];
     }
+    const double &GetSample(unsigned channel, size_t frame) const {
+        return interleaved_samples[frame * num_channels + channel];
+    }
 
     std::vector<double> interleaved_samples {};
     unsigned num_channels {};

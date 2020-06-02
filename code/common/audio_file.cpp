@@ -188,6 +188,7 @@ static bool WriteWaveFile(const ghc::filesystem::path &path,
 
 static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
     switch (code) {
+        case FLAC__STREAM_ENCODER_INIT_STATUS_OK: return;
         case FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR:
             std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR\n";
             return;

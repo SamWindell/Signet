@@ -5,11 +5,11 @@
 
 #define DR_WAV_IMPLEMENTATION
 #define DR_FLAC_IMPLEMENTATION
+#include "FLAC/all.h"
+#include "FLAC/stream_encoder.h"
 #include "doctest.hpp"
 #include "dr_flac.h"
 #include "dr_wav.h"
-#include "flac/all.h"
-#include "flac/stream_encoder.h"
 
 #include "common.h"
 #include "test_helpers.h"

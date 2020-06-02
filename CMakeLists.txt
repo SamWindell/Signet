@@ -40,6 +40,7 @@ add_library(
     code/common/common.cpp
     code/signet/backup.cpp
     code/signet/signet_interface.cpp
+    code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/fader/fader.cpp
     code/signet/subcommands/normalise/gain_calculators.cpp
     code/signet/subcommands/normalise/normaliser.cpp

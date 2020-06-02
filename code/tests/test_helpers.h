@@ -38,14 +38,24 @@ class StringToArgs {
 
 template <typename Subcommand>
 std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioFile &buf) {
+                                                     const AudioFile &buf,
+                                                     bool require_throws = false) {
     std::string whole_args = "signet-test " + std::string(subcommand_and_args_string);
     const auto args = TestHelpers::StringToArgs {whole_args};
 
     Subcommand subcommand {};
     CLI::App app;
     subcommand.CreateSubcommandCLI(app);
-    REQUIRE_NOTHROW(app.parse(args.Size(), args.Args()));
+    try {
+        app.parse(args.Size(), args.Args());
+    } catch (...) {
+        if (!require_throws) {
+            REQUIRE(false);
+            throw;
+        } else {
+            return {};
+        }
+    }
 
     ghc::filesystem::path filename {};
     return subcommand.Process(buf, filename);

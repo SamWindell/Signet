@@ -5,6 +5,7 @@
 #include "doctest.hpp"
 
 #include "audio_file.h"
+#include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
@@ -14,6 +15,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Fader>());
     m_subcommands.push_back(std::make_unique<Normaliser>());
     m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
+    m_subcommands.push_back(std::make_unique<Converter>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {

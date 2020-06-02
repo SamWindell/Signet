@@ -26,7 +26,7 @@ add_library(
 if (WIN32)
     target_sources(third_party_libs PRIVATE code/third_party_libs/flac/src/win_utf8_io.c)
 else (APPLE)
-    target_compile_definitions(flac PRIVATE HAVE_LROUND)
+    target_compile_definitions(third_party_libs PRIVATE HAVE_LROUND)
 endif ()
 
 target_include_directories(third_party_libs PUBLIC code/third_party_libs/flac/src/include

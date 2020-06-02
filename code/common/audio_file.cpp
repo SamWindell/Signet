@@ -83,6 +83,8 @@ std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<dou
     std::vector<SignedIntType> result;
     result.reserve(buf.size());
     for (const auto s : buf) {
+        assert(s >= -1);
+        assert(s <= 1);
         result.push_back(ScaleSampleToSignedInt<SignedIntType>(s, bits_per_sample));
     }
     return result;
@@ -94,7 +96,10 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
     std::vector<UnsignedIntType> result;
     result.reserve(buf.size());
     for (const auto s : buf) {
-        result.push_back(static_cast<UnsignedIntType>(((s + 1.0) / 2.0f) * ((1 << bits_per_sample) - 1)));
+        assert(s >= -1);
+        assert(s <= 1);
+        const auto scaled_val = ((s + 1.0) / 2.0f) * ((1 << bits_per_sample) - 1);
+        result.push_back(static_cast<UnsignedIntType>(scaled_val));
     }
     return result;
 }
@@ -338,10 +343,20 @@ TEST_CASE("[AudioFile]") {
             REQUIRE(ScaleSampleToSignedInt<s32>(-1, 32) == INT32_MIN);
         }
         SUBCASE("to signed buffer") {
-            const auto s = CreateSignedIntSamplesFromFloat<s32>({-1.0, 1.0}, 32);
-            REQUIRE(s.size() == 2);
-            REQUIRE(s[0] == INT32_MIN);
-            REQUIRE(s[1] == INT32_MAX);
+            SUBCASE("s32") {
+                const auto s = CreateSignedIntSamplesFromFloat<s32>({-1.0, 1.0, 0}, 32);
+                REQUIRE(s.size() == 3);
+                REQUIRE(s[0] == INT32_MIN);
+                REQUIRE(s[1] == INT32_MAX);
+                REQUIRE(s[2] == 0);
+            }
+            SUBCASE("s16") {
+                const auto s = CreateSignedIntSamplesFromFloat<s16>({-1.0, 1.0, 0}, 16);
+                REQUIRE(s.size() == 3);
+                REQUIRE(s[0] == INT16_MIN);
+                REQUIRE(s[1] == INT16_MAX);
+                REQUIRE(s[2] == 0);
+            }
         }
         SUBCASE("to unsigned buffer") {
             const auto s = CreateUnsignedIntSamplesFromFloat<u8>({-1.0, 1.0}, 8);

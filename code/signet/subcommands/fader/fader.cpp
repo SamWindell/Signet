@@ -5,8 +5,9 @@
 
 #include "audio_file.h"
 #include "common.h"
+#include "test_helpers.h"
 
-tcb::span<const std::string_view> Fader::GetShapeNames() {
+static tcb::span<const std::string_view> GetShapeNames() {
     static const auto names = magic_enum::enum_names<Fader::Shape>();
     return {names.data(), names.size()};
 }
@@ -38,10 +39,8 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
 }
 
 static double GetFade(Fader::Shape shape, double x) {
-    REQUIRE(x >= 0);
-    REQUIRE(x <= 1);
-    if (x == 0) return 0;
-    if (x == 1) return 1;
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
     static constexpr double silent_db = -90;
     static constexpr double range_db = -silent_db;
     switch (shape) {
@@ -73,9 +72,9 @@ static double GetFade(Fader::Shape shape, double x) {
 static void
 PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
-    const double delta_x = 1.0 / ((double)std::abs(fullvol_frame - silent_frame) + 1);
-    double x = 0;
+    const double delta_x = 1.0 / ((double)std::abs(fullvol_frame - silent_frame));
 
+    double x = 0;
     for (s64 frame = silent_frame; frame != fullvol_frame + increment; frame += increment) {
         const auto gain = GetFade(shape, x);
         for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
@@ -103,58 +102,97 @@ std::optional<AudioFile> Fader::Process(const AudioFile &input, ghc::filesystem:
     return output;
 }
 
-TEST_CASE("[Fader] args") {
+TEST_CASE("[Fader]") {
     AudioFile buf {};
-    buf.sample_rate = 100;
+    buf.sample_rate = 44100;
     buf.num_channels = 1;
     buf.interleaved_samples.resize(100, 1.0);
+    buf.bits_per_sample = 16;
 
-    const auto TestArgs = [&](const std::initializer_list<const char *> args,
-                              const size_t expected_fade_in_samples, const size_t expected_fade_out_samples) {
-        Fader fader {};
-        CLI::App app;
-        fader.CreateSubcommandCLI(app);
-        REQUIRE_NOTHROW(app.parse((int)args.size(), args.begin()));
-
-        ghc::filesystem::path filename {};
-        const auto output = fader.Process(buf, filename);
-        REQUIRE(output);
-
-        SUBCASE("audio fades in from 0 to 1") {
-            if (fader.HasFadeIn()) {
-                REQUIRE(buf.num_channels == 1);
-                REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0);
-                for (size_t i = 0; i < expected_fade_in_samples; ++i) {
-                    REQUIRE(output->interleaved_samples[i] < 1.0);
-                }
+    SUBCASE("fade calculation") {
+        auto CheckRegion = [&](const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
+            CAPTURE(silent_frame);
+            CAPTURE(fullvol_frame);
+            PerformFade(buf, silent_frame, fullvol_frame, shape);
+            REQUIRE(buf.interleaved_samples[silent_frame] == doctest::Approx(0.0));
+            REQUIRE(buf.interleaved_samples[fullvol_frame] == doctest::Approx(1.0));
+            for (s64 i = std::min(silent_frame, fullvol_frame) + 1;
+                 i < std::max(fullvol_frame, silent_frame) - 1; ++i) {
+                REQUIRE(buf.interleaved_samples[i] > 0);
+                REQUIRE(buf.interleaved_samples[i] < 1);
             }
+        };
+
+        SUBCASE("") { CheckRegion(0, 10, Fader::Shape::Linear); }
+        SUBCASE("") { CheckRegion(10, 0, Fader::Shape::Linear); }
+        SUBCASE("") { CheckRegion(0, 99, Fader::Shape::Linear); }
+        SUBCASE("") { CheckRegion(99, 0, Fader::Shape::Linear); }
+        SUBCASE("") { CheckRegion(0, 10, Fader::Shape::Sqrt); }
+        SUBCASE("") { CheckRegion(10, 0, Fader::Shape::Sqrt); }
+        SUBCASE("") { CheckRegion(0, 99, Fader::Shape::Sqrt); }
+        SUBCASE("") { CheckRegion(99, 0, Fader::Shape::Sqrt); }
+    }
+
+    SUBCASE("subcommand") {
+
+        const std::string dir = "fader-test-files";
+        if (!ghc::filesystem::is_directory(dir)) {
+            ghc::filesystem::create_directory(dir);
         }
 
-        SUBCASE("audio fades out to 0") {
-            if (fader.HasFadeOut()) {
-                REQUIRE(buf.num_channels == 1);
-                REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) == 0.0);
-                for (size_t i = output->interleaved_samples.size() - expected_fade_out_samples;
-                     i < output->interleaved_samples.size(); ++i) {
-                    REQUIRE(output->interleaved_samples[i] < 1.0);
+        const auto TestArgs = [&](std::string args, const size_t expected_fade_in_samples,
+                                  const size_t expected_fade_out_samples) {
+            auto output = TestHelpers::ProcessBufferWithSubcommand<Fader>(args, buf);
+            CAPTURE(args);
+            REQUIRE(output);
+
+            SUBCASE("audio fades in from 0 to 1") {
+                if (Contains(args, " in ")) {
+                    REQUIRE(buf.num_channels == 1);
+                    REQUIRE(std::abs(output->interleaved_samples[0]) == 0.0);
+                    for (size_t i = 0; i < expected_fade_in_samples; ++i) {
+                        REQUIRE(output->interleaved_samples[i] < 1.0);
+                        REQUIRE(output->interleaved_samples[i] >= 0);
+                    }
                 }
             }
+
+            SUBCASE("audio fades out to 0") {
+                if (Contains(args, " out ")) {
+                    REQUIRE(buf.num_channels == 1);
+                    REQUIRE(std::abs(output->interleaved_samples[output->interleaved_samples.size() - 1]) ==
+                            0.0);
+                    for (size_t i = output->interleaved_samples.size() - expected_fade_out_samples;
+                         i < output->interleaved_samples.size(); ++i) {
+                        REQUIRE(output->interleaved_samples[i] < 1.0);
+                        REQUIRE(output->interleaved_samples[i] >= 0);
+                    }
+                }
+            }
+
+            for (const auto s : output->interleaved_samples) {
+                REQUIRE(s >= 0);
+                REQUIRE(s <= 1);
+            }
+
+            std::string output_name = dir + "/" + args;
+            std::replace(output_name.begin(), output_name.end(), ' ', '_');
+            output_name += ".wav";
+            WriteAudioFile(output_name, *output);
+        };
+
+        const auto TestSuite = [&](auto shape) {
+            const std::string shape_str {shape};
+            CAPTURE(shape_str);
+            TestArgs("fade out 10smp " + shape_str + " in 10smp" + shape_str, 10, 10);
+            TestArgs("fade out 1smp " + shape_str + " in 1smp" + shape_str, 1, 1);
+            TestArgs("fade out 60smp " + shape_str + " in 60smp" + shape_str, 60, 60);
+            TestArgs("fade in 200smp " + shape_str, 100, 0);
+            TestArgs("fade out 200smp " + shape_str, 0, 100);
+        };
+
+        for (const auto n : GetShapeNames()) {
+            TestSuite(n);
         }
-    };
-
-    const auto TestSuite = [&](auto shape) {
-        const std::string shape_str {shape};
-        CAPTURE(shape_str);
-        TestArgs({"signet", "fade", "out", "10smp", shape_str.data(), "in", "10smp", shape_str.data()}, 10,
-                 10);
-        TestArgs({"signet", "fade", "out", "1smp", shape_str.data(), "in", "1smp", shape_str.data()}, 1, 1);
-        TestArgs({"signet", "fade", "out", "60smp", shape_str.data(), "in", "60smp", shape_str.data()}, 60,
-                 60);
-        TestArgs({"signet", "fade", "in", "200smp", shape_str.data()}, 100, 0);
-        TestArgs({"signet", "fade", "out", "200smp", shape_str.data()}, 0, 100);
-    };
-
-    for (const auto n : Fader::GetShapeNames()) {
-        TestSuite(n);
     }
 }

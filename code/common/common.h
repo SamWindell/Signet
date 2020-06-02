@@ -53,6 +53,10 @@ inline bool StartsWith(std::string_view str, std::string_view prefix) {
     return prefix.size() <= str.size() && str.compare(0, prefix.size(), prefix) == 0;
 }
 
+inline bool Contains(std::string_view haystack, std::string_view needle) {
+    return haystack.find(needle) != std::string_view::npos;
+}
+
 bool PatternMatch(std::string_view pattern, std::string_view name);
 
 namespace ghc {

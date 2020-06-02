@@ -121,7 +121,7 @@ TEST_CASE("[SignetInterface]") {
         }
 
         SUBCASE("single file relative filename overwrite") {
-            const auto args = {"signet", "../test_data/test-out.wav", "norm", "3"};
+            const auto args = {"signet", "../test_data/test-out.wav", "norm", "-3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
@@ -144,36 +144,36 @@ TEST_CASE("[SignetInterface]") {
                                    ghc::filesystem::copy_options::update_existing);
 
         SUBCASE("when the input file is a single file the output cannot be a directory") {
-            const auto args = {"signet", "../test_data/test-out.wav", "test-folder", "norm", "3"};
+            const auto args = {"signet", "../test_data/test-out.wav", "test-folder", "norm", "-3"};
             REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
         }
 
         SUBCASE("match all WAVs in a dir by using a wildcard") {
             const auto wildcard = test_folder + "/*.wav";
-            const auto args = {"signet", wildcard.data(), "norm", "3"};
+            const auto args = {"signet", wildcard.data(), "norm", "-3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
         SUBCASE("match all WAVs by using a wildcard") {
-            const auto args = {"signet", "*.wav", "norm", "3"};
+            const auto args = {"signet", "*.wav", "norm", "-3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
         SUBCASE("when the input path is a pattern there cannot be an output file") {
             const auto wildcard = test_folder + "/*.wav";
-            const auto args = {"signet", wildcard.data(), "output.wav", "norm", "3"};
+            const auto args = {"signet", wildcard.data(), "output.wav", "norm", "-3"};
             REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
         }
 
         SUBCASE("when input path is a patternless directory scan all files in that") {
             const auto wildcard = test_folder;
-            const auto args = {"signet", wildcard.data(), "norm", "3"};
+            const auto args = {"signet", wildcard.data(), "norm", "-3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
         SUBCASE("when input path is a patternless directory with ending slash scan all files in that") {
             const auto wildcard = test_folder + "/";
-            const auto args = {"signet", wildcard.data(), "norm", "3"};
+            const auto args = {"signet", wildcard.data(), "norm", "-3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 
@@ -184,7 +184,7 @@ TEST_CASE("[SignetInterface]") {
 
         SUBCASE("multiple comma separated files") {
             const auto wildcard = test_folder + "/test.wav," + test_folder + "/test_other.wav";
-            const auto args = {"signet", wildcard.data(), "norm", "3"};
+            const auto args = {"signet", wildcard.data(), "norm", "-3"};
             REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
         }
 

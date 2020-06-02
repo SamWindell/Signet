@@ -43,7 +43,7 @@ add_library(
     code/signet/subcommands/normalise/normaliser.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
-target_compile_definitions(common PUBLIC NOMINMAX)
+target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 if (WIN32)
     set(WARNINGS_TO_ENABLE
         /W4

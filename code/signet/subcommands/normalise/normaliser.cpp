@@ -6,7 +6,8 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand("norm", "Normalise a sample to a certain level");
     norm->add_option("target_decibels", m_target_decibels,
                      "The target level in decibels to convert the sample(s) to")
-        ->required();
+        ->required()
+        ->check(CLI::Range(-200, 0));
     norm->add_flag("-c,--common_gain", m_use_common_gain,
                    "When using on a directory, amplifiy all the samples by the same amount");
     norm->add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");

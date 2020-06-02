@@ -25,6 +25,8 @@ add_library(
 
 if (WIN32)
     target_sources(third_party_libs PRIVATE code/third_party_libs/flac/src/win_utf8_io.c)
+else (APPLE)
+    target_compile_definitions(flac PRIVATE HAVE_LROUND)
 endif ()
 
 target_include_directories(third_party_libs PUBLIC code/third_party_libs/flac/src/include
@@ -40,10 +42,12 @@ add_library(
     code/common/common.cpp
     code/signet/backup.cpp
     code/signet/signet_interface.cpp
+    code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/fader/fader.cpp
     code/signet/subcommands/normalise/gain_calculators.cpp
     code/signet/subcommands/normalise/normaliser.cpp
-    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp)
+    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
+    code/tests/test_helpers.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 if (WIN32)

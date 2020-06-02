@@ -5,15 +5,18 @@
 #include "doctest.hpp"
 
 #include "audio_file.h"
+#include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
+#include "test_helpers.h"
 #include "tests_config.h"
 
 SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Fader>());
     m_subcommands.push_back(std::make_unique<Normaliser>());
     m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
+    m_subcommands.push_back(std::make_unique<Converter>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
@@ -113,89 +116,79 @@ TEST_CASE("[SignetInterface]") {
     SignetInterface signet;
 
     SUBCASE("args") {
-        SUBCASE("single file absolute filename writing to output file") {
-            const auto args = {
-                "signet", TEST_DATA_DIRECTORY "/test.wav", TEST_DATA_DIRECTORY "/test-out.wav", "fade", "in",
-                "50smp"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
-        }
-
-        SUBCASE("single file relative filename overwrite") {
-            const auto args = {"signet", "../test_data/test-out.wav", "norm", "-3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
-        }
-
-        SUBCASE("single file with single output that is not a wav or flac") {
-            const auto args = {
-                "signet", TEST_DATA_DIRECTORY "/test.wav", TEST_DATA_DIRECTORY "/test-out.ogg", "fade", "in",
-                "50smp"};
-            REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
-        }
+        const auto in_file = std::string(TEST_DATA_DIRECTORY "/white-noise.wav");
 
         std::string test_folder = "test-folder";
         if (!ghc::filesystem::is_directory(test_folder)) {
             ghc::filesystem::create_directory(test_folder);
         }
-        ghc::filesystem::copy_file(TEST_DATA_DIRECTORY "/test.wav", test_folder + "/test.wav",
-                                   ghc::filesystem::copy_options::update_existing);
-        ghc::filesystem::copy_file(TEST_DATA_DIRECTORY "/test.wav", test_folder + "/test_other.wav",
-                                   ghc::filesystem::copy_options::update_existing);
-        ghc::filesystem::copy_file(TEST_DATA_DIRECTORY "/test.wav", test_folder + "/test_other2.wav",
-                                   ghc::filesystem::copy_options::update_existing);
+
+        SUBCASE("single file absolute filename writing to output file") {
+            const auto args =
+                TestHelpers::StringToArgs {"signet " + in_file + " test-folder/test-out.wav fade in 50smp"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+        }
+
+        SUBCASE("single file relative filename overwrite") {
+            const auto args =
+                TestHelpers::StringToArgs {"signet test-folder/../test-folder/test-out.wav norm -3"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+        }
+
+        SUBCASE("single file with single output that is not a wav or flac") {
+            const auto args =
+                TestHelpers::StringToArgs {"signet " + in_file + " test-folder/test-out.ogg fade in 50smp"};
+            REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));
+        }
 
         SUBCASE("when the input file is a single file the output cannot be a directory") {
-            const auto args = {"signet", "../test_data/test-out.wav", "test-folder", "norm", "-3"};
-            REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
+            const auto args =
+                TestHelpers::StringToArgs {"signet test-folder/test-out.wav test-folder norm -3"};
+            REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));
         }
 
         SUBCASE("match all WAVs in a dir by using a wildcard") {
-            const auto wildcard = test_folder + "/*.wav";
-            const auto args = {"signet", wildcard.data(), "norm", "-3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/*wav norm -3"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("match all WAVs by using a wildcard") {
-            const auto args = {"signet", "*.wav", "norm", "-3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args = TestHelpers::StringToArgs {"signet *.wav norm -3"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("when the input path is a pattern there cannot be an output file") {
-            const auto wildcard = test_folder + "/*.wav";
-            const auto args = {"signet", wildcard.data(), "output.wav", "norm", "-3"};
-            REQUIRE_THROWS(signet.Main((int)args.size(), args.begin()));
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/*.wav output.wav norm -3"};
+            REQUIRE_THROWS(signet.Main(args.Size(), args.Args()));
         }
 
         SUBCASE("when input path is a patternless directory scan all files in that") {
             const auto wildcard = test_folder;
-            const auto args = {"signet", wildcard.data(), "norm", "-3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args = TestHelpers::StringToArgs {"signet test-folder norm -3"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("when input path is a patternless directory with ending slash scan all files in that") {
-            const auto wildcard = test_folder + "/";
-            const auto args = {"signet", wildcard.data(), "norm", "-3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/ norm -3"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("load backup") {
-            const auto args = {"signet", "--load-backup"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("multiple comma separated files") {
-            const auto wildcard = test_folder + "/test.wav," + test_folder + "/test_other.wav";
-            const auto args = {"signet", wildcard.data(), "norm", "-3"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args =
+                TestHelpers::StringToArgs {"signet test-folder/test.wav,test-folder/test-out.wav norm -3"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("read and write a flac file") {
-            const auto args = {"signet",
-                               TEST_DATA_DIRECTORY "/test.flac",
-                               TEST_DATA_DIRECTORY "/test-out.flac",
-                               "fade",
-                               "in",
-                               "50smp"};
-            REQUIRE(signet.Main((int)args.size(), args.begin()) == 0);
+            const auto args =
+                TestHelpers::StringToArgs {"signet " + std::string(TEST_DATA_DIRECTORY "/test.flac") +
+                                           " test-folder/test-out.flac fade in 50smp"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
     }
 }

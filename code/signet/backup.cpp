@@ -15,16 +15,18 @@ SignetBackup::SignetBackup() {
 
     m_backup_files_dir = m_backup_dir / "files";
     m_database_file = m_backup_dir / "backup.json";
-    try {
-        std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
-        i >> m_database;
-        m_parsed_json = true;
-        i.close();
-    } catch (const nlohmann::detail::parse_error &e) {
-        std::cout << e.what() << "\n";
-    } catch (...) {
-        std::cout << "other exception\n";
-        throw;
+    if (ghc::filesystem::is_regular_file(m_database_file)) {
+        try {
+            std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
+            i >> m_database;
+            m_parsed_json = true;
+            i.close();
+        } catch (const nlohmann::detail::parse_error &e) {
+            std::cout << e.what() << "\n";
+        } catch (...) {
+            std::cout << "other exception\n";
+            throw;
+        }
     }
 }
 

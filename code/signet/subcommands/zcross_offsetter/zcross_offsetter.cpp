@@ -106,4 +106,13 @@ TEST_CASE("[ZCross Offset]") {
         REQUIRE(result->interleaved_samples[5] == 1);
         REQUIRE(result->interleaved_samples[6] == 1);
     }
+    SUBCASE("search size larger than file will just be clamped") {
+        AudioFile buf;
+        buf.interleaved_samples.resize(10, 1.0);
+        buf.num_channels = 1;
+
+        auto result =
+            TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>("zcross-offset 100s", buf);
+        REQUIRE(result);
+    }
 }

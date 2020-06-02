@@ -8,7 +8,7 @@ Signet can work on both single audio files and whole directories. Run with the a
 This tool is different to [SoX](http://sox.sourceforge.net/) in that the focus is on the type of batch processing that is common to sample library developers. It's also designed to be easier to build and extend. 
 
 ### Examples
-`signet MyAudioFile.wav norm 3`
+`signet MyAudioFile.wav norm -3`
 
 `signet MyFolder fade in 0.5s out 2s log`
 

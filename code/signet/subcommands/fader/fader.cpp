@@ -44,7 +44,7 @@ static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 siz
     if (x_index == size) return 1;
 
     const double x = (1.0 / (double)size) * x_index;
-    static constexpr double silent_db = -90;
+    static constexpr double silent_db = -30;
     static constexpr double range_db = -silent_db;
     switch (shape) {
         case Fader::Shape::Linear: {
@@ -57,12 +57,14 @@ static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 siz
             return (-(std::cos(x * pi) - 1.0)) / 2.0;
         }
         case Fader::Shape::Exp: {
-            // TODO: this and exp are the same thing??
-            return DBToAmp(silent_db + range_db * x);
+            return std::pow(0.5, (1 - x) * 5);
         }
         case Fader::Shape::Log: {
-            // TODO: this and log are the same thing??
-            return std::clamp((AmpToDB(x) + range_db) / range_db, 0.0, 1.0);
+            const auto db = AmpToDB(x);
+            if (db < silent_db) {
+                return x;
+            }
+            return (db + range_db) / range_db;
         }
         case Fader::Shape::Sqrt: {
             return std::sqrt(x);
@@ -184,7 +186,6 @@ TEST_CASE("[Fader]") {
 
         const auto TestSuite = [&](auto shape) {
             const std::string shape_str {shape};
-            CAPTURE(shape_str);
             TestArgs("fade out 10smp " + shape_str + " in 10smp " + shape_str, 10, 10);
             TestArgs("fade out 1smp " + shape_str + " in 1smp " + shape_str, 1, 1);
             TestArgs("fade out 60smp " + shape_str + " in 60smp " + shape_str, 60, 60);

@@ -13,8 +13,8 @@ class Fader final : public Subcommand {
     void Run(SignetInterface &signet) override { signet.ProcessAllFiles(*this); }
 
   private:
-    Shape m_fade_out_shape = Shape::Log;
-    Shape m_fade_in_shape = Shape::Log;
+    Shape m_fade_out_shape = Shape::Sine;
+    Shape m_fade_in_shape = Shape::Sine;
     std::optional<AudioDuration> m_fade_out_duration {};
     std::optional<AudioDuration> m_fade_in_duration {};
 };

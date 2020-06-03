@@ -34,68 +34,45 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         "Load the most recent backup");
 
-    app.add_option("input-file-or-directory", m_input_filepath_pattern,
-                   "The file, directory or glob pattern to process")
+    app.add_option("input-file-or-directory", m_inputs, "The file, directory or glob pattern to process")
         ->required();
 
     app.add_option("output-filename", m_output_filepath,
-                   "The filename to write to - only relevant if the input file is not a directory");
+                   "The filename to write to - only relevant if the input is a single file")
+        ->check([&](const std::string &str) {
+            if (IsProcessingMultipleFiles()) {
+                return "the input path is a directory or pattern, there must be no output filepath";
+            } else {
+                ghc::filesystem::path path(str);
+                if (ghc::filesystem::is_directory(path)) {
+                    return "output filepath cannot be a directory if the input filepath is a file";
+                } else if (path.extension() != ".wav" && path.extension() != ".flac") {
+                    return "only WAV or FLAC files can be written";
+                }
+            }
+            return "";
+        });
 
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {
-        subcommand_clis.push_back(subcommand->CreateSubcommandCLI(app));
+        auto s = subcommand->CreateSubcommandCLI(app);
+        s->final_callback([&] { subcommand->Run(*this); });
     }
 
-    CLI11_PARSE(app, argc, argv);
+    try {
+        app.parse(argc, argv);
+    } catch (const CLI::ParseError &e) {
+        if (e.get_exit_code() != 0) {
+            std::atexit([]() { std::cout << rang::style::reset; });
+            std::cout << rang::fg::red;
+        }
+        return app.exit(e);
+    }
 
     m_backup.ResetBackup(); // if we have gotten here we must not be wanting to load a backup
 
-    if (IsProcessingMultipleFiles()) {
-        if (m_output_filepath) {
-            ErrorWithNewLine("the input path is a directory or pattern, there must be no output filepath");
-            return 1;
-        }
-    } else {
-        if (m_output_filepath) {
-            if (ghc::filesystem::is_directory(*m_output_filepath)) {
-                ErrorWithNewLine("output filepath cannot be a directory if the input filepath is a file");
-                return 1;
-            } else if (m_output_filepath->extension() != ".wav" &&
-                       m_output_filepath->extension() != ".flac") {
-                ErrorWithNewLine("only WAV files can be written");
-                return 1;
-            }
-        }
-    }
-
-    m_input_filepath_pattern.BuildAllMatchesFilenames();
-    if (!m_input_filepath_pattern.GetAllMatchedFilenames().Size()) {
-        ErrorWithNewLine("There are no matching files for the pattern ",
-                         m_input_filepath_pattern.GetWholePattern());
-        return 1;
-    }
-
-    for (const auto &path : m_input_filepath_pattern.GetAllMatchedFilenames()) {
-        if (auto file = ReadAudioFile(path)) {
-            m_all_files.push_back({*file, path});
-        }
-    }
-
-    for (auto &subcommand_cli : app.get_subcommands()) {
-        Subcommand *subcommand = nullptr;
-        for (usize i = 0; i < subcommand_clis.size(); ++i) {
-            if (subcommand_clis[i] == subcommand_cli) {
-                subcommand = m_subcommands[i].get();
-            }
-        }
-
-        if (subcommand) {
-            subcommand->Run(*this);
-        }
-    }
-
     if (m_num_files_processed) {
-        for (auto &[file, path] : m_all_files) {
+        for (auto &[file, path] : m_inputs.GetAllFiles()) {
             auto filepath = path;
 
             if (m_output_filepath) {
@@ -114,7 +91,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 }
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
-    for (auto &[file, path] : m_all_files) {
+    for (auto &[file, path] : m_inputs.GetAllFiles()) {
         if (subcommand.Process(file)) {
             m_num_files_processed++;
         }

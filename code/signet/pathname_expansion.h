@@ -136,25 +136,32 @@ class ExpandablePathnameListParser {
 class ExpandedPathnames {
   public:
     ExpandedPathnames() {}
-    ExpandedPathnames(std::string_view pathnames) : m_whole_list(pathnames) {
+    ExpandedPathnames(const std::string &pathnames) {
         ExpandablePathnameListParser parser(pathnames);
         m_expandables = std::move(parser.Parse());
+
+        for (auto &e : m_expandables) {
+            e->AddMatchingPathsToSet(m_all_matched_filesnames);
+        }
+
+        if (m_all_matched_filesnames.Size() == 0) {
+            throw CLI::ValidationError("input files",
+                                       "there are no files that match the pattern " + pathnames);
+        }
+
+        for (const auto &path : m_all_matched_filesnames) {
+            if (auto file = ReadAudioFile(path)) {
+                m_all_files.push_back({*file, path});
+            }
+        }
     }
 
     bool IsSingleFile() const { return m_expandables.size() == 1 && m_expandables[0]->IsSingleFile(); }
 
-    void BuildAllMatchesFilenames() {
-        for (auto &e : m_expandables) {
-            e->AddMatchingPathsToSet(m_all_matched_filesnames);
-        }
-    }
-
-    const CanonicalPathSet &GetAllMatchedFilenames() const { return m_all_matched_filesnames; }
-
-    std::string GetWholePattern() const { return m_whole_list; }
+    std::vector<std::pair<AudioFile, ghc::filesystem::path>> &GetAllFiles() { return m_all_files; }
 
   private:
+    std::vector<std::pair<AudioFile, ghc::filesystem::path>> m_all_files {};
     CanonicalPathSet m_all_matched_filesnames {};
-    std::string m_whole_list;
     std::vector<std::unique_ptr<ExpandablePathname>> m_expandables;
 };

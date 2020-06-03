@@ -18,7 +18,7 @@ class SignetInterface final : public SubcommandProcessor {
 
     int Main(const int argc, const char *const argv[]);
     void ProcessAllFiles(Subcommand &subcommand) override;
-    bool IsProcessingMultipleFiles() const override { return !m_input_filepath_pattern.IsSingleFile(); }
+    bool IsProcessingMultipleFiles() const override { return !m_inputs.IsSingleFile(); }
 
   private:
     std::vector<std::unique_ptr<Subcommand>> m_subcommands {};
@@ -27,7 +27,5 @@ class SignetInterface final : public SubcommandProcessor {
 
     int m_num_files_processed = 0;
     std::optional<ghc::filesystem::path> m_output_filepath {};
-    ExpandedPathnames m_input_filepath_pattern {};
-
-    std::vector<std::pair<AudioFile, ghc::filesystem::path>> m_all_files {};
+    ExpandedPathnames m_inputs {};
 };

@@ -25,7 +25,7 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     in->add_option("length", m_fade_in_duration,
                    WrapText("The length of the fade in. " + AudioDuration::TypeDescription(), 80))
         ->required()
-        ->type_name(AudioDuration::TypeName());
+        ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
 
     in->add_option("shape", m_fade_in_shape,
                    "The shape of the fade-in curve. The default is the 'sine' shape")
@@ -35,7 +35,7 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     out->add_option("length", m_fade_out_duration,
                     WrapText("The length of the fade out. " + AudioDuration::TypeDescription(), 80))
         ->required()
-        ->type_name(AudioDuration::TypeName());
+        ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
 
     out->add_option("shape", m_fade_out_shape,
                     "The shape of the fade-out curve. The default is the 'sine' shape")

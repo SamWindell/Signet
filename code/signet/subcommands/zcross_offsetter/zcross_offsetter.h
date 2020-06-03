@@ -42,7 +42,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
                              AudioDuration::TypeDescription(),
                          80))
             ->required()
-            ->type_name(AudioDuration::TypeName());
+            ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
         return zcross;
     }
 

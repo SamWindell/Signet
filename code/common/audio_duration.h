@@ -63,9 +63,7 @@ class AudioDuration {
         }
     }
 
-    static std::string ValidatorDescription() { return "Duration unit validator"; }
-
-    static std::string TypeName() { return "AUDIO-DURATION"; }
+    static std::string ValidatorDescription() { return "AUDIO-DURATION"; }
 
     static std::string TypeDescription() {
         return "This value is a number directly followed by a unit. The unit can be one of {" +

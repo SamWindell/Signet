@@ -27,7 +27,7 @@ class SignetInterface final : public SubcommandProcessor {
 
     int m_num_files_processed = 0;
     std::optional<ghc::filesystem::path> m_output_filepath {};
-    ExpandedPathnames<> m_input_filepath_pattern {};
+    ExpandedPathnames m_input_filepath_pattern {};
 
     std::vector<std::pair<AudioFile, ghc::filesystem::path>> m_all_files {};
 };

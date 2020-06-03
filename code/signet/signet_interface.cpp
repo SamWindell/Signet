@@ -37,6 +37,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_option("input-file-or-directory", m_input_filepath_pattern,
                    "The file, directory or glob pattern to process")
         ->required();
+
     app.add_option("output-filename", m_output_filepath,
                    "The filename to write to - only relevant if the input file is not a directory");
 

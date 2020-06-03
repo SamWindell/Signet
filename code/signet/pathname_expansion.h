@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "CLI11.hpp"
 #include "doctest.hpp"
 #include "filesystem.hpp"
 
@@ -96,21 +97,6 @@ class ExpandableDirectoryPathname final : public ExpandablePathname {
     }
 };
 
-struct RealFilesystemFunctions {
-    static bool IsDirectory(std::string_view str) { return ghc::filesystem::is_directory(std::string(str)); }
-    static bool IsRegularFile(std::string_view str) {
-        return ghc::filesystem::is_regular_file(std::string(str));
-    }
-};
-
-struct DummyFilesystemFunctions {
-    static bool IsDirectory(std::string_view str) { return str.find('/') != std::string::npos; }
-    static bool IsRegularFile(std::string_view str) {
-        return ghc::filesystem::path(std::string(str)).has_extension();
-    }
-};
-
-template <typename FilesystemFunctions>
 class ExpandablePathnameListParser {
   public:
     ExpandablePathnameListParser(std::string_view list) : m_list(list) {}
@@ -120,14 +106,13 @@ class ExpandablePathnameListParser {
         ForEachCommaDelimitedSection(m_list, [&](std::string_view section) {
             if (section.find('*') != std::string::npos) {
                 result.push_back(std::make_unique<ExpandablePatternPathname>(section));
-            } else if (FilesystemFunctions::IsDirectory(section)) {
+            } else if (ghc::filesystem::is_directory(std::string(section))) {
                 result.push_back(std::make_unique<ExpandableDirectoryPathname>(section));
-            } else if (FilesystemFunctions::IsRegularFile(section)) {
+            } else if (ghc::filesystem::is_regular_file(std::string(section))) {
                 result.push_back(std::make_unique<SingleFilePathname>(section));
             } else {
-                // invalid, just do nothing
-                WarningWithNewLine("The input filename ", section,
-                                   " is neither a file, directory, or pattern");
+                throw CLI::ValidationError("Input filename", "The input filename " + std::string(section) +
+                                                                 " is neither a file, directory, or pattern");
             }
         });
         return result;
@@ -148,12 +133,11 @@ class ExpandablePathnameListParser {
     std::string_view m_list;
 };
 
-template <typename FilesystemFunctions = RealFilesystemFunctions>
 class ExpandedPathnames {
   public:
     ExpandedPathnames() {}
     ExpandedPathnames(std::string_view pathnames) : m_whole_list(pathnames) {
-        ExpandablePathnameListParser<FilesystemFunctions> parser(pathnames);
+        ExpandablePathnameListParser parser(pathnames);
         m_expandables = std::move(parser.Parse());
     }
 

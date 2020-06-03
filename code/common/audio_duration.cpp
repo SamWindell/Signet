@@ -4,13 +4,13 @@
 
 TEST_CASE("Audio Duration") {
     SUBCASE("validation") {
-        REQUIRE(AudioDuration::ValidateString("100smp") == "");
-        REQUIRE(AudioDuration::ValidateString("100s") == "");
-        REQUIRE(AudioDuration::ValidateString("100ms") == "");
-        REQUIRE(AudioDuration::ValidateString("100%") == "");
-        REQUIRE(AudioDuration::ValidateString("22.334%") == "");
-        REQUIRE(AudioDuration::ValidateString("foo") != "");
-        REQUIRE(AudioDuration::ValidateString("10") != "");
+        REQUIRE_NOTHROW(AudioDuration("100smp"));
+        REQUIRE_NOTHROW(AudioDuration("100s"));
+        REQUIRE_NOTHROW(AudioDuration("100ms"));
+        REQUIRE_NOTHROW(AudioDuration("100%"));
+        REQUIRE_NOTHROW(AudioDuration("22.334%"));
+        REQUIRE_THROWS(AudioDuration("foo"));
+        REQUIRE_THROWS(AudioDuration("10"));
     }
 
     SUBCASE("constructors") {

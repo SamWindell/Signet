@@ -22,22 +22,20 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     }
 
     auto in = fade->add_subcommand("in", "Fade in the volume at the start of the audio");
-    in->add_option("length", m_fade_in_duration,
+    in->add_option("fade-in length", m_fade_in_duration,
                    WrapText("The length of the fade in. " + AudioDuration::TypeDescription(), 80))
-        ->required()
-        ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+        ->required();
 
-    in->add_option("shape", m_fade_in_shape,
+    in->add_option("fade-in shape", m_fade_in_shape,
                    "The shape of the fade-in curve. The default is the 'sine' shape")
         ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
 
     auto out = fade->add_subcommand("out", "Fade out the volume at the end of the audio");
-    out->add_option("length", m_fade_out_duration,
+    out->add_option("fade-out length", m_fade_out_duration,
                     WrapText("The length of the fade out. " + AudioDuration::TypeDescription(), 80))
-        ->required()
-        ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+        ->required();
 
-    out->add_option("shape", m_fade_out_shape,
+    out->add_option("fade-out shape", m_fade_out_shape,
                     "The shape of the fade-out curve. The default is the 'sine' shape")
         ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
 

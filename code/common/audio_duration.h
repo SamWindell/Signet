@@ -4,6 +4,7 @@
 #include <string>
 #include <utility>
 
+#include "CLI11.hpp"
 #include "doctest.hpp"
 #include "magic_enum.hpp"
 
@@ -21,7 +22,13 @@ class AudioDuration {
     AudioDuration(Unit unit, double value) : m_unit(unit), m_value(value) {}
 
     AudioDuration(const std::string &string) {
-        m_unit = *GetUnit(string);
+        const auto unit = GetUnit(string);
+        if (!unit) {
+            throw CLI::ValidationError("AudioDuration",
+                                       "This value must be a number followed by one of these units: " +
+                                           GetListOfUnits());
+        }
+        m_unit = *unit;
         m_value = std::stof(string);
     }
 
@@ -50,17 +57,13 @@ class AudioDuration {
         return {};
     }
 
-    static std::string ValidateString(const std::string &str) {
-        if (const auto unit = GetUnit(str); unit) {
-            return {};
-        } else {
-            std::string error {"Value must be specified as one of the following units: "};
-            for (const auto u : available_units) {
-                error.append(u.first);
-                error.append(" ");
-            }
-            return error;
+    static std::string GetListOfUnits() {
+        std::string result;
+        for (const auto u : available_units) {
+            result.append(u.first);
+            result.append(" ");
         }
+        return result;
     }
 
     static std::string ValidatorDescription() { return "AUDIO-DURATION"; }

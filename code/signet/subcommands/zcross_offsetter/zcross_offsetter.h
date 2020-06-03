@@ -41,8 +41,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
                 WrapText("The duration from the start of the sample to search for the zero crossing in. " +
                              AudioDuration::TypeDescription(),
                          80))
-            ->required()
-            ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+            ->required();
         return zcross;
     }
 

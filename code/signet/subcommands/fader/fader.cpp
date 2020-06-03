@@ -96,6 +96,9 @@ bool Fader::Process(AudioFile &input) {
             std::min(input.NumFrames() - 1,
                      m_fade_in_duration->GetDurationAsFrames(input.sample_rate, input.NumFrames()));
         PerformFade(input, 0, (s64)fade_in_frames, m_fade_in_shape);
+
+        MessageWithNewLine("Fader", "Fading in ", fade_in_frames, " frames with a ",
+                           magic_enum::enum_name(m_fade_in_shape), " curve");
     }
     if (m_fade_out_duration) {
         const auto fade_out_frames =
@@ -103,6 +106,9 @@ bool Fader::Process(AudioFile &input) {
         const auto last = (s64)input.NumFrames() - 1;
         const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
         PerformFade(input, last, start_frame, m_fade_out_shape);
+
+        MessageWithNewLine("Fader", "Fading out ", fade_out_frames, " frames with a ",
+                           magic_enum::enum_name(m_fade_out_shape), " curve");
     }
 
     return true;

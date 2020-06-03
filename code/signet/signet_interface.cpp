@@ -27,9 +27,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag_callback(
         "--load-backup",
         [this]() {
-            std::cout << "Loading most recent backup...\n";
+            MessageWithNewLine("Signet", "Loading most recent backup...");
             m_backup.LoadBackup();
-            std::cout << "Done.\n";
+            MessageWithNewLine("Signet", "Done.");
             throw CLI::Success();
         },
         "Load the most recent backup");

@@ -33,7 +33,7 @@ bool CanFileBeConvertedToBitDepth(const AudioFile &file, const unsigned bit_dept
 }
 
 std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
-    std::cout << "Reading file " << path << "\n";
+    MessageWithNewLine("Signet", "Reading file ", path);
     AudioFile result {};
     const auto ext = path.extension();
     std::vector<float> f32_buf {};
@@ -236,29 +236,29 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
     switch (code) {
         case FLAC__STREAM_ENCODER_INIT_STATUS_OK: return;
         case FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR");
             return;
             /**< General failure to set up encoder; call FLAC__stream_encoder_get_state() for cause. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER");
             return;
             /**< The library was not compiled with support for the given container
              * format.
              */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS");
             return;
             /**< A required callback was not supplied. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS");
             return;
             /**< The encoder has an invalid setting for number of channels. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE");
             return;
             /**< The encoder has an invalid setting for bits-per-sample.
              * FLAC supports 4-32 bps but the reference encoder currently supports
@@ -266,39 +266,39 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
              */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE");
             return;
             /**< The encoder has an invalid setting for the input sample rate. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE");
             return;
             /**< The encoder has an invalid setting for the block size. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER");
             return;
             /**< The encoder has an invalid setting for the maximum LPC order. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION");
             return;
             /**< The encoder has an invalid setting for the precision of the quantized linear predictor
              * coefficients. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER");
             return;
             /**< The specified block size is less than the maximum LPC order. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE");
             return;
             /**< The encoder is bound to the <A HREF="../format.html#subset">Subset</A> but other settings
              * violate it. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA");
             return;
             /**< The metadata input to the encoder is invalid, in one of the following ways:
              * - FLAC__stream_encoder_set_metadata() was called with a null pointer but a block count > 0
@@ -309,7 +309,7 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
              */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED:
-            std::cout << "FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED\n";
+            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED");
             return;
             /**< FLAC__stream_encoder_init_*() was called when the encoder was
              * already initialized, usually because
@@ -380,7 +380,7 @@ bool WriteAudioFile(const ghc::filesystem::path &filename,
         result = WriteWaveFile(filename, audio_file, bits_per_sample);
     }
 
-    if (result) std::cout << "Successfully wrote file " << filename << "\n";
+    if (result) MessageWithNewLine("Signet", "Successfully wrote file ", filename);
     return result;
 }
 

@@ -21,7 +21,7 @@ using usize = size_t;
 
 template <typename Arg, typename... Args>
 void ErrorWithNewLine(Arg &&arg, Args &&... args) {
-    std::cout << rang::fg::red << "ERROR: " << rang::fg::reset;
+    std::cout << rang::fg::red << rang::style::bold << "ERROR: " << rang::fg::reset << rang::style::reset;
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
@@ -29,7 +29,16 @@ void ErrorWithNewLine(Arg &&arg, Args &&... args) {
 
 template <typename Arg, typename... Args>
 void WarningWithNewLine(Arg &&arg, Args &&... args) {
-    std::cout << rang::fg::yellow << "WARNING: " << rang::fg::reset;
+    std::cout << rang::fg::yellow << rang::style::bold << "WARNING: " << rang::fg::reset
+              << rang::style::reset;
+    std::cout << std::forward<Arg>(arg);
+    ((std::cout << std::forward<Args>(args)), ...);
+    std::cout << "\n";
+}
+
+template <typename Arg, typename... Args>
+void MessageWithNewLine(const std::string_view heading, Arg &&arg, Args &&... args) {
+    std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";

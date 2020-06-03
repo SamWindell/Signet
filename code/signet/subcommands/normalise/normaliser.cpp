@@ -59,7 +59,7 @@ bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
     }
     const double gain = m_processor->GetGain(DBToAmp(m_target_decibels));
 
-    std::cout << "Applying a gain of " << gain << "\n";
+    MessageWithNewLine("Normaliser", "Applying a gain of ", gain);
 
     for (auto &s : input_audio.interleaved_samples) {
         s *= gain;

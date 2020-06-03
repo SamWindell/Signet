@@ -41,13 +41,19 @@ bool Converter::Process(AudioFile &input) {
         }
         case Mode::Converting: {
             if (!input.interleaved_samples.size()) return false;
-            if (m_bit_depth == input.bits_per_sample && m_sample_rate == input.sample_rate) return false;
+            if (m_bit_depth == input.bits_per_sample && m_sample_rate == input.sample_rate) {
+                MessageWithNewLine("Converter", "No conversion necessary");
+                return false;
+            }
             input.bits_per_sample = m_bit_depth;
             if (input.sample_rate == m_sample_rate) {
-                input.sample_rate = m_sample_rate;
+                MessageWithNewLine("Converter", "Seting the bit rate from ", input.bits_per_sample, " to ",
+                                   m_bit_depth);
                 return true;
             }
 
+            MessageWithNewLine("Converter", "Converting sample rate from ", input.sample_rate, " to ",
+                               m_sample_rate);
             const auto result_num_frames =
                 (usize)(input.NumFrames() * ((double)m_sample_rate / (double)input.sample_rate));
             std::vector<double> result_interleaved_samples(input.num_channels * result_num_frames);

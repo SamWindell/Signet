@@ -5,6 +5,7 @@
 
 #include "doctest.hpp"
 
+#include "common.h"
 #include "test_helpers.h"
 #include "tests_config.h"
 
@@ -23,10 +24,7 @@ SignetBackup::SignetBackup() {
             m_parsed_json = true;
             i.close();
         } catch (const nlohmann::detail::parse_error &e) {
-            std::cout << e.what() << "\n";
-        } catch (...) {
-            std::cout << "other exception\n";
-            throw;
+            WarningWithNewLine("could not parse json backup file ", m_database_file, e.what());
         }
     }
 }
@@ -34,7 +32,7 @@ SignetBackup::SignetBackup() {
 bool SignetBackup::LoadBackup() {
     if (!m_parsed_json) return false;
     for (auto [hash, path] : m_database["files"].items()) {
-        std::cout << "Loading backed-up file " << path << "\n";
+        MessageWithNewLine("Signet", "Loading backed-up file ", path);
         ghc::filesystem::copy_file(m_backup_files_dir / hash, path,
                                    ghc::filesystem::copy_options::overwrite_existing);
     }
@@ -62,7 +60,7 @@ void SignetBackup::AddFileToBackup(const ghc::filesystem::path &path) {
                                ghc::filesystem::copy_options::update_existing);
     m_database["files"][hash_string] = path.generic_string();
 
-    std::cout << "Backing-up file " << path << "\n";
+    MessageWithNewLine("Signet", "Backing-up file ", path);
     std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
     o << std::setw(2) << m_database << std::endl;
     o.close();

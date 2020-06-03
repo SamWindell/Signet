@@ -126,7 +126,8 @@ class ExpandablePathnameListParser {
                 result.push_back(std::make_unique<SingleFilePathname>(section));
             } else {
                 // invalid, just do nothing
-                WarningWithNewLine("The input filename ", section, " is not valid");
+                WarningWithNewLine("The input filename ", section,
+                                   " is neither a file, directory, or pattern");
             }
         });
         return result;

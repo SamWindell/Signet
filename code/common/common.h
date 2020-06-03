@@ -76,3 +76,5 @@ class path;
 } // namespace ghc
 
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &path, const char *mode);
+
+std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces = 0);

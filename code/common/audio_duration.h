@@ -5,6 +5,7 @@
 #include <utility>
 
 #include "doctest.hpp"
+#include "magic_enum.hpp"
 
 #include "common.h"
 
@@ -64,7 +65,34 @@ class AudioDuration {
 
     static std::string ValidatorDescription() { return "Duration unit validator"; }
 
+    static std::string TypeName() { return "AUDIO-DURATION"; }
+
+    static std::string TypeDescription() {
+        return "This value is a number directly followed by a unit. The unit can be one of {" +
+               GetCommaSeparatedUnits() + "}. These represent {" + GetCommaSeparatedUnitsNames() +
+               "} respectively. The percent option specifies the duration relative to the whole "
+               "length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp";
+    }
+
   private:
+    static std::string GetCommaSeparatedUnits() {
+        std::string result;
+        static const std::string divider = ", ";
+        for (auto [unit, value] : available_units) {
+            result += std::string(unit) + divider;
+        }
+        return result.substr(0, result.size() - divider.size());
+    }
+
+    static std::string GetCommaSeparatedUnitsNames() {
+        std::string result;
+        static const std::string divider = ", ";
+        for (const auto &name : magic_enum::enum_names<Unit>()) {
+            result += std::string(name) + divider;
+        }
+        return result.substr(0, result.size() - divider.size());
+    }
+
     static constexpr std::pair<const char *, Unit> available_units[] = {{"s", Unit::Seconds},
                                                                         {"ms", Unit::Milliseconds},
                                                                         {"%", Unit::Percent},

@@ -1,5 +1,6 @@
 #include "common.h"
 
+#include "doctest.hpp"
 #include "filesystem.hpp"
 
 bool PatternMatch(std::string_view pattern, std::string_view name) {
@@ -71,4 +72,33 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &pa
 #else
     return {std::fopen(path.generic_string().data(), mode), &SafeFClose};
 #endif
+}
+
+std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces) {
+    std::string result;
+    usize col = 0;
+    for (const auto c : text) {
+        if (col >= width && c == ' ') {
+            result += '\n';
+            for (usize i = 0; i < indent_spaces; ++i) {
+                result += ' ';
+            }
+            col = 0;
+        } else {
+            result += c;
+            col++;
+        }
+    }
+    return result;
+}
+
+TEST_CASE("WrapText") {
+    std::cout << "WrapText\n";
+    std::cout << WrapText("hello there my friend", 5, 0) << "\n";
+    std::cout
+        << WrapText(
+               "hello there my friend, this is a rather long line, I'd like to split it up into multiple "
+               "lines. This will be better for readability. I want to use this with the CLI descriptions.",
+               15, 0)
+        << "\n";
 }

@@ -9,8 +9,8 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
         ->required()
         ->check(CLI::Range(-200, 0));
     norm->add_flag("-c,--common-gain", m_use_common_gain,
-                   "When using on a directory, amplifiy all the samples by the same amount");
-    norm->add_flag("--rms", m_use_rms, "Use RMS normalisation instead of peak");
+                   "When there are multiple files, amplifiy all the samples by the same amount");
+    norm->add_flag("--rms", m_use_rms, "(experimental) Use RMS normalisation instead of peak");
     return norm;
 }
 

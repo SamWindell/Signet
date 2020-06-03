@@ -20,7 +20,7 @@ SignetInterface::SignetInterface() {
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
-    CLI::App app {"Tools for processing audio files"};
+    CLI::App app {"Audio file processor"};
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
@@ -34,9 +34,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         "Load the most recent backup");
 
-    app.add_option("input-file-or-directory", m_input_filepath_pattern, "The file or directory to read from")
+    app.add_option("input-file-or-directory", m_input_filepath_pattern,
+                   "The file, directory or glob pattern to process")
         ->required();
-    app.add_option("output-wave-filename", m_output_filepath,
+    app.add_option("output-filename", m_output_filepath,
                    "The filename to write to - only relevant if the input file is not a directory");
 
     std::vector<CLI::App *> subcommand_clis;

@@ -29,17 +29,20 @@ class ZeroCrossingOffsetter final : public Subcommand {
     void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override {
-        auto zcross = app.add_subcommand(
-            "zcross-offset", "Offset the start of a FLAC or WAV file to the nearest zero-crossing");
+        auto zcross = app.add_subcommand("zcross-offset",
+                                         "Offset the start of the sample to the nearest zero-crossing");
         zcross->add_flag(
             "-a,--append-skipped", m_append_skipped_frames_on_end,
             "Append the frames offsetted to the end of the file - useful when the sample is a seamless loop");
 
         zcross
-            ->add_option("search_size", m_search_size,
-                         "The duration from the start of the sample to search for the zero crossing in")
+            ->add_option(
+                "search_size", m_search_size,
+                WrapText("The duration from the start of the sample to search for the zero crossing in. " +
+                             AudioDuration::TypeDescription(),
+                         80))
             ->required()
-            ->check(AudioDuration::ValidateString, AudioDuration::ValidatorDescription());
+            ->type_name(AudioDuration::TypeName());
         return zcross;
     }
 

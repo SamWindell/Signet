@@ -8,6 +8,7 @@ Signet is a command line program designed to make sample library development eas
 ### Limitations
 - Currently only supports reading and writing WAV and FLAC files.
 - The filename globbing always searches recursively down through folders - there is not yet an option to only scan the top folder.
+- Any metadata in the file is discarded - such as loop markers in a WAV file.
 
 ### Building
 To get Signet, you currently have to build it from source. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.

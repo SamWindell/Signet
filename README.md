@@ -21,6 +21,8 @@ Each subcommand has it's own set of options. To show these add `--help` after th
 - `convert`. Converts a file's sample rate and bit depth. Uses the high quality resampler r8brain.
 - `silence-remove`. Removes silence from the end, start or both start and end of the sample.
 - `trim`. Removes a chunk of specified length from the end, start or both start and end of the sample.
+- `pitch-detect`. Prints the detected pitch of the sample.
+- `tune`. Change the pitch of the sample by slowing it down or speeding it up.
 
 ### Usage
 Signet is run from the command line. You first specify the input filename. This can be either a single filename or a filename pattern (glob). You can also add multiple inputs by comma separating them. You then must specify one or more subcommands. These are the utilites that process the files. They will process the file(s) in the order that they are specified in the command.

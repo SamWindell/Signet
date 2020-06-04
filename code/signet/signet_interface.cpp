@@ -8,6 +8,7 @@
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
+#include "subcommands/pitch_detector/pitch_detector.h"
 #include "subcommands/silence_remover/silence_remover.h"
 #include "subcommands/trimmer/trimmer.h"
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
@@ -21,6 +22,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Converter>());
     m_subcommands.push_back(std::make_unique<SilenceRemover>());
     m_subcommands.push_back(std::make_unique<Trimmer>());
+    m_subcommands.push_back(std::make_unique<PitchDetector>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {

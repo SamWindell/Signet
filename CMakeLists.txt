@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(
     third_party_libs STATIC
+    code/third_party_libs/dywapitchtrack/dywapitchtrack.c
     code/third_party_libs/flac/src/bitmath.c
     code/third_party_libs/flac/src/bitreader.c
     code/third_party_libs/flac/src/bitwriter.c
@@ -40,10 +41,12 @@ add_library(
     code/common/audio_duration.cpp
     code/common/audio_file.cpp
     code/common/common.cpp
+    code/common/midi_pitches.cpp
     code/signet/backup.cpp
     code/signet/signet_interface.cpp
     code/signet/pathname_expansion.cpp
     code/signet/subcommands/converter/converter.cpp
+    code/signet/subcommands/pitch_detector/pitch_detector.cpp
     code/signet/subcommands/fader/fader.cpp
     code/signet/subcommands/trimmer/trimmer.cpp
     code/signet/subcommands/normalise/gain_calculators.cpp

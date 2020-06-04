@@ -10,10 +10,24 @@
 #include "doctest.hpp"
 #include "filesystem.hpp"
 
+#include "audio_file.h"
+#include "common.h"
+
 static void
-ForEachAudioFilesInDirectoryRecursively(const std::string &directory,
+ForEachAudioFilesInDirectoryRecursively(const std::string_view directory,
                                         std::function<void(const ghc::filesystem::path &)> callback) {
-    for (const auto &entry : ghc::filesystem::recursive_directory_iterator(directory)) {
+    for (const auto &entry : ghc::filesystem::recursive_directory_iterator(std::string(directory))) {
+        const auto &path = entry.path();
+        const auto ext = path.extension();
+        if (ext == ".flac" || ext == ".wav") {
+            callback(path);
+        }
+    }
+}
+
+static void ForEachAudioFilesInDirectory(const std::string_view directory,
+                                         std::function<void(const ghc::filesystem::path &)> callback) {
+    for (const auto &entry : ghc::filesystem::directory_iterator(std::string(directory))) {
         const auto &path = entry.path();
         const auto ext = path.extension();
         if (ext == ".flac" || ext == ".wav") {
@@ -30,7 +44,7 @@ class CanonicalPathSet {
 
     bool Contains(const std::string &path) const { return paths.find(path) != paths.end(); }
 
-    usize Size() const { return paths.size(); }
+    auto Size() const { return paths.size(); }
 
     auto begin() { return paths.begin(); }
     auto end() { return paths.end(); }
@@ -41,57 +55,111 @@ class CanonicalPathSet {
     std::unordered_set<std::string> paths {};
 };
 
-class ExpandablePathname {
-  public:
-    ExpandablePathname(const std::string_view str) : m_pathname(str) {}
-    virtual ~ExpandablePathname() {}
-    virtual void AddMatchingPathsToSet(CanonicalPathSet &paths) = 0;
-    virtual bool IsSingleFile() const { return false; }
+struct ExpandablePatternPathname {
+    static void AddMatchingPathsToSet(std::string_view str,
+                                      CanonicalPathSet &paths,
+                                      const std::vector<std::string_view> &exclude_filters) {
+        namespace fs = ghc::filesystem;
 
-  protected:
-    std::string m_pathname;
-};
+        std::string added_slash;
+        if (str.find('/') == std::string_view::npos) {
+            added_slash = "./" + std::string(str);
+            str = added_slash;
+        }
 
-class ExpandablePatternPathname final : public ExpandablePathname {
-  public:
-    ExpandablePatternPathname(const std::string_view str) : ExpandablePathname(str) {}
-    void AddMatchingPathsToSet(CanonicalPathSet &paths) override {
-        ForEachAudioFilesInDirectoryRecursively(GetDirectoryToStartSearch(), [&](auto path) {
-            if (PatternMatch(m_pathname, path.generic_string())) {
-                paths.Add(path);
-            }
-        });
-    }
+        std::vector<std::string> possible_folders;
 
-  private:
-    std::string GetDirectoryToStartSearch() {
-        if (const auto slash_pos = m_pathname.rfind('/'); slash_pos != std::string::npos) {
-            const auto pattern_pos = m_pathname.find('*');
-            REQUIRE(pattern_pos != std::string::npos);
-            if (pattern_pos < slash_pos) {
-                return ".";
+        size_t pos = 0;
+        size_t prev_pos = 0;
+        std::string_view prev_part = {};
+        while ((pos = str.find('/', pos)) != std::string_view::npos) {
+            const auto folder = str.substr(0, pos);
+            const auto part = str.substr(prev_pos, pos - prev_pos);
+
+            if (!possible_folders.size()) {
+                possible_folders.push_back(std::string(folder));
             } else {
-                return m_pathname.substr(0, slash_pos);
+                std::vector<std::string> new_possible_folders;
+
+                for (const auto &f : possible_folders) {
+                    const std::string with_part = f + "/" + std::string(part);
+
+                    if (part.find("**") != std::string_view::npos) {
+                        for (const auto &entry : fs::recursive_directory_iterator(f)) {
+                            if (entry.is_directory()) {
+                                const auto path = entry.path().generic_string();
+                                if (PatternMatch(folder, path)) {
+                                    new_possible_folders.push_back(path);
+                                }
+                            }
+                        }
+                    } else if (part.find('*') != std::string_view::npos) {
+                        for (const auto &entry : fs::directory_iterator(f)) {
+                            if (entry.is_directory()) {
+                                const auto path = entry.path().generic_string();
+                                if (PatternMatch(folder, path)) {
+                                    new_possible_folders.push_back(path);
+                                }
+                            }
+                        }
+                    } else {
+                        new_possible_folders.push_back(with_part);
+                    }
+                }
+
+                possible_folders = new_possible_folders;
             }
-        } else {
-            return ".";
+
+            pos += 1;
+            prev_pos = pos;
+        }
+
+        const std::string_view last_file_section = str.substr(prev_pos);
+
+        const auto CheckAndRegisterFile = [&](auto path) {
+            const auto generic = path.generic_string();
+            if (PatternMatch(str, generic)) {
+                bool is_valid = true;
+                for (const auto exclude : exclude_filters) {
+                    if (PatternMatch(exclude, generic)) {
+                        is_valid = false;
+                        break;
+                    }
+                }
+                if (is_valid) {
+                    paths.Add(path);
+                }
+            }
+        };
+
+        for (const auto f : possible_folders) {
+            if (last_file_section.find("**") != std::string_view::npos) {
+                ForEachAudioFilesInDirectoryRecursively(f, CheckAndRegisterFile);
+            } else if (last_file_section.find("*") != std::string_view::npos) {
+                ForEachAudioFilesInDirectory(f, CheckAndRegisterFile);
+            } else {
+                fs::path path = f;
+                path /= std::string(last_file_section);
+                CheckAndRegisterFile(path);
+            }
         }
     }
 };
 
-class SingleFilePathname final : public ExpandablePathname {
-  public:
-    SingleFilePathname(const std::string_view str) : ExpandablePathname(str) {}
-    void AddMatchingPathsToSet(CanonicalPathSet &paths) override { paths.Add(m_pathname); }
-    bool IsSingleFile() const override { return true; }
+struct SingleFilePathname {
+    static void AddMatchingPathsToSet(const std::string_view str,
+                                      CanonicalPathSet &paths,
+                                      const std::vector<std::string_view> &exclude_filters) {
+        paths.Add(str);
+    }
 };
 
-class ExpandableDirectoryPathname final : public ExpandablePathname {
-  public:
-    ExpandableDirectoryPathname(const std::string_view str) : ExpandablePathname(str) {}
-    void AddMatchingPathsToSet(CanonicalPathSet &paths) override {
-        const auto parent_directory = ghc::filesystem::path(m_pathname);
-        ForEachAudioFilesInDirectoryRecursively(m_pathname, [&](auto path) {
+struct ExpandableDirectoryPathname {
+    static void AddMatchingPathsToSet(const std::string_view str,
+                                      CanonicalPathSet &paths,
+                                      const std::vector<std::string_view> &exclude_filters) {
+        const auto parent_directory = ghc::filesystem::path(str);
+        ForEachAudioFilesInDirectory(str, [&](auto path) {
             if (parent_directory.compare(path) < 0) {
                 paths.Add(path);
             }
@@ -103,21 +171,33 @@ class ExpandedPathnames {
   public:
     ExpandedPathnames() {}
     ExpandedPathnames(const std::string &pathnames) {
-        m_expandables = std::move(Parse(pathnames));
+        std::vector<std::string_view> include_parts;
+        std::vector<std::string_view> exclude_parts;
+        CanonicalPathSet all_matched_filesnames {};
 
-        for (auto &[is_exclude, e] : m_expandables) {
-            if (!is_exclude) {
-                e->AddMatchingPathsToSet(m_all_matched_filesnames);
+        GetAllCommaDelimitedSections(pathnames, include_parts, exclude_parts);
+
+        for (const auto &include_part : include_parts) {
+            if (include_part.find('*') != std::string_view::npos) {
+                ExpandablePatternPathname::AddMatchingPathsToSet(include_part, all_matched_filesnames,
+                                                                 exclude_parts);
+            } else if (ghc::filesystem::is_directory(std::string(include_part))) {
+                ExpandableDirectoryPathname::AddMatchingPathsToSet(include_part, all_matched_filesnames,
+                                                                   exclude_parts);
+            } else if (ghc::filesystem::is_regular_file(std::string(include_part))) {
+                SingleFilePathname::AddMatchingPathsToSet(include_part, all_matched_filesnames,
+                                                          exclude_parts);
+                num_single_file_parts++;
             } else {
-                e->AddMatchingPathsToSet(m_all_exclude_matched_filesnames);
+                throw CLI::ValidationError("Input filename", "The input filename " +
+                                                                 std::string(include_part) +
+                                                                 " is neither a file, directory, or pattern");
             }
         }
 
-        for (const auto &path : m_all_matched_filesnames) {
-            if (!m_all_exclude_matched_filesnames.Contains(path)) {
-                if (auto file = ReadAudioFile(path)) {
-                    m_all_files.push_back({*file, path});
-                }
+        for (const auto &path : all_matched_filesnames) {
+            if (auto file = ReadAudioFile(path)) {
+                m_all_files.push_back({*file, path});
             }
         }
 
@@ -127,42 +207,26 @@ class ExpandedPathnames {
         }
     }
 
-    bool IsSingleFile() const { return m_expandables.size() == 1 && m_expandables[0].second->IsSingleFile(); }
+    bool IsSingleFile() const { return num_single_file_parts == 1; }
     std::vector<std::pair<AudioFile, ghc::filesystem::path>> &GetAllFiles() { return m_all_files; }
 
   private:
-    static std::vector<std::pair<bool, std::unique_ptr<ExpandablePathname>>>
-    Parse(std::string_view pathnames) {
-        std::vector<std::pair<bool, std::unique_ptr<ExpandablePathname>>> result;
-        ForEachCommaDelimitedSection(pathnames, [&](std::string_view section) {
-            const bool is_exclude = section[0] == '-';
-            if (is_exclude) {
-                section.remove_prefix(1);
-            }
-
-            if (section.find('*') != std::string::npos) {
-                result.push_back({is_exclude, std::make_unique<ExpandablePatternPathname>(section)});
-            } else if (ghc::filesystem::is_directory(std::string(section))) {
-                result.push_back({is_exclude, std::make_unique<ExpandableDirectoryPathname>(section)});
-            } else if (ghc::filesystem::is_regular_file(std::string(section))) {
-                result.push_back({is_exclude, std::make_unique<SingleFilePathname>(section)});
-            } else {
-                throw CLI::ValidationError("Input filename", "The input filename " + std::string(section) +
-                                                                 " is neither a file, directory, or pattern");
-            }
-        });
-        return result;
-    }
-
-    static void ForEachCommaDelimitedSection(std::string_view s,
-                                             std::function<void(std::string_view)> callback) {
+    static void GetAllCommaDelimitedSections(std::string_view s,
+                                             std::vector<std::string_view> &include_parts,
+                                             std::vector<std::string_view> &exclude_parts) {
         const auto RegisterSection = [&](std::string_view section) {
             if (section.size() >= 2 && (section[0] == '"' || section[0] == '\'') &&
                 (section.back() == '"' || section.back() == '\'')) {
                 section.remove_prefix(1);
                 section.remove_suffix(1);
             }
-            callback(section);
+
+            if (section[0] == '-') {
+                section.remove_prefix(1);
+                exclude_parts.push_back(section);
+            } else {
+                include_parts.push_back(section);
+            }
         };
 
         size_t pos = 0;
@@ -174,7 +238,5 @@ class ExpandedPathnames {
     }
 
     std::vector<std::pair<AudioFile, ghc::filesystem::path>> m_all_files {};
-    CanonicalPathSet m_all_matched_filesnames {};
-    CanonicalPathSet m_all_exclude_matched_filesnames {};
-    std::vector<std::pair<bool, std::unique_ptr<ExpandablePathname>>> m_expandables;
+    usize num_single_file_parts = 0;
 };

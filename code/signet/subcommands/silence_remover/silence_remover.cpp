@@ -32,7 +32,7 @@ bool SilenceRemover::Process(AudioFile &input) {
     if (input.interleaved_samples.size() == 0) return false;
 
     usize loud_region_start = 0;
-    usize loud_region_end = input.NumFrames() - 1;
+    usize loud_region_end = input.NumFrames();
     const auto amp_threshold = DBToAmp(m_silence_threshold_db);
 
     if (m_region == Region::Start || m_region == Region::Both) {
@@ -63,7 +63,7 @@ bool SilenceRemover::Process(AudioFile &input) {
             }
 
             if (!is_silent) {
-                loud_region_end = frame;
+                loud_region_end = frame + 1;
                 break;
             }
         }
@@ -75,29 +75,29 @@ bool SilenceRemover::Process(AudioFile &input) {
         loud_region_start = 0;
     else
         loud_region_start -= silence_allowence;
-    loud_region_end = std::min(input.NumFrames() - 1, loud_region_end + 4);
+    loud_region_end = std::min(input.NumFrames(), loud_region_end + 4);
 
-    if (loud_region_start > loud_region_end) {
+    if (loud_region_start >= loud_region_end) {
         MessageWithNewLine("SilenceRemover", "The whole sample is silence - no change will be made");
         return false;
     }
-    if (loud_region_start == 0 && loud_region_end == input.NumFrames() - 1) {
+    if (loud_region_start == 0 && loud_region_end == input.NumFrames()) {
         MessageWithNewLine("SilenceRemover", "No silence to trim at start or end");
         return false;
     }
 
-    if (loud_region_start != 0 && loud_region_end != input.NumFrames() - 1) {
+    if (loud_region_start != 0 && loud_region_end != input.NumFrames()) {
         MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start and ",
-                           input.NumFrames() - (loud_region_end + 1), " frames from the end");
+                           input.NumFrames() - loud_region_end, " frames from the end");
     } else if (loud_region_start) {
         MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start");
     } else {
-        MessageWithNewLine("SilenceRemover", "Removing ", input.NumFrames() - (loud_region_end + 1),
+        MessageWithNewLine("SilenceRemover", "Removing ", input.NumFrames() - loud_region_end,
                            " frames from the end");
     }
 
     if (m_region == Region::End || m_region == Region::Both) {
-        input.interleaved_samples.resize((loud_region_end + 1) * input.num_channels);
+        input.interleaved_samples.resize(loud_region_end * input.num_channels);
     }
     if (m_region == Region::Start || m_region == Region::Both) {
         input.interleaved_samples.erase(input.interleaved_samples.begin(),

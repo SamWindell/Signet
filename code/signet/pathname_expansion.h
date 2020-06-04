@@ -28,6 +28,8 @@ class CanonicalPathSet {
         paths.insert(ghc::filesystem::canonical(path).generic_string());
     }
 
+    bool Contains(const std::string &path) const { return paths.find(path) != paths.end(); }
+
     usize Size() const { return paths.size(); }
 
     auto begin() { return paths.begin(); }
@@ -97,19 +99,53 @@ class ExpandableDirectoryPathname final : public ExpandablePathname {
     }
 };
 
-class ExpandablePathnameListParser {
+class ExpandedPathnames {
   public:
-    ExpandablePathnameListParser(std::string_view list) : m_list(list) {}
+    ExpandedPathnames() {}
+    ExpandedPathnames(const std::string &pathnames) {
+        m_expandables = std::move(Parse(pathnames));
 
-    std::vector<std::unique_ptr<ExpandablePathname>> Parse() {
-        std::vector<std::unique_ptr<ExpandablePathname>> result;
-        ForEachCommaDelimitedSection(m_list, [&](std::string_view section) {
+        for (auto &[is_exclude, e] : m_expandables) {
+            if (!is_exclude) {
+                e->AddMatchingPathsToSet(m_all_matched_filesnames);
+            } else {
+                e->AddMatchingPathsToSet(m_all_exclude_matched_filesnames);
+            }
+        }
+
+        for (const auto &path : m_all_matched_filesnames) {
+            if (!m_all_exclude_matched_filesnames.Contains(path)) {
+                if (auto file = ReadAudioFile(path)) {
+                    m_all_files.push_back({*file, path});
+                }
+            }
+        }
+
+        if (m_all_files.size() == 0) {
+            throw CLI::ValidationError("input files",
+                                       "there are no files that match the pattern " + pathnames);
+        }
+    }
+
+    bool IsSingleFile() const { return m_expandables.size() == 1 && m_expandables[0].second->IsSingleFile(); }
+    std::vector<std::pair<AudioFile, ghc::filesystem::path>> &GetAllFiles() { return m_all_files; }
+
+  private:
+    static std::vector<std::pair<bool, std::unique_ptr<ExpandablePathname>>>
+    Parse(std::string_view pathnames) {
+        std::vector<std::pair<bool, std::unique_ptr<ExpandablePathname>>> result;
+        ForEachCommaDelimitedSection(pathnames, [&](std::string_view section) {
+            const bool is_exclude = section[0] == '-';
+            if (is_exclude) {
+                section.remove_prefix(1);
+            }
+
             if (section.find('*') != std::string::npos) {
-                result.push_back(std::make_unique<ExpandablePatternPathname>(section));
+                result.push_back({is_exclude, std::make_unique<ExpandablePatternPathname>(section)});
             } else if (ghc::filesystem::is_directory(std::string(section))) {
-                result.push_back(std::make_unique<ExpandableDirectoryPathname>(section));
+                result.push_back({is_exclude, std::make_unique<ExpandableDirectoryPathname>(section)});
             } else if (ghc::filesystem::is_regular_file(std::string(section))) {
-                result.push_back(std::make_unique<SingleFilePathname>(section));
+                result.push_back({is_exclude, std::make_unique<SingleFilePathname>(section)});
             } else {
                 throw CLI::ValidationError("Input filename", "The input filename " + std::string(section) +
                                                                  " is neither a file, directory, or pattern");
@@ -118,50 +154,27 @@ class ExpandablePathnameListParser {
         return result;
     }
 
-  private:
     static void ForEachCommaDelimitedSection(std::string_view s,
                                              std::function<void(std::string_view)> callback) {
+        const auto RegisterSection = [&](std::string_view section) {
+            if (section.size() >= 2 && (section[0] == '"' || section[0] == '\'') &&
+                (section.back() == '"' || section.back() == '\'')) {
+                section.remove_prefix(1);
+                section.remove_suffix(1);
+            }
+            callback(section);
+        };
+
         size_t pos = 0;
         while ((pos = s.find(',')) != std::string::npos) {
-            const auto section = s.substr(0, pos);
-            callback(section);
+            RegisterSection(s.substr(0, pos));
             s.remove_prefix(pos + 1);
         }
-        callback(s);
+        RegisterSection(s);
     }
 
-    std::string_view m_list;
-};
-
-class ExpandedPathnames {
-  public:
-    ExpandedPathnames() {}
-    ExpandedPathnames(const std::string &pathnames) {
-        ExpandablePathnameListParser parser(pathnames);
-        m_expandables = std::move(parser.Parse());
-
-        for (auto &e : m_expandables) {
-            e->AddMatchingPathsToSet(m_all_matched_filesnames);
-        }
-
-        if (m_all_matched_filesnames.Size() == 0) {
-            throw CLI::ValidationError("input files",
-                                       "there are no files that match the pattern " + pathnames);
-        }
-
-        for (const auto &path : m_all_matched_filesnames) {
-            if (auto file = ReadAudioFile(path)) {
-                m_all_files.push_back({*file, path});
-            }
-        }
-    }
-
-    bool IsSingleFile() const { return m_expandables.size() == 1 && m_expandables[0]->IsSingleFile(); }
-
-    std::vector<std::pair<AudioFile, ghc::filesystem::path>> &GetAllFiles() { return m_all_files; }
-
-  private:
     std::vector<std::pair<AudioFile, ghc::filesystem::path>> m_all_files {};
     CanonicalPathSet m_all_matched_filesnames {};
-    std::vector<std::unique_ptr<ExpandablePathname>> m_expandables;
+    CanonicalPathSet m_all_exclude_matched_filesnames {};
+    std::vector<std::pair<bool, std::unique_ptr<ExpandablePathname>>> m_expandables;
 };

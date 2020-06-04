@@ -29,6 +29,39 @@ CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
     return convert;
 }
 
+void Converter::ConvertSampleRate(std::vector<double> &buffer,
+                                  const unsigned num_channels,
+                                  const double input_sample_rate,
+                                  const double new_sample_rate) {
+    if (input_sample_rate == new_sample_rate) return;
+    const auto num_frames = buffer.size() / num_channels;
+
+    const auto result_num_frames = (usize)(num_frames * (new_sample_rate / (double)input_sample_rate));
+    std::vector<double> result_interleaved_samples(num_channels * result_num_frames);
+
+    r8b::CDSPResampler24 resampler(input_sample_rate, new_sample_rate, (int)num_frames);
+
+    std::vector<double> channel_buffer;
+    channel_buffer.reserve(num_frames);
+    for (unsigned chan = 0; chan < num_channels; ++chan) {
+        channel_buffer.clear();
+        for (size_t frame = 0; frame < num_frames; ++frame) {
+            channel_buffer.push_back(buffer[frame * num_channels + chan]);
+        }
+
+        std::vector<double> output_buffer(result_num_frames);
+        resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
+                          (int)result_num_frames);
+        for (size_t frame = 0; frame < result_num_frames; ++frame) {
+            result_interleaved_samples[frame * num_channels + chan] = output_buffer[frame];
+        }
+
+        resampler.clear();
+    }
+
+    buffer = result_interleaved_samples;
+}
+
 bool Converter::Process(AudioFile &input) {
     switch (m_mode) {
         case Mode::ValidatingCorrectFormat: {
@@ -54,32 +87,9 @@ bool Converter::Process(AudioFile &input) {
 
             MessageWithNewLine("Converter", "Converting sample rate from ", input.sample_rate, " to ",
                                m_sample_rate);
-            const auto result_num_frames =
-                (usize)(input.NumFrames() * ((double)m_sample_rate / (double)input.sample_rate));
-            std::vector<double> result_interleaved_samples(input.num_channels * result_num_frames);
-
-            r8b::CDSPResampler24 resampler(input.sample_rate, m_sample_rate, (int)input.NumFrames());
-
-            std::vector<double> channel_buffer;
-            channel_buffer.reserve(input.NumFrames());
-            for (unsigned chan = 0; chan < input.num_channels; ++chan) {
-                channel_buffer.clear();
-                for (size_t frame = 0; frame < input.NumFrames(); ++frame) {
-                    channel_buffer.push_back(input.GetSample(chan, frame));
-                }
-
-                std::vector<double> output_buffer(result_num_frames);
-                resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
-                                  (int)result_num_frames);
-                for (size_t frame = 0; frame < result_num_frames; ++frame) {
-                    result_interleaved_samples[frame * input.num_channels + chan] = output_buffer[frame];
-                }
-
-                resampler.clear();
-            }
-
+            ConvertSampleRate(input.interleaved_samples, input.num_channels, input.sample_rate,
+                              (double)m_sample_rate);
             input.sample_rate = m_sample_rate;
-            input.interleaved_samples = result_interleaved_samples;
             return true;
         }
     }

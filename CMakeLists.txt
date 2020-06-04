@@ -48,6 +48,7 @@ add_library(
     code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/pitch_detector/pitch_detector.cpp
     code/signet/subcommands/fader/fader.cpp
+    code/signet/subcommands/tuner/tuner.cpp
     code/signet/subcommands/trimmer/trimmer.cpp
     code/signet/subcommands/normalise/gain_calculators.cpp
     code/signet/subcommands/normalise/normaliser.cpp

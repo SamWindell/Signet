@@ -47,6 +47,7 @@ add_library(
     code/signet/subcommands/normalise/gain_calculators.cpp
     code/signet/subcommands/normalise/normaliser.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
+    code/signet/subcommands/silence_remover/silence_remover.cpp
     code/tests/test_helpers.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)

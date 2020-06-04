@@ -8,6 +8,7 @@
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
+#include "subcommands/silence_remover/silence_remover.h"
 #include "subcommands/zcross_offsetter/zcross_offsetter.h"
 #include "test_helpers.h"
 #include "tests_config.h"
@@ -17,6 +18,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Normaliser>());
     m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
     m_subcommands.push_back(std::make_unique<Converter>());
+    m_subcommands.push_back(std::make_unique<SilenceRemover>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {

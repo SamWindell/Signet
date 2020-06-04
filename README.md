@@ -7,7 +7,6 @@ Signet is a command line program designed to make sample library development eas
 
 ### Limitations
 - Currently only supports reading and writing WAV and FLAC files.
-- The filename globbing always searches recursively down through folders - there is not yet an option to only scan the top folder.
 - Any metadata in the file is discarded - such as loop markers in a WAV file.
 
 ### Building

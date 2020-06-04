@@ -39,9 +39,8 @@ bool Trimmer::Process(AudioFile &input) {
         remaining_region_end = input.NumFrames() - end_size;
     }
 
-    if (remaining_region_start > remaining_region_end) {
+    if (remaining_region_start >= remaining_region_end) {
         WarningWithNewLine(
-            "Trimmer",
             "The trim region would result in the whole sample being removed - no change will be made");
         return false;
     }

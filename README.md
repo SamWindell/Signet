@@ -16,7 +16,7 @@ To get Signet, you currently have to build it from source. However, this process
 ### Current subcommands
 Each subcommand has it's own set of options. To show these add `--help` after the subcommand. For example: `signet norm --help`. You can also run `--help-all` on signet itself to see more info: `signet --help-all`.
 
-- `zcross-offset`. Zero crossing offsetter. Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file. This is useful when used with samples that are seamless loops.
+- `zcross-offset`. Zero crossing offsetter. Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file; this is useful when used with samples that are seamless loops.
 - `norm`. Normalise a sample to a particular decibel level. Can be used on a directory, optionally recursively. With a directory you can normalise the samples to a common gain.
 - `fade`. Fade the start and/or end of the audio. The fade length must be specified. There are options for the shape of the fade curve.
 - `convert`. Converts a file's sample rate and bit depth. Uses the high quality resampler r8brain.

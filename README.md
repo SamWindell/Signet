@@ -20,7 +20,8 @@ Each subcommand has it's own set of options. To show these add `--help` after th
 - `norm`. Normalise a sample to a particular decibel level. Can be used on a directory, optionally recursively. With a directory you can normalise the samples to a common gain.
 - `fade`. Fade the start and/or end of the audio. The fade length must be specified. There are options for the shape of the fade curve.
 - `convert`. Converts a file's sample rate and bit depth. Uses the high quality resampler r8brain.
-- `silence-remove`. Removes silence from the end, start or both of the sample.
+- `silence-remove`. Removes silence from the end, start or both start and end of the sample.
+- `trim`. Removes a chunk of specified length from the end, start or both start and end of the sample.
 
 ### Usage
 Signet is run from the command line. You first specify the input filename. This can be either a single filename or a filename pattern (glob). You can also add multiple inputs by comma separating them. You then must specify one or more subcommands. These are the utilites that process the files. They will process the file(s) in the order that they are specified in the command.

@@ -44,6 +44,7 @@ add_library(
     code/signet/signet_interface.cpp
     code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/fader/fader.cpp
+    code/signet/subcommands/trimmer/trimmer.cpp
     code/signet/subcommands/normalise/gain_calculators.cpp
     code/signet/subcommands/normalise/normaliser.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp

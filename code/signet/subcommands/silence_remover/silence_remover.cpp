@@ -88,7 +88,7 @@ bool SilenceRemover::Process(AudioFile &input) {
 
     if (loud_region_start != 0 && loud_region_end != input.NumFrames() - 1) {
         MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start and ",
-                           input.NumFrames() - loud_region_end, " frames from the end");
+                           input.NumFrames() - (loud_region_end + 1), " frames from the end");
     } else if (loud_region_start) {
         MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start");
     } else {
@@ -97,11 +97,12 @@ bool SilenceRemover::Process(AudioFile &input) {
     }
 
     if (m_region == Region::End || m_region == Region::Both) {
-        input.interleaved_samples.resize(loud_region_end + 1);
+        input.interleaved_samples.resize((loud_region_end + 1) * input.num_channels);
     }
     if (m_region == Region::Start || m_region == Region::Both) {
         input.interleaved_samples.erase(input.interleaved_samples.begin(),
-                                        input.interleaved_samples.begin() + loud_region_start);
+                                        input.interleaved_samples.begin() +
+                                            loud_region_start * input.num_channels);
     }
 
     return true;

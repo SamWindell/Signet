@@ -5,6 +5,7 @@
 #include "doctest.hpp"
 
 #include "audio_file.h"
+#include "subcommands/auto_tuner/auto_tuner.h"
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
@@ -25,6 +26,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Trimmer>());
     m_subcommands.push_back(std::make_unique<PitchDetector>());
     m_subcommands.push_back(std::make_unique<Tuner>());
+    m_subcommands.push_back(std::make_unique<AutoTuner>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {

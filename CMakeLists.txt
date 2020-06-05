@@ -46,6 +46,7 @@ add_library(
     code/signet/signet_interface.cpp
     code/signet/pathname_expansion.cpp
     code/signet/subcommands/converter/converter.cpp
+    code/signet/subcommands/auto_tuner/auto_tuner.cpp
     code/signet/subcommands/pitch_detector/pitch_detector.cpp
     code/signet/subcommands/fader/fader.cpp
     code/signet/subcommands/tuner/tuner.cpp

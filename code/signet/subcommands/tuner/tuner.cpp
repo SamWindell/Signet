@@ -1,6 +1,5 @@
 #include "tuner.h"
 
-#include "audio_file.h"
 #include "common.h"
 #include "subcommands/converter/converter.h"
 
@@ -10,17 +9,17 @@ CLI::App *Tuner::CreateSubcommandCLI(CLI::App &app) {
     return tuner;
 }
 
-bool Tuner::Process(AudioFile &input) {
-    if (!input.interleaved_samples.size()) return false;
-
-    const auto cents_in_octave = 100.0 * 12.0;
-    const auto multiplier = std::pow(2, -m_tune_cents / cents_in_octave);
-
-    MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
-
+void Tuner::ChangePitch(AudioFile &input, const double cents) {
+    constexpr auto cents_in_octave = 100.0 * 12.0;
+    const auto multiplier = std::pow(2, -cents / cents_in_octave);
     const auto new_sample_rate = (double)input.sample_rate * multiplier;
     Converter::ConvertSampleRate(input.interleaved_samples, input.num_channels, (double)input.sample_rate,
                                  new_sample_rate);
+}
 
+bool Tuner::Process(AudioFile &input) {
+    if (!input.interleaved_samples.size()) return false;
+    MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
+    ChangePitch(input, m_tune_cents);
     return true;
 }

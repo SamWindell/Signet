@@ -1,8 +1,15 @@
 #pragma once
 
 #include <array>
+#include <string>
 
 struct MIDIPitch {
+    std::string ToString() const {
+        std::array<char, 32> buf {};
+        std::snprintf(buf.data(), buf.size(), "%.2f", pitch);
+        return std::string(buf.data()) + "Hz (" + name + ": MIDI " + std::to_string(midi_note) + ")";
+    }
+
     int midi_note;
     const char *name;
     double pitch;

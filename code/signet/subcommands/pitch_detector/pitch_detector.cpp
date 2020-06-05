@@ -11,9 +11,7 @@ CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
     return pitch_detector;
 }
 
-bool PitchDetector::Process(AudioFile &input) {
-    if (!input.interleaved_samples.size()) return false;
-
+std::optional<double> PitchDetector::DetectPitch(const AudioFile &input) {
     std::vector<double> channel_pitches;
     ForEachDeinterleavedChannel(
         input.interleaved_samples, input.num_channels, [&](const auto &channel_buffer, auto channel) {
@@ -38,12 +36,18 @@ bool PitchDetector::Process(AudioFile &input) {
     }
     average_pitch /= channel_pitches.size();
 
-    if (average_pitch != 0) {
-        const auto closest_musical_note = FindClosestMidiPitch(average_pitch);
-        MessageWithNewLine("Pitch-Dectector", "Detected a pitch of ", average_pitch,
-                           "Hz, the closest note is ", closest_musical_note.name, " (MIDI number ",
-                           closest_musical_note.midi_note, "), which has a pitch of ",
-                           closest_musical_note.pitch);
+    return average_pitch;
+}
+
+bool PitchDetector::Process(AudioFile &input) {
+    if (!input.interleaved_samples.size()) return false;
+
+    const auto pitch = DetectPitch(input);
+
+    if (pitch) {
+        const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+        MessageWithNewLine("Pitch-Dectector", "Detected a pitch of ", *pitch, "Hz, the closest note is ",
+                           closest_musical_note.ToString());
     } else {
         MessageWithNewLine("Pitch-Dectector", "No pitch could be found");
     }

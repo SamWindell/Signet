@@ -55,7 +55,7 @@ void Converter::ConvertSampleRate(std::vector<double> &buffer,
     buffer = result_interleaved_samples;
 }
 
-bool Converter::Process(AudioFile &input) {
+bool Converter::Process(AudioFile &input, const std::string_view filename) {
     switch (m_mode) {
         case Mode::ValidatingCorrectFormat: {
             if (!CanFileBeConvertedToBitDepth(input, m_bit_depth)) {

@@ -42,7 +42,9 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     TestSubcommandProcessor(const AudioFile &buf, Subcommand &subcommand) : m_buf(buf) {
         subcommand.Run(*this);
     }
-    void ProcessAllFiles(Subcommand &subcommand) override { m_processed = subcommand.Process(m_buf); }
+    void ProcessAllFiles(Subcommand &subcommand) override {
+        m_processed = subcommand.Process(m_buf, "test_file");
+    }
     bool IsProcessingMultipleFiles() const override { return false; }
 
     std::optional<AudioFile> GetBuf() const {

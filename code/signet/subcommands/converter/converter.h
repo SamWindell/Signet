@@ -7,7 +7,7 @@ class Converter final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void Run(SubcommandProcessor &processor) override;
-    bool Process(AudioFile &input) override;
+    bool Process(AudioFile &input, const std::string_view filename) override;
 
     static void Converter::ConvertSampleRate(std::vector<double> &buffer,
                                              const unsigned num_channels,

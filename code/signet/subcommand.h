@@ -19,5 +19,6 @@ class Subcommand {
     virtual ~Subcommand() {}
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
     virtual void Run(SubcommandProcessor &) = 0;
-    virtual bool Process(AudioFile &input) = 0;
+    virtual bool Process(AudioFile &input, const std::string_view filename) { return false; };
+    virtual bool ProcessFilename(const AudioFile &input, std::string &filename) { return false; };
 };

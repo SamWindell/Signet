@@ -43,7 +43,7 @@ std::optional<double> PitchDetector::DetectPitch(const AudioFile &input) {
     }
 }
 
-bool PitchDetector::Process(AudioFile &input) {
+bool PitchDetector::Process(AudioFile &input, const std::string_view filename) {
     if (!input.interleaved_samples.size()) return false;
 
     const auto pitch = DetectPitch(input);

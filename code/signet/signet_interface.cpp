@@ -83,17 +83,18 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     m_backup.ResetBackup(); // if we have gotten here we must not be wanting to load a backup
 
     if (m_num_files_processed) {
-        for (auto &[file, path] : m_inputs.GetAllFiles()) {
-            auto filepath = path;
+        for (auto &file : m_inputs.GetAllFiles()) {
+            if (file.file_edited) {
+                auto filepath = file.path;
+                if (m_output_filepath) {
+                    filepath = *m_output_filepath;
+                } else {
+                    m_backup.AddFileToBackup(filepath);
+                }
 
-            if (m_output_filepath) {
-                filepath = *m_output_filepath;
-            } else {
-                m_backup.AddFileToBackup(filepath);
-            }
-
-            if (!WriteAudioFile(filepath, file)) {
-                ErrorWithNewLine("could not write the wave file ", filepath);
+                if (!WriteAudioFile(filepath, file.file)) {
+                    ErrorWithNewLine("could not write the wave file ", filepath);
+                }
             }
         }
     }
@@ -102,8 +103,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 }
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
-    for (auto &[file, path] : m_inputs.GetAllFiles()) {
-        if (subcommand.Process(file)) {
+    for (auto &file : m_inputs.GetAllFiles()) {
+        auto filename = file.path.filename();
+        filename.replace_extension("");
+        const auto name = filename.generic_string();
+        if (subcommand.Process(file.file, name)) {
+            file.file_edited = true;
+            m_num_files_processed++;
+        }
+
+        auto generic_string = file.path.generic_string();
+        if (subcommand.ProcessFilename(file.file, generic_string)) {
+            file.renamed = true;
+            file.path = generic_string;
             m_num_files_processed++;
         }
     }

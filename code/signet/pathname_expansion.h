@@ -167,6 +167,13 @@ struct ExpandableDirectoryPathname {
     }
 };
 
+struct ProcessedAudioFile {
+    AudioFile file;
+    ghc::filesystem::path path;
+    bool file_edited;
+    bool renamed;
+};
+
 class ExpandedPathnames {
   public:
     ExpandedPathnames() {}
@@ -197,7 +204,7 @@ class ExpandedPathnames {
 
         for (const auto &path : all_matched_filesnames) {
             if (auto file = ReadAudioFile(path)) {
-                m_all_files.push_back({*file, path});
+                m_all_files.push_back({*file, path, false, false});
             }
         }
 
@@ -208,7 +215,7 @@ class ExpandedPathnames {
     }
 
     bool IsSingleFile() const { return num_single_file_parts == 1; }
-    std::vector<std::pair<AudioFile, ghc::filesystem::path>> &GetAllFiles() { return m_all_files; }
+    std::vector<ProcessedAudioFile> &GetAllFiles() { return m_all_files; }
 
   private:
     static void GetAllCommaDelimitedSections(std::string_view s,
@@ -237,6 +244,6 @@ class ExpandedPathnames {
         RegisterSection(s);
     }
 
-    std::vector<std::pair<AudioFile, ghc::filesystem::path>> m_all_files {};
+    std::vector<ProcessedAudioFile> m_all_files {};
     usize num_single_file_parts = 0;
 };

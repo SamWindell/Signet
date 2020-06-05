@@ -21,7 +21,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                                   const AudioDuration &search_size,
                                                   const bool append_skipped_frames_on_end);
 
-    bool Process(AudioFile &input) override {
+    bool Process(AudioFile &input, const std::string_view file_name) override {
         if (!input.interleaved_samples.size()) return false;
         return CreateSampleOffsetToNearestZCross(input, m_search_size, m_append_skipped_frames_on_end);
     }

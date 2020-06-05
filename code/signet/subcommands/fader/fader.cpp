@@ -92,7 +92,7 @@ PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, c
     }
 }
 
-bool Fader::Process(AudioFile &input) {
+bool Fader::Process(AudioFile &input, const std::string_view filename) {
     if (!input.interleaved_samples.size()) return false;
 
     if (m_fade_in_duration) {

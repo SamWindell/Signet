@@ -168,10 +168,19 @@ struct ExpandableDirectoryPathname {
 };
 
 struct ProcessedAudioFile {
-    AudioFile file;
-    ghc::filesystem::path path;
-    bool file_edited;
-    bool renamed;
+    ProcessedAudioFile(const AudioFile &_file, ghc::filesystem::path _path) {
+        file = _file;
+        path = _path;
+        auto filename = path.filename();
+        filename.replace_extension("");
+        new_filename = filename;
+    }
+
+    AudioFile file {};
+    ghc::filesystem::path path {};
+    std::string new_filename {};
+    bool renamed {};
+    bool file_edited {};
 };
 
 class ExpandedPathnames {
@@ -204,7 +213,7 @@ class ExpandedPathnames {
 
         for (const auto &path : all_matched_filesnames) {
             if (auto file = ReadAudioFile(path)) {
-                m_all_files.push_back({*file, path, false, false});
+                m_all_files.push_back({*file, path});
             }
         }
 

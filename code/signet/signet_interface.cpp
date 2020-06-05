@@ -10,6 +10,7 @@
 #include "subcommands/fader/fader.h"
 #include "subcommands/normalise/normaliser.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
+#include "subcommands/renamer/renamer.h"
 #include "subcommands/silence_remover/silence_remover.h"
 #include "subcommands/trimmer/trimmer.h"
 #include "subcommands/tuner/tuner.h"
@@ -27,6 +28,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<PitchDetector>());
     m_subcommands.push_back(std::make_unique<Tuner>());
     m_subcommands.push_back(std::make_unique<AutoTuner>());
+    m_subcommands.push_back(std::make_unique<Renamer>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
@@ -96,6 +98,24 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                     ErrorWithNewLine("could not write the wave file ", filepath);
                 }
             }
+
+            if (file.renamed) {
+                const auto filepath = m_output_filepath ? *m_output_filepath : file.path;
+
+                ghc::filesystem::path new_path = filepath;
+                new_path.replace_filename(file.new_filename);
+                new_path.replace_extension(filepath.extension());
+
+                if (m_output_filepath) {
+                    MessageWithNewLine("Signet", "Renaming the file ", filepath, " to ", new_path);
+                } else {
+                    MessageWithNewLine("Signet",
+                                       "The output name has been specified but also has been renamed by the "
+                                       "subcommands, we will rename the output name from ",
+                                       filepath, " to ", new_path);
+                }
+                ghc::filesystem::rename(file.path, new_path);
+            }
         }
     }
 
@@ -112,10 +132,8 @@ void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
             m_num_files_processed++;
         }
 
-        auto generic_string = file.path.generic_string();
-        if (subcommand.ProcessFilename(file.file, generic_string)) {
+        if (subcommand.ProcessFilename(file.file, file.new_filename, file.path)) {
             file.renamed = true;
-            file.path = generic_string;
             m_num_files_processed++;
         }
     }

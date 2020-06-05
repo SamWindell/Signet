@@ -11,6 +11,12 @@ struct MIDIPitch {
                ")";
     }
 
+    std::string GetPitchString() const {
+        std::array<char, 32> buf {};
+        std::snprintf(buf.data(), buf.size(), "%.0f", pitch);
+        return buf.data();
+    }
+
     int midi_note;
     const char *name;
     double pitch;

@@ -19,3 +19,11 @@ MIDIPitch FindClosestMidiPitch(const double freq) {
 
     return g_midi_pitches[min_index];
 }
+
+TEST_CASE("Midi pitches") {
+    REQUIRE(FindClosestMidiPitch(0).midi_note == 0);
+    REQUIRE(FindClosestMidiPitch(440).midi_note == 69);
+    REQUIRE(FindClosestMidiPitch(439).midi_note == 69);
+    REQUIRE(FindClosestMidiPitch(441).midi_note == 69);
+    REQUIRE(FindClosestMidiPitch(999999999).midi_note == 127);
+}

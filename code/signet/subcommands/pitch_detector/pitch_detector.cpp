@@ -7,7 +7,7 @@
 #include "midi_pitches.h"
 
 CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
-    auto pitch_detector = app.add_subcommand("pitch-detect", "Prints out the detected pitch of the file");
+    auto pitch_detector = app.add_subcommand("detect-pitch", "Prints out the detected pitch of the file");
     return pitch_detector;
 }
 
@@ -36,18 +36,22 @@ std::optional<double> PitchDetector::DetectPitch(const AudioFile &input) {
     }
     average_pitch /= channel_pitches.size();
 
-    return average_pitch;
+    if (average_pitch) {
+        return average_pitch;
+    } else {
+        return {};
+    }
 }
 
 bool PitchDetector::Process(AudioFile &input) {
     if (!input.interleaved_samples.size()) return false;
 
     const auto pitch = DetectPitch(input);
-
     if (pitch) {
         const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-        MessageWithNewLine("Pitch-Dectector", "Detected a pitch of ", *pitch, "Hz, the closest note is ",
-                           closest_musical_note.ToString());
+        MessageWithNewLine("Pitch-Dectector", "Detected a pitch of ", *pitch, "Hz, this is ",
+                           GetCentsDifference(*pitch, closest_musical_note.pitch),
+                           " cents off of the closest note ", closest_musical_note.ToString());
     } else {
         MessageWithNewLine("Pitch-Dectector", "No pitch could be found");
     }

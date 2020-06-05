@@ -50,6 +50,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_option("output-filename", m_output_filepath,
                    "The filename to write to - only relevant if the input is a single file")
         ->check([&](const std::string &str) {
+            MessageWithNewLine("Signet", "Checking if output file ", str, " is valid");
             if (IsProcessingMultipleFiles()) {
                 return "the input path is a directory or pattern, there must be no output filepath";
             } else {

@@ -17,17 +17,7 @@ bool AutoTuner::Process(AudioFile &input) {
 
     if (const auto pitch = PitchDetector::DetectPitch(input)) {
         const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-
-        constexpr double cents_in_octave = 100 * 12;
-        double cents;
-        if (*pitch <= closest_musical_note.pitch) {
-            const auto ratio = closest_musical_note.pitch / *pitch;
-            cents = std::sqrt(ratio) * cents_in_octave;
-        } else {
-            const auto ratio = *pitch / closest_musical_note.pitch;
-            cents = -(std::sqrt(ratio) * cents_in_octave);
-        }
-
+        const double cents = GetCentsDifference(*pitch, closest_musical_note.pitch);
         if (std::abs(cents) < 1) {
             MessageWithNewLine("AutoTuner", "Sample is already in tune: ", closest_musical_note.ToString());
             return false;

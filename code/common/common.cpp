@@ -22,6 +22,12 @@ void ForEachDeinterleavedChannel(
     }
 }
 
+double GetCentsDifference(const double pitch1_hz, const double pitch2_hz) {
+    constexpr double cents_in_octave = 100 * 12;
+    const double cents = std::log2(pitch2_hz / pitch1_hz) * cents_in_octave;
+    return cents;
+}
+
 bool NeedsRegexEscape(const char c) {
     static const std::string_view special_chars = R"([]-{}()*+?.\^$|)";
     for (const char &special_char : special_chars) {

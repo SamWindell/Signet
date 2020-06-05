@@ -61,6 +61,8 @@ void ForEachDeinterleavedChannel(const std::vector<double> &interleaved_samples,
                                  const unsigned num_channels,
                                  std::function<void(const std::vector<double> &, unsigned channel)> callback);
 
+double GetCentsDifference(double pitch1_hz, double pitch2_hz);
+
 inline bool EndsWith(std::string_view str, std::string_view suffix) {
     return suffix.size() <= str.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }

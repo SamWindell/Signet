@@ -2,9 +2,11 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <functional>
 #include <iostream>
 #include <stdexcept>
 #include <string_view>
+#include <vector>
 
 #include "rang.hpp"
 
@@ -54,6 +56,10 @@ static constexpr auto pi = 3.14159265359f;
 
 inline double DBToAmp(const double d) { return std::pow(10.0, d / 20.0); }
 inline double AmpToDB(const double a) { return 20.0 * std::log10(a); }
+
+void ForEachDeinterleavedChannel(const std::vector<double> &interleaved_samples,
+                                 const unsigned num_channels,
+                                 std::function<void(const std::vector<double> &, unsigned channel)> callback);
 
 inline bool EndsWith(std::string_view str, std::string_view suffix) {
     return suffix.size() <= str.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;

@@ -5,6 +5,23 @@
 #include "doctest.hpp"
 #include "filesystem.hpp"
 
+void ForEachDeinterleavedChannel(
+    const std::vector<double> &interleaved_samples,
+    const unsigned num_channels,
+    std::function<void(const std::vector<double> &, unsigned channel)> callback) {
+    const auto num_frames = interleaved_samples.size() / num_channels;
+    std::vector<double> channel_buffer;
+    channel_buffer.reserve(num_frames);
+    for (unsigned chan = 0; chan < num_channels; ++chan) {
+        channel_buffer.clear();
+        for (size_t frame = 0; frame < num_frames; ++frame) {
+            channel_buffer.push_back(interleaved_samples[frame * num_channels + chan]);
+        }
+
+        callback(channel_buffer, chan);
+    }
+}
+
 bool NeedsRegexEscape(const char c) {
     static const std::string_view special_chars = R"([]-{}()*+?.\^$|)";
     for (const char &special_char : special_chars) {

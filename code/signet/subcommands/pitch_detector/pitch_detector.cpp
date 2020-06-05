@@ -14,25 +14,33 @@ CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
 bool PitchDetector::Process(AudioFile &input) {
     if (!input.interleaved_samples.size()) return false;
 
-    // TODO: do this for all channels and use the average pitch
-    std::vector<double> channel_buffer;
-    channel_buffer.reserve(input.NumFrames());
-    for (size_t frame = 0; frame < input.NumFrames(); ++frame) {
-        channel_buffer.push_back(input.interleaved_samples[frame * input.num_channels + 0]);
+    std::vector<double> channel_pitches;
+    ForEachDeinterleavedChannel(
+        input.interleaved_samples, input.num_channels, [&](const auto &channel_buffer, auto channel) {
+            dywapitchtracker pitch_tracker;
+            dywapitch_inittracking(&pitch_tracker);
+
+            auto detected_pitch = dywapitch_computepitch(
+                &pitch_tracker, const_cast<double *>(channel_buffer.data()), 0, (int)channel_buffer.size());
+            if (input.sample_rate != 44100) {
+                detected_pitch *= static_cast<double>(input.sample_rate) / 44100.0;
+            }
+            channel_pitches.push_back(detected_pitch);
+        });
+
+    double average_pitch = 0;
+    for (const auto detected_pitch : channel_pitches) {
+        if (detected_pitch == 0) {
+            average_pitch = 0;
+            break;
+        }
+        average_pitch += detected_pitch;
     }
+    average_pitch /= channel_pitches.size();
 
-    dywapitchtracker pitch_tracker;
-    dywapitch_inittracking(&pitch_tracker);
-
-    auto detected_pitch =
-        dywapitch_computepitch(&pitch_tracker, channel_buffer.data(), 0, (int)channel_buffer.size());
-    if (input.sample_rate != 44100) {
-        detected_pitch *= static_cast<double>(input.sample_rate) / 44100.0;
-    }
-
-    if (detected_pitch != 0) {
-        const auto closest_musical_note = FindClosestMidiPitch(detected_pitch);
-        MessageWithNewLine("Pitch-Dectector", "Detected a pitch of ", detected_pitch,
+    if (average_pitch != 0) {
+        const auto closest_musical_note = FindClosestMidiPitch(average_pitch);
+        MessageWithNewLine("Pitch-Dectector", "Detected a pitch of ", average_pitch,
                            "Hz, the closest note is ", closest_musical_note.name, " (MIDI number ",
                            closest_musical_note.midi_note, "), which has a pitch of ",
                            closest_musical_note.pitch);

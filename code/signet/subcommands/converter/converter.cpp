@@ -41,23 +41,16 @@ void Converter::ConvertSampleRate(std::vector<double> &buffer,
 
     r8b::CDSPResampler24 resampler(input_sample_rate, new_sample_rate, (int)num_frames);
 
-    std::vector<double> channel_buffer;
-    channel_buffer.reserve(num_frames);
-    for (unsigned chan = 0; chan < num_channels; ++chan) {
-        channel_buffer.clear();
-        for (size_t frame = 0; frame < num_frames; ++frame) {
-            channel_buffer.push_back(buffer[frame * num_channels + chan]);
-        }
-
+    ForEachDeinterleavedChannel(buffer, num_channels, [&](const auto &channel_buffer, auto channel) {
         std::vector<double> output_buffer(result_num_frames);
         resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
                           (int)result_num_frames);
         for (size_t frame = 0; frame < result_num_frames; ++frame) {
-            result_interleaved_samples[frame * num_channels + chan] = output_buffer[frame];
+            result_interleaved_samples[frame * num_channels + channel] = output_buffer[frame];
         }
 
         resampler.clear();
-    }
+    });
 
     buffer = result_interleaved_samples;
 }

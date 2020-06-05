@@ -12,6 +12,7 @@
 
 #include "audio_file.h"
 #include "common.h"
+#include "string_utils.h"
 
 static void
 ForEachAudioFilesInDirectoryRecursively(const std::string_view directory,
@@ -41,6 +42,7 @@ class CanonicalPathSet {
     void Add(const ghc::filesystem::path &path) {
         paths.insert(ghc::filesystem::canonical(path).generic_string());
     }
+    void Add(const std::string_view &path) { Add(ghc::filesystem::path(std::string(path))); }
 
     bool Contains(const std::string &path) const { return paths.find(path) != paths.end(); }
 
@@ -71,7 +73,6 @@ struct ExpandablePatternPathname {
 
         size_t pos = 0;
         size_t prev_pos = 0;
-        std::string_view prev_part = {};
         while ((pos = str.find('/', pos)) != std::string_view::npos) {
             const auto folder = str.substr(0, pos);
             const auto part = str.substr(prev_pos, pos - prev_pos);
@@ -88,7 +89,7 @@ struct ExpandablePatternPathname {
                         for (const auto &entry : fs::recursive_directory_iterator(f)) {
                             if (entry.is_directory()) {
                                 const auto path = entry.path().generic_string();
-                                if (PatternMatch(folder, path)) {
+                                if (WildcardMatch(folder, path)) {
                                     new_possible_folders.push_back(path);
                                 }
                             }
@@ -97,7 +98,7 @@ struct ExpandablePatternPathname {
                         for (const auto &entry : fs::directory_iterator(f)) {
                             if (entry.is_directory()) {
                                 const auto path = entry.path().generic_string();
-                                if (PatternMatch(folder, path)) {
+                                if (WildcardMatch(folder, path)) {
                                     new_possible_folders.push_back(path);
                                 }
                             }
@@ -118,10 +119,10 @@ struct ExpandablePatternPathname {
 
         const auto CheckAndRegisterFile = [&](auto path) {
             const auto generic = path.generic_string();
-            if (PatternMatch(str, generic)) {
+            if (WildcardMatch(str, generic)) {
                 bool is_valid = true;
                 for (const auto exclude : exclude_filters) {
-                    if (PatternMatch(exclude, generic)) {
+                    if (WildcardMatch(exclude, generic)) {
                         is_valid = false;
                         break;
                     }
@@ -158,7 +159,7 @@ struct ExpandableDirectoryPathname {
     static void AddMatchingPathsToSet(const std::string_view str,
                                       CanonicalPathSet &paths,
                                       const std::vector<std::string_view> &exclude_filters) {
-        const auto parent_directory = ghc::filesystem::path(str);
+        const auto parent_directory = ghc::filesystem::path(std::string(str));
         ForEachAudioFilesInDirectory(str, [&](auto path) {
             if (parent_directory.compare(path) < 0) {
                 paths.Add(path);

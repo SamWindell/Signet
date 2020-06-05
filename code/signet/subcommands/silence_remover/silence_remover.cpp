@@ -5,6 +5,7 @@
 #include "audio_file.h"
 #include "common.h"
 #include "test_helpers.h"
+#include "types.h"
 
 static constexpr usize silence_allowence = 4;
 

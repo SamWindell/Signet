@@ -5,6 +5,7 @@
 #include "audio_file.h"
 #include "common.h"
 #include "midi_pitches.h"
+#include "string_utils.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "test_helpers.h"
 
@@ -33,18 +34,6 @@ CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     return renamer;
 }
 
-static bool RegexReplaceString(std::string &str, std::string pattern, std::string replacement) {
-    const std::regex r {pattern};
-    const auto result = std::regex_replace(str, r, replacement);
-    if (result != str) {
-        str = result;
-        return true;
-    }
-    return false;
-}
-
-static std::string MakeNumberInAngleBracket(usize num) { return "<" + std::to_string(num) + ">"; }
-
 bool Renamer::ProcessFilename(const AudioFile &input,
                               std::string &filename,
                               const ghc::filesystem::path &full_path) {
@@ -54,10 +43,9 @@ bool Renamer::ProcessFilename(const AudioFile &input,
         std::smatch pieces_match;
         if (std::regex_match(filename, pieces_match, r)) {
             for (size_t i = 0; i < pieces_match.size(); ++i) {
-                std::ssub_match sub_match = pieces_match[i];
-                std::string piece = sub_match.str();
-                std::cout << "  submatch " << i << ": " << piece << '\n';
-                RegexReplaceString(m_regex_replacement, MakeNumberInAngleBracket(i), piece);
+                const std::ssub_match sub_match = pieces_match[i];
+                const std::string piece = sub_match.str();
+                Replace(m_regex_replacement, PutNumberInAngleBracket(i), piece);
             }
             filename = m_regex_replacement;
             renamed = true;
@@ -75,25 +63,24 @@ bool Renamer::ProcessFilename(const AudioFile &input,
 
     if (renamed) {
         if (Contains(filename, "<counter>")) {
-            RegexReplaceString(filename, "<counter>", std::to_string(m_counter++));
+            Replace(filename, "<counter>", std::to_string(m_counter++));
         }
         if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-node>") ||
             Contains(filename, "<detected-note>")) {
             if (const auto pitch = PitchDetector::DetectPitch(input)) {
                 const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
-                RegexReplaceString(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
-                RegexReplaceString(filename, "<detected-midi-note>",
-                                   std::to_string(closest_musical_note.midi_note));
-                RegexReplaceString(filename, "<detected-note>", closest_musical_note.name);
+                Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
+                Replace(filename, "<detected-midi-note>", std::to_string(closest_musical_note.midi_note));
+                Replace(filename, "<detected-note>", closest_musical_note.name);
             } else {
                 WarningWithNewLine(
                     "Renamer: One of the detected pitch variables was used in the file name, but we "
                     "could not find any pitch in the audio. All detected pitch variables will be replaced "
                     "with NOPITCH.");
-                RegexReplaceString(filename, "<detected-pitch>", "NOPITCH");
-                RegexReplaceString(filename, "<detected-midi-note>", "NOPITCH");
-                RegexReplaceString(filename, "<detected-note>", "NOPITCH");
+                Replace(filename, "<detected-pitch>", "NOPITCH");
+                Replace(filename, "<detected-midi-note>", "NOPITCH");
+                Replace(filename, "<detected-note>", "NOPITCH");
             }
         }
         if (Contains(filename, "<parent-folder>")) {
@@ -101,14 +88,14 @@ bool Renamer::ProcessFilename(const AudioFile &input,
             if (full_path.has_parent_path()) {
                 const auto parent_folder = full_path.parent_path().filename();
                 if (parent_folder != ".") {
-                    RegexReplaceString(filename, "<parent-folder>", parent_folder.generic_string());
+                    Replace(filename, "<parent-folder>", parent_folder.generic_string());
                     replaced = true;
                 }
             }
             if (!replaced) {
                 WarningWithNewLine("Renamer: The file does not have a parent path, but the variable "
                                    "<parent-folder> was used. This will just be replaced by nothing.");
-                RegexReplaceString(filename, "<parent-folder>", "");
+                Replace(filename, "<parent-folder>", "");
             }
         }
     }

@@ -1,7 +1,6 @@
 #pragma once
 #include <array>
 #include <cmath>
-#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <stdexcept>
@@ -9,17 +8,6 @@
 #include <vector>
 
 #include "rang.hpp"
-
-using u8 = uint8_t;
-using s8 = int8_t;
-using u16 = uint16_t;
-using s16 = int16_t;
-using u32 = uint32_t;
-using s32 = int32_t;
-using u64 = uint64_t;
-using s64 = int64_t;
-using b8 = s8;
-using usize = size_t;
 
 template <typename Arg, typename... Args>
 void ErrorWithNewLine(Arg &&arg, Args &&... args) {
@@ -63,20 +51,6 @@ void ForEachDeinterleavedChannel(const std::vector<double> &interleaved_samples,
 
 double GetCentsDifference(double pitch1_hz, double pitch2_hz);
 
-inline bool EndsWith(std::string_view str, std::string_view suffix) {
-    return suffix.size() <= str.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
-}
-
-inline bool StartsWith(std::string_view str, std::string_view prefix) {
-    return prefix.size() <= str.size() && str.compare(0, prefix.size(), prefix) == 0;
-}
-
-inline bool Contains(std::string_view haystack, std::string_view needle) {
-    return haystack.find(needle) != std::string_view::npos;
-}
-
-bool PatternMatch(std::string_view pattern, std::string_view name);
-
 namespace ghc {
 namespace filesystem {
 class path;
@@ -84,5 +58,3 @@ class path;
 } // namespace ghc
 
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &path, const char *mode);
-
-std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces = 0);

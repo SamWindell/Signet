@@ -9,10 +9,10 @@ class Converter final : public Subcommand {
     void Run(SubcommandProcessor &processor) override;
     bool Process(AudioFile &input, const std::string_view filename) override;
 
-    static void Converter::ConvertSampleRate(std::vector<double> &buffer,
-                                             const unsigned num_channels,
-                                             const double input_sample_rate,
-                                             const double new_sample_rate);
+    static void ConvertSampleRate(std::vector<double> &buffer,
+                                  const unsigned num_channels,
+                                  const double input_sample_rate,
+                                  const double new_sample_rate);
 
   private:
     enum class Mode {

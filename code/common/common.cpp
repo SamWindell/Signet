@@ -4,6 +4,7 @@
 
 #include "doctest.hpp"
 #include "filesystem.hpp"
+#include "types.h"
 
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,
@@ -26,40 +27,6 @@ double GetCentsDifference(const double pitch1_hz, const double pitch2_hz) {
     constexpr double cents_in_octave = 100 * 12;
     const double cents = std::log2(pitch2_hz / pitch1_hz) * cents_in_octave;
     return cents;
-}
-
-bool NeedsRegexEscape(const char c) {
-    static const std::string_view special_chars = R"([]-{}()*+?.\^$|)";
-    for (const char &special_char : special_chars) {
-        if (c == special_char) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool PatternMatch(std::string_view pattern, std::string_view name) {
-    std::string re_pattern;
-    re_pattern.reserve(pattern.size() * 2);
-
-    for (usize i = 0; i < pattern.size(); ++i) {
-        if (pattern[i] == '*') {
-            if (i + 1 < pattern.size() && pattern[i + 1] == '*') {
-                re_pattern += ".*";
-                i++;
-            } else {
-                re_pattern += "[^\\/]*";
-            }
-        } else {
-            if (NeedsRegexEscape(pattern[i])) {
-                re_pattern += '\\';
-            }
-            re_pattern += pattern[i];
-        }
-    }
-
-    const std::regex regex {re_pattern};
-    return std::regex_match(std::string(name), regex);
 }
 
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &path, const char *mode) {

@@ -9,6 +9,7 @@
 #include "magic_enum.hpp"
 
 #include "common.h"
+#include "string_utils.h"
 
 class AudioDuration {
   public:

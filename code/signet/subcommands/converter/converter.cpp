@@ -94,12 +94,12 @@ bool Converter::Process(AudioFile &input, const std::string_view filename) {
 TEST_CASE("[Converter]") {
     SUBCASE("args") {
         SUBCASE("requires both") {
-            TestHelpers::ProcessBufferWithSubcommand<Converter>("convert", {}, true);
-            TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 44100", {}, true);
-            TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 44100 16", {}, false);
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert", {}));
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 44100", {}));
+            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 44100 16", {}));
         }
         SUBCASE("invalid vals") {
-            TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 0.2 2", {}, true);
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 0.2 2", {}));
         }
     }
     SUBCASE("conversion") {

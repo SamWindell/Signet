@@ -15,3 +15,10 @@ bool Replace(std::string &str, std::string_view a, std::string_view b);
 
 std::string PutNumberInAngleBracket(usize num);
 std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces = 0);
+
+namespace ghc {
+namespace filesystem {
+class path;
+}
+} // namespace ghc
+std::string GetJustFilenameWithNoExtension(ghc::filesystem::path path);

@@ -102,3 +102,73 @@ bool Renamer::ProcessFilename(const AudioFile &input,
 
     return renamed;
 }
+
+TEST_CASE("Renamer") {
+    SUBCASE("requires args") {
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename", {}, "file.wav"));
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename prefix", {}, "file.wav"));
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename suffix", {}, "file.wav"));
+        REQUIRE_THROWS(
+            TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename regex-replace", {}, "file.wav"));
+    }
+
+    SUBCASE("prefix") {
+        SUBCASE("simple") {
+            const auto f =
+                TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename prefix _", {}, "file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "_file");
+        }
+    }
+
+    SUBCASE("suffix") {
+        SUBCASE("simple") {
+            const auto f =
+                TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename suffix _", {}, "file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "file_");
+        }
+    }
+
+    SUBCASE("regex-replace") {
+        SUBCASE("replace everything") {
+            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                "rename regex-replace .* new_name", {}, "file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "new_name");
+        }
+        SUBCASE("insert groups into replacement") {
+            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                "rename regex-replace ([^l]*)(le) <1><2><1>", {}, "file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "filefi");
+        }
+    }
+
+    SUBCASE("<parent-folder>") {
+        SUBCASE("prefix") {
+            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                "rename prefix <parent-folder>bar", {}, "foo/file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "foobarfile");
+        }
+        SUBCASE("suffix") {
+            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                "rename suffix <parent-folder>bar", {}, "foo/file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "filefoobar");
+        }
+        SUBCASE("regex-replace") {
+            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                "rename regex-replace .* <0><parent-folder>", {}, "foo/file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "filefoo");
+        }
+        SUBCASE("regex-replace") {
+            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                "rename regex-replace .* <0><parent-folder>", {}, "foo/file.wav");
+            REQUIRE(f);
+            REQUIRE(*f == "filefoo");
+        }
+    }
+}

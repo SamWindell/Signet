@@ -3,6 +3,7 @@
 
 #include "CLI11.hpp"
 #include "audio_file.h"
+#include "string_utils.h"
 #include "subcommand.h"
 
 namespace TestHelpers {
@@ -39,49 +40,64 @@ class StringToArgs {
 
 class TestSubcommandProcessor : public SubcommandProcessor {
   public:
-    TestSubcommandProcessor(const AudioFile &buf, Subcommand &subcommand) : m_buf(buf) {
-        subcommand.Run(*this);
+    template <typename SubcommandType>
+    static TestSubcommandProcessor Run(const std::string_view subcommand_and_args_string,
+                                       const AudioFile &buf,
+                                       const ghc::filesystem::path path) {
+        std::string whole_args = "signet-test " + std::string(subcommand_and_args_string);
+        CAPTURE(whole_args);
+        const auto args = TestHelpers::StringToArgs {whole_args};
+
+        SubcommandType subcommand {};
+        CLI::App app;
+        subcommand.CreateSubcommandCLI(app);
+        app.parse(args.Size(), args.Args());
+
+        TestSubcommandProcessor processor(subcommand, buf, path);
+        return processor;
     }
+
     void ProcessAllFiles(Subcommand &subcommand) override {
-        m_processed = subcommand.Process(m_buf, "test_file");
+        m_filename = GetJustFilenameWithNoExtension(m_path);
+        m_processed = subcommand.Process(m_buf, m_filename);
+        m_processed_filename = subcommand.ProcessFilename(m_buf, m_filename, m_path);
     }
     bool IsProcessingMultipleFiles() const override { return false; }
 
     std::optional<AudioFile> GetBuf() const {
-        if (m_processed) {
-            return m_buf;
-        }
+        if (m_processed) return m_buf;
+        return {};
+    }
+
+    std::optional<std::string> GetFilename() const {
+        if (m_processed_filename) return m_filename;
         return {};
     }
 
   private:
+    TestSubcommandProcessor(Subcommand &subcommand, const AudioFile &buf, const ghc::filesystem::path &path)
+        : m_buf(buf), m_path(path) {
+        subcommand.Run(*this);
+    }
+
     bool m_processed {false};
+    bool m_processed_filename {false};
     AudioFile m_buf {};
+    ghc::filesystem::path m_path;
+    std::string m_filename;
 };
 
 template <typename SubcommandType>
 std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioFile &buf,
-                                                     bool require_throws = false) {
-    std::string whole_args = "signet-test " + std::string(subcommand_and_args_string);
-    const auto args = TestHelpers::StringToArgs {whole_args};
+                                                     const AudioFile &buf) {
+    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, "test.wav").GetBuf();
+}
 
-    SubcommandType subcommand {};
-    CLI::App app;
-    subcommand.CreateSubcommandCLI(app);
-    try {
-        app.parse(args.Size(), args.Args());
-    } catch (...) {
-        if (!require_throws) {
-            REQUIRE(false);
-            throw;
-        } else {
-            return {};
-        }
-    }
-
-    TestSubcommandProcessor processor(buf, subcommand);
-    return processor.GetBuf();
+template <typename SubcommandType>
+std::optional<std::string> ProcessFilenameWithSubcommand(const std::string_view subcommand_and_args_string,
+                                                         const AudioFile &buf,
+                                                         const ghc::filesystem::path path) {
+    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, path).GetFilename();
 }
 
 } // namespace TestHelpers

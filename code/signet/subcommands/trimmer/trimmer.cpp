@@ -87,7 +87,7 @@ TEST_CASE("[Trimmer]") {
         }
 
         SUBCASE("neither start or end throws") {
-            TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim", buf, true);
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim", buf));
         }
 
         SUBCASE("trim start") {

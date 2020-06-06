@@ -172,9 +172,7 @@ struct ProcessedAudioFile {
     ProcessedAudioFile(const AudioFile &_file, ghc::filesystem::path _path) {
         file = _file;
         path = _path;
-        auto filename = path.filename();
-        filename.replace_extension("");
-        new_filename = filename;
+        new_filename = GetJustFilenameWithNoExtension(path);
     }
 
     AudioFile file {};

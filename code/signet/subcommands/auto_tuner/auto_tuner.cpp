@@ -12,7 +12,7 @@ CLI::App *AutoTuner::CreateSubcommandCLI(CLI::App &app) {
     return auto_tuner;
 }
 
-bool AutoTuner::Process(AudioFile &input, const std::string_view filename) {
+bool AutoTuner::ProcessAudio(AudioFile &input, const std::string_view filename) {
     if (!input.interleaved_samples.size()) return false;
 
     if (const auto pitch = PitchDetector::DetectPitch(input)) {

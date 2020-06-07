@@ -34,8 +34,8 @@ CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     return renamer;
 }
 
-bool Renamer::ProcessFilename(const AudioFile &input,
-                              std::string &filename,
+bool Renamer::ProcessFilename(std::string &filename,
+                              const AudioFile &input,
                               const ghc::filesystem::path &full_path) {
     bool renamed = false;
     if (m_regex_pattern) {

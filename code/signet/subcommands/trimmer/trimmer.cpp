@@ -26,7 +26,7 @@ CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
     return trimmer;
 }
 
-bool Trimmer::Process(AudioFile &input, const std::string_view filename) {
+bool Trimmer::ProcessAudio(AudioFile &input, const std::string_view filename) {
     if (input.interleaved_samples.size() == 0) return false;
 
     usize remaining_region_start = 0, remaining_region_end = input.NumFrames();

@@ -59,8 +59,8 @@ class TestSubcommandProcessor : public SubcommandProcessor {
 
     void ProcessAllFiles(Subcommand &subcommand) override {
         m_filename = GetJustFilenameWithNoExtension(m_path);
-        m_processed = subcommand.Process(m_buf, m_filename);
-        m_processed_filename = subcommand.ProcessFilename(m_buf, m_filename, m_path);
+        m_processed = subcommand.ProcessAudio(m_buf, m_filename);
+        m_processed_filename = subcommand.ProcessFilename(m_filename, m_buf, m_path);
     }
     bool IsProcessingMultipleFiles() const override { return false; }
 

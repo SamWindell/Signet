@@ -7,8 +7,8 @@
 class Renamer final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool ProcessFilename(const AudioFile &input,
-                         std::string &filename,
+    bool ProcessFilename(std::string &filename,
+                         const AudioFile &input,
                          const ghc::filesystem::path &full_path) override;
     void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
 

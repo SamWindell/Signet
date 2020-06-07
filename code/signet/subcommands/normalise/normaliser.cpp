@@ -14,7 +14,7 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     return norm;
 }
 
-bool Normaliser::Process(AudioFile &input, const std::string_view filename) {
+bool Normaliser::ProcessAudio(AudioFile &input, const std::string_view filename) {
     switch (m_current_stage) {
         case ProcessingStage::FindingCommonGain: {
             if (!ReadFileForCommonGain(input)) {

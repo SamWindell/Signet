@@ -8,8 +8,9 @@
 class Normaliser final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool Process(AudioFile &input, const std::string_view filename) override;
+    bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
     void Run(SubcommandProcessor &processor) override;
+    bool ProcessesAudio() const override { return true; }
 
   private:
     bool PerformNormalisation(AudioFile &input_audio) const;

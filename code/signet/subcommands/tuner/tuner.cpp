@@ -17,7 +17,7 @@ void Tuner::ChangePitch(AudioFile &input, const double cents) {
                                  new_sample_rate);
 }
 
-bool Tuner::Process(AudioFile &input, const std::string_view filename) {
+bool Tuner::ProcessAudio(AudioFile &input, const std::string_view filename) {
     if (!input.interleaved_samples.size()) return false;
     MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
     ChangePitch(input, m_tune_cents);

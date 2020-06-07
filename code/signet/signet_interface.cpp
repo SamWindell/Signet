@@ -127,12 +127,12 @@ void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
         auto filename = file.path.filename();
         filename.replace_extension("");
         const auto name = filename.generic_string();
-        if (subcommand.Process(file.file, name)) {
+        if (subcommand.ProcessAudio(file.file, name)) {
             file.file_edited = true;
             m_num_files_processed++;
         }
 
-        if (subcommand.ProcessFilename(file.file, file.new_filename, file.path)) {
+        if (subcommand.ProcessFilename(file.new_filename, file.file, file.path)) {
             file.renamed = true;
             m_num_files_processed++;
         }

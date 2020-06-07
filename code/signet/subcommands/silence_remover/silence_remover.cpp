@@ -29,7 +29,7 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     return silence_remover;
 }
 
-bool SilenceRemover::Process(AudioFile &input, const std::string_view filename) {
+bool SilenceRemover::ProcessAudio(AudioFile &input, const std::string_view filename) {
     if (input.interleaved_samples.size() == 0) return false;
 
     usize loud_region_start = 0;

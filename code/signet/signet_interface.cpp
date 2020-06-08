@@ -46,7 +46,15 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         "Load the most recent backup");
 
-    app.add_option("input-file-or-directory", m_inputs, "The file, directory or glob pattern to process")
+    app.add_flag("--recursive-folder-search", m_recursive_directory_search,
+                 "When the input is a directory, scan for files in it recursively");
+
+    app.add_option_function<std::string>(
+           "input-file-or-directory",
+           [&](const std::string &input) {
+               m_inputs = ExpandedPathnames(input, m_recursive_directory_search);
+           },
+           "The file, directory or glob pattern to process")
         ->required();
 
     app.add_option("output-filename", m_output_filepath,
@@ -124,14 +132,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
     for (auto &file : m_inputs.GetAllFiles()) {
-        auto filename = file.path.filename();
-        filename.replace_extension("");
-        const auto name = filename.generic_string();
-        if (subcommand.ProcessAudio(file.file, name)) {
+        if (subcommand.ProcessAudio(file.file, file.new_filename)) {
             file.file_edited = true;
             m_num_files_processed++;
         }
-
         if (subcommand.ProcessFilename(file.new_filename, file.file, file.path)) {
             file.renamed = true;
             m_num_files_processed++;

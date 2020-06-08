@@ -28,4 +28,5 @@ class SignetInterface final : public SubcommandProcessor {
     int m_num_files_processed = 0;
     std::optional<ghc::filesystem::path> m_output_filepath {};
     ExpandedPathnames m_inputs {};
+    bool m_recursive_directory_search {};
 };

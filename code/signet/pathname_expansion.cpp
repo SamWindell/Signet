@@ -4,6 +4,132 @@
 
 #include "tests_config.h"
 
+void ForEachAudioFilesInDirectory(const std::string_view directory,
+                                  const bool recursively,
+                                  const std::function<void(const ghc::filesystem::path &)> callback) {
+    if (recursively) {
+        ForEachAudioFilesInDirectory<ghc::filesystem::recursive_directory_iterator>(directory, callback);
+    } else {
+        ForEachAudioFilesInDirectory<ghc::filesystem::directory_iterator>(directory, callback);
+    }
+}
+
+const bool IsPathExcluded(const ghc::filesystem::path &path,
+                          const std::vector<std::string_view> &exclude_patterns) {
+    for (const auto exclude : exclude_patterns) {
+        if (WildcardMatch(exclude, path.generic_string())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool AddNonExcludedPathsToSet(CanonicalPathSet &set,
+                              const tcb::span<const ghc::filesystem::path> paths,
+                              const std::vector<std::string_view> &exclude_patterns) {
+    bool matches = false;
+    for (const auto &path : paths) {
+        if (!IsPathExcluded(path, exclude_patterns)) {
+            set.Add(path);
+            matches = true;
+        }
+    }
+    return matches;
+}
+
+std::vector<ghc::filesystem::path> GetAudioFilePathsThatMatchPattern(std::string_view pattern) {
+    namespace fs = ghc::filesystem;
+
+    std::string added_slash;
+    if (pattern.find('/') == std::string_view::npos) {
+        added_slash = "./" + std::string(pattern);
+        pattern = added_slash;
+    }
+
+    std::vector<std::string> possible_folders;
+
+    size_t pos = 0;
+    size_t prev_pos = 0;
+    while ((pos = pattern.find('/', pos)) != std::string_view::npos) {
+        const auto folder = pattern.substr(0, pos);
+        const auto part = pattern.substr(prev_pos, pos - prev_pos);
+
+        if (!possible_folders.size()) {
+            possible_folders.push_back(std::string(folder));
+        } else {
+            std::vector<std::string> new_possible_folders;
+
+            for (const auto &f : possible_folders) {
+                const std::string with_part = f + "/" + std::string(part);
+
+                if (part.find("**") != std::string_view::npos) {
+                    for (const auto &entry : fs::recursive_directory_iterator(f)) {
+                        if (entry.is_directory()) {
+                            const auto path = entry.path().generic_string();
+                            if (WildcardMatch(folder, path)) {
+                                new_possible_folders.push_back(path);
+                            }
+                        }
+                    }
+                } else if (part.find('*') != std::string_view::npos) {
+                    for (const auto &entry : fs::directory_iterator(f)) {
+                        if (entry.is_directory()) {
+                            const auto path = entry.path().generic_string();
+                            if (WildcardMatch(folder, path)) {
+                                new_possible_folders.push_back(path);
+                            }
+                        }
+                    }
+                } else {
+                    new_possible_folders.push_back(with_part);
+                }
+            }
+
+            possible_folders = new_possible_folders;
+        }
+
+        pos += 1;
+        prev_pos = pos;
+    }
+
+    const std::string_view last_file_section = pattern.substr(prev_pos);
+
+    std::vector<ghc::filesystem::path> result;
+    const auto CheckAndRegisterFile = [&](auto path) {
+        const auto generic = path.generic_string();
+        if (WildcardMatch(pattern, generic)) {
+            result.push_back(path);
+        }
+    };
+
+    for (const auto f : possible_folders) {
+        if (last_file_section.find("**") != std::string_view::npos) {
+            ForEachAudioFilesInDirectory<ghc::filesystem::recursive_directory_iterator>(f,
+                                                                                        CheckAndRegisterFile);
+        } else if (last_file_section.find("*") != std::string_view::npos) {
+            ForEachAudioFilesInDirectory<ghc::filesystem::directory_iterator>(f, CheckAndRegisterFile);
+        } else {
+            fs::path path = f;
+            path /= std::string(last_file_section);
+            CheckAndRegisterFile(path);
+        }
+    }
+
+    return result;
+}
+
+std::vector<ghc::filesystem::path> GetAudioFilePathsInDirectory(const std::string_view dir,
+                                                                const bool recursively) {
+    std::vector<ghc::filesystem::path> result;
+    const auto parent_directory = ghc::filesystem::path(std::string(dir));
+    ForEachAudioFilesInDirectory(dir, recursively, [&](const auto path) {
+        if (parent_directory.compare(path) < 0) {
+            result.push_back(path);
+        }
+    });
+    return result;
+}
+
 TEST_CASE("Pathname Expansion") {
 #ifdef CreateFile
 #undef CreateFile
@@ -47,7 +173,8 @@ TEST_CASE("Pathname Expansion") {
                                  const std::vector<std::string_view> &exclude_filters,
                                  const std::initializer_list<const std::string> expected_matches) {
         CanonicalPathSet matches;
-        ExpandablePatternPathname::AddMatchingPathsToSet(pattern, matches, exclude_filters);
+        const auto matching_paths = GetAudioFilePathsThatMatchPattern(pattern);
+        AddNonExcludedPathsToSet(matches, matching_paths, exclude_filters);
         CAPTURE(pattern);
 
         std::vector<std::string> canonical_matches;

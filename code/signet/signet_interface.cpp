@@ -50,12 +50,15 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                  "When the input is a directory, scan for files in it recursively");
 
     app.add_option_function<std::string>(
-           "input-file-or-directory",
+           "input-files",
            [&](const std::string &input) {
-               m_inputs = ExpandedPathnames(input, m_recursive_directory_search);
+               m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
            },
            "The file, directory or glob pattern to process")
-        ->required();
+        ->required()
+        ->type_name("STRING - a file, directory or glob pattern. To use multiple, separate each one with a "
+                    "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
+                    "exclude all .wav files.");
 
     app.add_option("output-filename", m_output_filepath,
                    "The filename to write to - only relevant if the input is a single file")
@@ -93,7 +96,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     m_backup.ResetBackup(); // if we have gotten here we must not be wanting to load a backup
 
     if (m_num_files_processed) {
-        for (auto &file : m_inputs.GetAllFiles()) {
+        for (auto &file : m_input_audio_files.GetAllFiles()) {
             if (file.file_edited) {
                 auto filepath = file.path;
                 if (m_output_filepath) {
@@ -131,7 +134,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 }
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
-    for (auto &file : m_inputs.GetAllFiles()) {
+    for (auto &file : m_input_audio_files.GetAllFiles()) {
         if (subcommand.ProcessAudio(file.file, file.new_filename)) {
             file.file_edited = true;
             m_num_files_processed++;

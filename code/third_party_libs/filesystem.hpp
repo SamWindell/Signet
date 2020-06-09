@@ -1,8 +1,10 @@
 #pragma once
 
-// for some reason clang and msvc are not defining this dispite having string_view available
+// for some reason apple clang is not defining this dispite having string_view available
+#if defined(__APPLE__)
 #ifndef __cpp_lib_string_view
 #define __cpp_lib_string_view
+#endif
 #endif
 
 #if defined(__cplusplus) && __cplusplus >= 201703L && defined(__has_include) && !defined(__APPLE__)

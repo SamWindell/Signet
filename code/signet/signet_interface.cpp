@@ -138,7 +138,12 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                                        "subcommands, we will rename the output name from ",
                                        file.original_path, " to ", file.path);
                 }
-                fs::rename(file.original_path, file.path);
+                try {
+                    fs::rename(file.original_path, file.path);
+                } catch (const fs::filesystem_error &e) {
+                    ErrorWithNewLine("failed to rename ", e.path1(), " to ", e.path2(),
+                                     " for reason: ", e.what());
+                }
             }
         }
     }

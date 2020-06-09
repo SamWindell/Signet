@@ -34,7 +34,9 @@ CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     return renamer;
 }
 
-bool Renamer::ProcessFilename(std::string &filename, const AudioFile &input, const fs::path &full_path) {
+bool Renamer::ProcessFilename(fs::path &path, const AudioFile &input) {
+    std::string filename = GetJustFilenameWithNoExtension(path);
+
     bool renamed = false;
     if (m_regex_pattern) {
         const std::regex r {*m_regex_pattern};
@@ -83,8 +85,8 @@ bool Renamer::ProcessFilename(std::string &filename, const AudioFile &input, con
         }
         if (Contains(filename, "<parent-folder>")) {
             bool replaced = false;
-            if (full_path.has_parent_path()) {
-                const auto parent_folder = full_path.parent_path().filename();
+            if (path.has_parent_path()) {
+                const auto parent_folder = path.parent_path().filename();
                 if (parent_folder != ".") {
                     Replace(filename, "<parent-folder>", parent_folder.generic_string());
                     replaced = true;
@@ -98,6 +100,11 @@ bool Renamer::ProcessFilename(std::string &filename, const AudioFile &input, con
         }
     }
 
+    if (renamed) {
+        const auto ext = path.extension();
+        path.replace_filename(filename);
+        path.replace_extension(ext);
+    }
     return renamed;
 }
 

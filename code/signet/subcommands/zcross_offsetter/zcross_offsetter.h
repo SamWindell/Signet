@@ -44,7 +44,6 @@ class ZeroCrossingOffsetter final : public Subcommand {
             ->required();
         return zcross;
     }
-    bool ProcessesAudio() const override { return true; }
 
   private:
     bool m_append_skipped_frames_on_end = false;

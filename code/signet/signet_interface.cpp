@@ -96,7 +96,26 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     m_backup.ResetBackup(); // if we have gotten here we must not be wanting to load a backup
 
     if (m_num_files_processed) {
-        for (auto &file : m_input_audio_files.GetAllFiles()) {
+        {
+            std::unordered_set<std::string> files_set;
+            bool file_conflicts = false;
+            for (const auto &f : m_input_audio_files.GetAllFiles()) {
+                const auto generic = f.path.generic_string();
+                if (files_set.find(generic) != files_set.end()) {
+                    ErrorWithNewLine("filepath ", generic, " would have the same filename as another file");
+                    file_conflicts = true;
+                }
+                files_set.insert(generic);
+            }
+            if (file_conflicts) {
+                ErrorWithNewLine(
+                    "files could be unexpectedly overwritten, please review your renaming settings, "
+                    "no action will be taken now");
+                return 1;
+            }
+        }
+
+        for (const auto &file : m_input_audio_files.GetAllFiles()) {
             if (file.file_edited) {
                 auto filepath = file.path;
                 if (m_output_filepath) {
@@ -111,36 +130,31 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             }
 
             if (file.renamed) {
-                const auto filepath = m_output_filepath ? *m_output_filepath : file.path;
-
-                fs::path new_path = filepath;
-                new_path.replace_filename(file.new_filename);
-                new_path.replace_extension(filepath.extension());
-
-                if (m_output_filepath) {
-                    MessageWithNewLine("Signet", "Renaming the file ", filepath, " to ", new_path);
+                if (!m_output_filepath) {
+                    MessageWithNewLine("Signet", "Renaming the file ", file.original_path, " to ", file.path);
                 } else {
                     MessageWithNewLine("Signet",
                                        "The output name has been specified but also has been renamed by the "
                                        "subcommands, we will rename the output name from ",
-                                       filepath, " to ", new_path);
+                                       file.original_path, " to ", file.path);
                 }
-                fs::rename(file.path, new_path);
+                fs::rename(file.original_path, file.path);
             }
         }
     }
 
-    return m_num_files_processed != 0 ? 0 : 1;
+    return (m_num_files_processed != 0) ? 0 : 1;
 }
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
     for (auto &file : m_input_audio_files.GetAllFiles()) {
         if (subcommand.ProcessAudio(file.file, file.new_filename)) {
             file.file_edited = true;
-            m_num_files_processed++;
         }
-        if (subcommand.ProcessFilename(file.new_filename, file.file, file.path)) {
+        if (subcommand.ProcessFilename(file.path, file.file)) {
             file.renamed = true;
+        }
+        if (file.renamed || file.file_edited) {
             m_num_files_processed++;
         }
     }

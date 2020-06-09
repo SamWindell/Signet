@@ -8,7 +8,6 @@ class Converter final : public Subcommand {
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void Run(SubcommandProcessor &processor) override;
     bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
-    bool ProcessesAudio() const override { return true; }
 
     static void ConvertSampleRate(std::vector<double> &buffer,
                                   const unsigned num_channels,

@@ -7,5 +7,4 @@ class AutoTuner final : public Subcommand {
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
     void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
-    bool ProcessesAudio() const override { return true; }
 };

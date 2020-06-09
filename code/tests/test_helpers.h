@@ -57,9 +57,9 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     }
 
     void ProcessAllFiles(Subcommand &subcommand) override {
-        m_filename = GetJustFilenameWithNoExtension(m_path);
-        m_processed = subcommand.ProcessAudio(m_buf, m_filename);
-        m_processed_filename = subcommand.ProcessFilename(m_filename, m_buf, m_path);
+        const auto filename = GetJustFilenameWithNoExtension(m_path);
+        m_processed = subcommand.ProcessAudio(m_buf, filename);
+        m_processed_filename = subcommand.ProcessFilename(m_path, m_buf);
     }
     bool IsProcessingMultipleFiles() const override { return false; }
 
@@ -69,7 +69,9 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     }
 
     std::optional<std::string> GetFilename() const {
-        if (m_processed_filename) return m_filename;
+        if (m_processed_filename) {
+            return GetJustFilenameWithNoExtension(m_path);
+        }
         return {};
     }
 
@@ -83,7 +85,6 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     bool m_processed_filename {false};
     AudioFile m_buf {};
     fs::path m_path;
-    std::string m_filename;
 };
 
 template <typename SubcommandType>

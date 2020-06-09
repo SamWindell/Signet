@@ -9,7 +9,6 @@ class Tuner final : public Subcommand {
     bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
     void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
     static void ChangePitch(AudioFile &input, double cents);
-    bool ProcessesAudio() const override { return true; }
 
   private:
     double m_tune_cents {};

@@ -8,7 +8,7 @@
 #include "subcommands/auto_tuner/auto_tuner.h"
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
-#include "subcommands/normalise/normaliser.h"
+#include "subcommands/normaliser/normaliser.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "subcommands/renamer/renamer.h"
 #include "subcommands/silence_remover/silence_remover.h"

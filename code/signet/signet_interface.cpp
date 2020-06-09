@@ -64,7 +64,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                    "The filename to write to - only relevant if the input is a single file")
         ->check([&](const std::string &str) {
             MessageWithNewLine("Signet", "Checking if output file ", str, " is valid");
-            if (IsProcessingMultipleFiles()) {
+            if (!m_input_audio_files.IsSingleFile()) {
                 return "the input path is a directory or pattern, there must be no output filepath";
             } else {
                 fs::path path(str);

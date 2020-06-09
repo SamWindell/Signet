@@ -152,16 +152,13 @@ static void GetAllCommaDelimitedSections(std::string_view s,
     RegisterSection(s);
 }
 
-bool FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
+void FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                                       const std::vector<std::string_view> &exclude_patterns) {
-    bool matches = false;
     for (const auto &path : paths) {
         if (!IsPathExcluded(path, exclude_patterns)) {
             Add(path);
-            matches = true;
         }
     }
-    return matches;
 }
 
 std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_view comma_delimed_parts,
@@ -176,15 +173,16 @@ std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_vie
         if (include_part.find('*') != std::string_view::npos) {
             const auto matching_paths = GetAudioFilePathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
+            set.m_num_wildcard_parts++;
         } else if (fs::is_directory(std::string(include_part))) {
             const auto matching_paths =
                 GetAudioFilePathsInDirectory(include_part, recursive_directory_search);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
+            set.m_num_directory_parts++;
         } else if (fs::is_regular_file(std::string(include_part))) {
             fs::path path {include_part};
-            if (set.AddNonExcludedPaths({&path, 1}, exclude_paths)) {
-                set.m_num_single_file_parts++;
-            }
+            set.AddNonExcludedPaths({&path, 1}, exclude_paths);
+            set.m_num_file_parts++;
         } else {
             if (error) {
                 *error = "The input part " + std::string(include_part) +

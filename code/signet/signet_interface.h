@@ -18,7 +18,7 @@ class SignetInterface final : public SubcommandProcessor {
 
     int Main(const int argc, const char *const argv[]);
     void ProcessAllFiles(Subcommand &subcommand) override;
-    bool IsProcessingMultipleFiles() const override { return !m_input_audio_files.IsSingleFile(); }
+    bool IsProcessingMultipleFiles() const override { return m_input_audio_files.NumFiles() > 1; }
 
   private:
     std::vector<std::unique_ptr<Subcommand>> m_subcommands {};

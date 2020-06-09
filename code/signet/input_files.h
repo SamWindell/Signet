@@ -5,6 +5,7 @@
 #include "audio_file.h"
 #include "pathname_expansion.h"
 #include "string_utils.h"
+#include "types.h"
 
 struct InputAudioFile {
     InputAudioFile(const AudioFile &_file, fs::path _path) {
@@ -47,6 +48,7 @@ class InputAudioFiles {
 
     bool IsSingleFile() const { return m_is_single_file; }
     std::vector<InputAudioFile> &GetAllFiles() { return m_all_files; }
+    usize NumFiles() const { return m_all_files.size(); }
 
   private:
     bool m_is_single_file {};

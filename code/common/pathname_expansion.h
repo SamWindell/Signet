@@ -25,11 +25,13 @@ class FilePathSet {
     auto begin() const { return m_paths.begin(); }
     auto end() const { return m_paths.end(); }
 
-    bool IsSingleFile() const { return m_num_single_file_parts == 1; }
+    bool IsSingleFile() const {
+        return m_num_file_parts == 1 && m_num_directory_parts == 0 && m_num_wildcard_parts == 0;
+    }
 
   private:
     FilePathSet() {}
-    bool AddNonExcludedPaths(const tcb::span<const fs::path> paths,
+    void AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                              const std::vector<std::string_view> &exclude_patterns);
     void Add(const fs::path &path) { m_paths.insert(fs::canonical(path).generic_string()); }
     void Add(const std::vector<fs::path> &paths) {
@@ -38,6 +40,8 @@ class FilePathSet {
         }
     }
 
-    int m_num_single_file_parts {};
+    int m_num_file_parts {};
+    int m_num_wildcard_parts {};
+    int m_num_directory_parts {};
     std::unordered_set<std::string> m_paths {};
 };

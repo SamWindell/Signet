@@ -41,11 +41,11 @@ add_library(
     code/common/audio_duration.cpp
     code/common/audio_file.cpp
     code/common/common.cpp
+    code/common/pathname_expansion.cpp
     code/common/string_utils.cpp
     code/common/midi_pitches.cpp
     code/signet/backup.cpp
     code/signet/signet_interface.cpp
-    code/signet/pathname_expansion.cpp
     code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/auto_tuner/auto_tuner.cpp
     code/signet/subcommands/pitch_detector/pitch_detector.cpp

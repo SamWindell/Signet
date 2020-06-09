@@ -7,24 +7,21 @@
 #include "tests_config.h"
 
 template <typename DirectoryIterator>
-static void ForEachAudioFilesInDirectory(const std::string_view directory,
-                                         const std::function<void(const fs::path &)> callback) {
-    for (const auto &entry : DirectoryIterator(std::string(directory))) {
+static void ForEachFileInDirectory(const std::string_view directory,
+                                   const std::function<void(const fs::path &)> callback) {
+    for (const auto &entry : DirectoryIterator(directory)) {
         const auto &path = entry.path();
-        const auto ext = path.extension();
-        if (ext == ".flac" || ext == ".wav") {
-            callback(path);
-        }
+        callback(path);
     }
 }
 
-static void ForEachAudioFilesInDirectory(const std::string_view directory,
-                                         const bool recursively,
-                                         const std::function<void(const fs::path &)> callback) {
+static void ForEachFileInDirectory(const std::string_view directory,
+                                   const bool recursively,
+                                   const std::function<void(const fs::path &)> callback) {
     if (recursively) {
-        ForEachAudioFilesInDirectory<fs::recursive_directory_iterator>(directory, callback);
+        ForEachFileInDirectory<fs::recursive_directory_iterator>(directory, callback);
     } else {
-        ForEachAudioFilesInDirectory<fs::directory_iterator>(directory, callback);
+        ForEachFileInDirectory<fs::directory_iterator>(directory, callback);
     }
 }
 
@@ -104,9 +101,9 @@ static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view 
 
     for (const auto f : possible_folders) {
         if (last_file_section.find("**") != std::string_view::npos) {
-            ForEachAudioFilesInDirectory<fs::recursive_directory_iterator>(f, CheckAndRegisterFile);
+            ForEachFileInDirectory<fs::recursive_directory_iterator>(f, CheckAndRegisterFile);
         } else if (last_file_section.find("*") != std::string_view::npos) {
-            ForEachAudioFilesInDirectory<fs::directory_iterator>(f, CheckAndRegisterFile);
+            ForEachFileInDirectory<fs::directory_iterator>(f, CheckAndRegisterFile);
         } else {
             fs::path path = f;
             path /= std::string(last_file_section);
@@ -121,7 +118,7 @@ static std::vector<fs::path> GetAudioFilePathsInDirectory(const std::string_view
                                                           const bool recursively) {
     std::vector<fs::path> result;
     const auto parent_directory = fs::path(std::string(dir));
-    ForEachAudioFilesInDirectory(dir, recursively, [&](const auto path) {
+    ForEachFileInDirectory(dir, recursively, [&](const auto path) {
         if (parent_directory.compare(path) < 0) {
             result.push_back(path);
         }
@@ -155,8 +152,8 @@ static void GetAllCommaDelimitedSections(std::string_view s,
     RegisterSection(s);
 }
 
-bool AudioFilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
-                                           const std::vector<std::string_view> &exclude_patterns) {
+bool FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
+                                      const std::vector<std::string_view> &exclude_patterns) {
     bool matches = false;
     for (const auto &path : paths) {
         if (!IsPathExcluded(path, exclude_patterns)) {
@@ -167,15 +164,14 @@ bool AudioFilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths
     return matches;
 }
 
-std::optional<AudioFilePathSet>
-AudioFilePathSet::CreateFromPatterns(const std::string_view comma_delimed_parts,
-                                     bool recursive_directory_search,
-                                     std::string *error) {
+std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_view comma_delimed_parts,
+                                                           bool recursive_directory_search,
+                                                           std::string *error) {
     std::vector<std::string_view> include_parts;
     std::vector<std::string_view> exclude_paths;
     GetAllCommaDelimitedSections(comma_delimed_parts, include_parts, exclude_paths);
 
-    AudioFilePathSet set {};
+    FilePathSet set {};
     for (const auto &include_part : include_parts) {
         if (include_part.find('*') != std::string_view::npos) {
             const auto matching_paths = GetAudioFilePathsThatMatchPattern(include_part);
@@ -243,7 +239,7 @@ TEST_CASE("Pathname Expansion") {
     const auto CheckMatches = [](const std::string pattern,
                                  const std::initializer_list<const std::string> expected_matches) {
         std::string parse_error;
-        const auto matches = AudioFilePathSet::CreateFromPatterns(pattern, false, &parse_error);
+        const auto matches = FilePathSet::CreateFromPatterns(pattern, false, &parse_error);
         CAPTURE(parse_error);
         CAPTURE(pattern);
         REQUIRE(matches);
@@ -348,108 +344,3 @@ TEST_CASE("Pathname Expansion") {
                      {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav"});
     }
 }
-
-// TEST_CASE("[WildcardMatchingFilename]") {
-//     SUBCASE("absolute path with pattern in final dir") {
-//         WildcardMatchingFilename<CheckDummyFilesystem> p("/foo/bar/*.wav");
-//         REQUIRE(p.GetMode() == PatternMode::Pattern);
-//         REQUIRE(p.MatchesRaw("/foo/bar/file.wav"));
-//         REQUIRE(!p.MatchesRaw("/foo/bbar/file.wav"));
-//         REQUIRE(p.GetRootDirectory() == "/foo/bar");
-//     }
-//     SUBCASE("match all wavs") {
-//         WildcardMatchingFilename<CheckDummyFilesystem> p("*.wav");
-//         REQUIRE(p.GetMode() == PatternMode::Pattern);
-//         REQUIRE(p.MatchesRaw("foodledoo.wav"));
-//         REQUIRE(p.MatchesRaw("inside/dirs/foo.wav"));
-//         REQUIRE(!p.MatchesRaw("notawav.flac"));
-//         REQUIRE(p.GetRootDirectory() == ".");
-//     }
-//     SUBCASE("no pattern") {
-//         WildcardMatchingFilename<CheckDummyFilesystem> p("file.wav");
-//         REQUIRE(p.GetMode() == PatternMode::File);
-//         REQUIRE(p.MatchesRaw("file.wav"));
-//         REQUIRE(!p.MatchesRaw("dir/file.wav"));
-//         REQUIRE(p.GetRootDirectory() == ".");
-//     }
-//     SUBCASE("dirs that have a subfolder called subdir") {
-//         WildcardMatchingFilename<CheckDummyFilesystem> p("*/subdir/*");
-//         REQUIRE(p.GetMode() == PatternMode::Pattern);
-//         REQUIRE(p.MatchesRaw("foo/subdir/file.wav"));
-//         REQUIRE(p.MatchesRaw("bar/subdir/file.wav"));
-//         REQUIRE(p.MatchesRaw("bar/subdir/subsubdir/file.wav"));
-//         REQUIRE(!p.MatchesRaw("subdir/subsubdir/file.wav"));
-//         REQUIRE(!p.MatchesRaw("foo/subdir"));
-//         REQUIRE(!p.MatchesRaw("subdir/file.wav"));
-//         REQUIRE(p.GetRootDirectory() == ".");
-//     }
-//     SUBCASE("dir with no pattern") {
-//         WildcardMatchingFilename<CheckDummyFilesystem> p("c:/tools");
-//         REQUIRE(p.GetMode() == PatternMode::Directory);
-//         REQUIRE(p.MatchesRaw("c:/tools"));
-//         REQUIRE(!p.MatchesRaw("c:/tools/file.wav"));
-//         REQUIRE(!p.MatchesRaw("c:/tool"));
-//         REQUIRE(p.GetRootDirectory() == "c:/tools");
-//     }
-//     SUBCASE("multiple filenames") {
-//         MultipleWildcardMatchingFilenames<CheckDummyFilesystem> p("foo.wav,bar.wav");
-//         REQUIRE(!p.IsSingleFile());
-//         REQUIRE(p.GetNumPatterns() == 2);
-//         REQUIRE(p.Matches(0, "foo.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(0, "foo.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::AlreadyMatched);
-//         REQUIRE(p.Matches(1, "bar.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(1, "barrr.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::No);
-//         REQUIRE(p.GetRootDirectory(0) == ".");
-//         REQUIRE(p.GetRootDirectory(1) == ".");
-//     }
-//     SUBCASE("multiple patterns") {
-//         MultipleWildcardMatchingFilenames<CheckDummyFilesystem> p("code/subdirs/*,build/*.wav,*.flac");
-//         REQUIRE(!p.IsSingleFile());
-//         REQUIRE(p.GetNumPatterns() == 3);
-//         REQUIRE(p.GetRootDirectory(0) == "code/subdirs");
-//         REQUIRE(p.GetRootDirectory(1) == "build");
-//         REQUIRE(p.GetRootDirectory(2) == ".");
-//         REQUIRE(p.Matches(0, "code/subdirs/file.flac") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(2, "code/subdirs/file.flac") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::AlreadyMatched);
-//         REQUIRE(p.Matches(1, "build/file.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(2, "foo.flac") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(2, "foo.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::No);
-//     }
-//     SUBCASE("multiple-pattern object with just a single unpatterned filename") {
-//         MultipleWildcardMatchingFilenames<CheckDummyFilesystem> p("file.wav");
-//         REQUIRE(p.GetNumPatterns() == 1);
-//         REQUIRE(p.Matches(0, "file.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(0, "dir/file.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::No);
-//         REQUIRE(p.GetRootDirectory(0) == ".");
-//         REQUIRE(p.IsSingleFile());
-//     }
-//     SUBCASE("multiple-pattern object with just a single pattern") {
-//         MultipleWildcardMatchingFilenames<CheckDummyFilesystem> p("test-folder/*.wav");
-//         REQUIRE(p.GetNumPatterns() == 1);
-//         REQUIRE(p.Matches(0, "test-folder/file.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.GetRootDirectory(0) == "test-folder");
-//         REQUIRE(!p.IsSingleFile());
-//     }
-//     SUBCASE("pattern with an ending slash") {
-//         MultipleWildcardMatchingFilenames<CheckDummyFilesystem> p("test-folder/");
-//         REQUIRE(p.GetNumPatterns() == 1);
-//         REQUIRE(!p.IsSingleFile());
-//         REQUIRE(p.GetRootDirectory(0) == "test-folder/");
-//         REQUIRE(p.Matches(0, "test-folder/file.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//         REQUIRE(p.Matches(0, "test-folder/foo.wav") ==
-//                 MultipleWildcardMatchingFilenames<CheckDummyFilesystem>::MatchResult::Yes);
-//     }
-// }

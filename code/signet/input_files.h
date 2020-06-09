@@ -25,7 +25,7 @@ class InputAudioFiles {
     InputAudioFiles() {}
     InputAudioFiles(const std::string &pathnames_comma_delimed, const bool recursive_directory_search) {
         std::string parse_error;
-        const auto all_matched_filenames = AudioFilePathSet::CreateFromPatterns(
+        const auto all_matched_filenames = FilePathSet::CreateFromPatterns(
             pathnames_comma_delimed, recursive_directory_search, &parse_error);
         if (!all_matched_filenames) {
             throw CLI::ValidationError("Input files", parse_error);
@@ -38,6 +38,7 @@ class InputAudioFiles {
 
         m_is_single_file = all_matched_filenames->IsSingleFile();
         for (const auto &path : *all_matched_filenames) {
+            if (!IsAudioFileReadable(path)) continue;
             if (auto file = ReadAudioFile(path)) {
                 m_all_files.push_back({*file, path});
             }

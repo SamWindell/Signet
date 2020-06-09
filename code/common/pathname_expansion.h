@@ -9,11 +9,14 @@
 #include "filesystem.hpp"
 #include "span.hpp"
 
-class AudioFilePathSet {
+class FilePathSet {
   public:
-    static std::optional<AudioFilePathSet> CreateFromPatterns(const std::string_view comma_delimed_parts,
-                                                              bool recursive_directory_search,
-                                                              std::string *error = nullptr);
+    // Creates a FilePathSet from a comma separated list of glob patterns, filenames, or directories.
+    // Each part can start with a - to signify that the result should exclude anything that matches it.
+    // e.g. *.wav,file.flac,-foo*
+    static std::optional<FilePathSet> CreateFromPatterns(const std::string_view comma_delimed_parts,
+                                                         bool recursive_directory_search,
+                                                         std::string *error = nullptr);
 
     auto Size() const { return m_paths.size(); }
 
@@ -25,7 +28,7 @@ class AudioFilePathSet {
     bool IsSingleFile() const { return m_num_single_file_parts == 1; }
 
   private:
-    AudioFilePathSet() {}
+    FilePathSet() {}
     bool AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                              const std::vector<std::string_view> &exclude_patterns);
     void Add(const fs::path &path) { m_paths.insert(fs::canonical(path).generic_string()); }

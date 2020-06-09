@@ -33,6 +33,11 @@ bool CanFileBeConvertedToBitDepth(const AudioFile &file, const unsigned bit_dept
     return false;
 }
 
+bool IsAudioFileReadable(const fs::path &path) {
+    const auto ext = path.extension();
+    return ext == ".wav" || ext == ".flac";
+}
+
 std::optional<AudioFile> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", path);
     AudioFile result {};

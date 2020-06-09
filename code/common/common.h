@@ -7,6 +7,7 @@
 #include <string_view>
 #include <vector>
 
+#include "filesystem.hpp"
 #include "rang.hpp"
 
 template <typename Arg, typename... Args>
@@ -51,10 +52,4 @@ void ForEachDeinterleavedChannel(const std::vector<double> &interleaved_samples,
 
 double GetCentsDifference(double pitch1_hz, double pitch2_hz);
 
-namespace ghc {
-namespace filesystem {
-class path;
-}
-} // namespace ghc
-
-std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &path, const char *mode);
+std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode);

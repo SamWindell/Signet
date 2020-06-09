@@ -11,13 +11,13 @@
 
 SignetBackup::SignetBackup() {
     m_backup_dir = "signet-backup";
-    if (!ghc::filesystem::is_directory(m_backup_dir)) {
-        ghc::filesystem::create_directory(m_backup_dir);
+    if (!fs::is_directory(m_backup_dir)) {
+        fs::create_directory(m_backup_dir);
     }
 
     m_backup_files_dir = m_backup_dir / "files";
     m_database_file = m_backup_dir / "backup.json";
-    if (ghc::filesystem::is_regular_file(m_database_file)) {
+    if (fs::is_regular_file(m_database_file)) {
         try {
             std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
             i >> m_database;
@@ -33,31 +33,29 @@ bool SignetBackup::LoadBackup() {
     if (!m_parsed_json) return false;
     for (auto [hash, path] : m_database["files"].items()) {
         MessageWithNewLine("Signet", "Loading backed-up file ", path);
-        ghc::filesystem::copy_file(m_backup_files_dir / hash, path,
-                                   ghc::filesystem::copy_options::overwrite_existing);
+        fs::copy_file(m_backup_files_dir / hash, path, fs::copy_options::overwrite_existing);
     }
     return true;
 }
 
 void SignetBackup::ResetBackup() {
-    if (ghc::filesystem::is_directory(m_backup_files_dir)) {
-        ghc::filesystem::remove_all(m_backup_files_dir);
-        ghc::filesystem::create_directory(m_backup_files_dir);
+    if (fs::is_directory(m_backup_files_dir)) {
+        fs::remove_all(m_backup_files_dir);
+        fs::create_directory(m_backup_files_dir);
     }
-    if (ghc::filesystem::is_regular_file(m_database_file)) {
-        ghc::filesystem::remove(m_database_file);
+    if (fs::is_regular_file(m_database_file)) {
+        fs::remove(m_database_file);
     }
     m_database = {};
 }
 
-void SignetBackup::AddFileToBackup(const ghc::filesystem::path &path) {
-    if (!ghc::filesystem::is_directory(m_backup_files_dir)) {
-        ghc::filesystem::create_directory(m_backup_files_dir);
+void SignetBackup::AddFileToBackup(const fs::path &path) {
+    if (!fs::is_directory(m_backup_files_dir)) {
+        fs::create_directory(m_backup_files_dir);
     }
 
-    const auto hash_string = std::to_string(ghc::filesystem::hash_value(path));
-    ghc::filesystem::copy_file(path, m_backup_files_dir / hash_string,
-                               ghc::filesystem::copy_options::update_existing);
+    const auto hash_string = std::to_string(fs::hash_value(path));
+    fs::copy_file(path, m_backup_files_dir / hash_string, fs::copy_options::update_existing);
     m_database["files"][hash_string] = path.generic_string();
 
     MessageWithNewLine("Signet", "Backing-up file ", path);

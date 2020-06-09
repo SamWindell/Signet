@@ -7,14 +7,14 @@
 #include "string_utils.h"
 
 struct InputAudioFile {
-    InputAudioFile(const AudioFile &_file, ghc::filesystem::path _path) {
+    InputAudioFile(const AudioFile &_file, fs::path _path) {
         file = _file;
         path = _path;
         new_filename = GetJustFilenameWithNoExtension(path);
     }
 
     AudioFile file {};
-    ghc::filesystem::path path {};
+    fs::path path {};
     std::string new_filename {};
     bool renamed {};
     bool file_edited {};

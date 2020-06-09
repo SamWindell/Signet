@@ -8,7 +8,7 @@
 
 template <typename DirectoryIterator>
 static void ForEachAudioFilesInDirectory(const std::string_view directory,
-                                         const std::function<void(const ghc::filesystem::path &)> callback) {
+                                         const std::function<void(const fs::path &)> callback) {
     for (const auto &entry : DirectoryIterator(std::string(directory))) {
         const auto &path = entry.path();
         const auto ext = path.extension();
@@ -20,16 +20,15 @@ static void ForEachAudioFilesInDirectory(const std::string_view directory,
 
 static void ForEachAudioFilesInDirectory(const std::string_view directory,
                                          const bool recursively,
-                                         const std::function<void(const ghc::filesystem::path &)> callback) {
+                                         const std::function<void(const fs::path &)> callback) {
     if (recursively) {
-        ForEachAudioFilesInDirectory<ghc::filesystem::recursive_directory_iterator>(directory, callback);
+        ForEachAudioFilesInDirectory<fs::recursive_directory_iterator>(directory, callback);
     } else {
-        ForEachAudioFilesInDirectory<ghc::filesystem::directory_iterator>(directory, callback);
+        ForEachAudioFilesInDirectory<fs::directory_iterator>(directory, callback);
     }
 }
 
-const bool IsPathExcluded(const ghc::filesystem::path &path,
-                          const std::vector<std::string_view> &exclude_patterns) {
+const bool IsPathExcluded(const fs::path &path, const std::vector<std::string_view> &exclude_patterns) {
     for (const auto exclude : exclude_patterns) {
         if (WildcardMatch(exclude, path.generic_string())) {
             return true;
@@ -38,8 +37,8 @@ const bool IsPathExcluded(const ghc::filesystem::path &path,
     return false;
 }
 
-static std::vector<ghc::filesystem::path> GetAudioFilePathsThatMatchPattern(std::string_view pattern) {
-    namespace fs = ghc::filesystem;
+static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view pattern) {
+    namespace fs = fs;
 
     std::string added_slash;
     if (pattern.find('/') == std::string_view::npos) {
@@ -95,7 +94,7 @@ static std::vector<ghc::filesystem::path> GetAudioFilePathsThatMatchPattern(std:
 
     const std::string_view last_file_section = pattern.substr(prev_pos);
 
-    std::vector<ghc::filesystem::path> result;
+    std::vector<fs::path> result;
     const auto CheckAndRegisterFile = [&](auto path) {
         const auto generic = path.generic_string();
         if (WildcardMatch(pattern, generic)) {
@@ -105,10 +104,9 @@ static std::vector<ghc::filesystem::path> GetAudioFilePathsThatMatchPattern(std:
 
     for (const auto f : possible_folders) {
         if (last_file_section.find("**") != std::string_view::npos) {
-            ForEachAudioFilesInDirectory<ghc::filesystem::recursive_directory_iterator>(f,
-                                                                                        CheckAndRegisterFile);
+            ForEachAudioFilesInDirectory<fs::recursive_directory_iterator>(f, CheckAndRegisterFile);
         } else if (last_file_section.find("*") != std::string_view::npos) {
-            ForEachAudioFilesInDirectory<ghc::filesystem::directory_iterator>(f, CheckAndRegisterFile);
+            ForEachAudioFilesInDirectory<fs::directory_iterator>(f, CheckAndRegisterFile);
         } else {
             fs::path path = f;
             path /= std::string(last_file_section);
@@ -119,10 +117,10 @@ static std::vector<ghc::filesystem::path> GetAudioFilePathsThatMatchPattern(std:
     return result;
 }
 
-static std::vector<ghc::filesystem::path> GetAudioFilePathsInDirectory(const std::string_view dir,
-                                                                       const bool recursively) {
-    std::vector<ghc::filesystem::path> result;
-    const auto parent_directory = ghc::filesystem::path(std::string(dir));
+static std::vector<fs::path> GetAudioFilePathsInDirectory(const std::string_view dir,
+                                                          const bool recursively) {
+    std::vector<fs::path> result;
+    const auto parent_directory = fs::path(std::string(dir));
     ForEachAudioFilesInDirectory(dir, recursively, [&](const auto path) {
         if (parent_directory.compare(path) < 0) {
             result.push_back(path);
@@ -157,7 +155,7 @@ static void GetAllCommaDelimitedSections(std::string_view s,
     RegisterSection(s);
 }
 
-bool AudioFilePathSet::AddNonExcludedPaths(const tcb::span<const ghc::filesystem::path> paths,
+bool AudioFilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                                            const std::vector<std::string_view> &exclude_patterns) {
     bool matches = false;
     for (const auto &path : paths) {
@@ -182,12 +180,12 @@ AudioFilePathSet::CreateFromPatterns(const std::string_view comma_delimed_parts,
         if (include_part.find('*') != std::string_view::npos) {
             const auto matching_paths = GetAudioFilePathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
-        } else if (ghc::filesystem::is_directory(std::string(include_part))) {
+        } else if (fs::is_directory(std::string(include_part))) {
             const auto matching_paths =
                 GetAudioFilePathsInDirectory(include_part, recursive_directory_search);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
-        } else if (ghc::filesystem::is_regular_file(std::string(include_part))) {
-            ghc::filesystem::path path {include_part};
+        } else if (fs::is_regular_file(std::string(include_part))) {
+            fs::path path {include_part};
             if (set.AddNonExcludedPaths({&path, 1}, exclude_paths)) {
                 set.m_num_single_file_parts++;
             }
@@ -207,7 +205,7 @@ TEST_CASE("Pathname Expansion") {
 #ifdef CreateFile
 #undef CreateFile
 #endif
-    namespace fs = ghc::filesystem;
+    namespace fs = fs;
     const auto CreateDir = [](const char *name) {
         if (!fs::is_directory(name)) {
             fs::create_directory(name);

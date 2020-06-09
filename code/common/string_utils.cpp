@@ -73,7 +73,7 @@ bool WildcardMatch(std::string_view pattern, std::string_view name) {
     return std::regex_match(std::string(name), regex);
 }
 
-std::string GetJustFilenameWithNoExtension(ghc::filesystem::path path) {
+std::string GetJustFilenameWithNoExtension(fs::path path) {
     auto filename = path.filename();
     filename.replace_extension("");
     return filename.generic_string();

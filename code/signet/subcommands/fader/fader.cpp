@@ -149,8 +149,8 @@ TEST_CASE("[Fader]") {
 
     SUBCASE("subcommand") {
         const std::string dir = "fader-test-files";
-        if (!ghc::filesystem::is_directory(dir)) {
-            ghc::filesystem::create_directory(dir);
+        if (!fs::is_directory(dir)) {
+            fs::create_directory(dir);
         }
 
         const auto TestArgs = [&](std::string args, const size_t expected_fade_in_samples,

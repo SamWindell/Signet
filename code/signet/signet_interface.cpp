@@ -67,8 +67,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             if (IsProcessingMultipleFiles()) {
                 return "the input path is a directory or pattern, there must be no output filepath";
             } else {
-                ghc::filesystem::path path(str);
-                if (ghc::filesystem::is_directory(path)) {
+                fs::path path(str);
+                if (fs::is_directory(path)) {
                     return "output filepath cannot be a directory if the input filepath is a file";
                 } else if (path.extension() != ".wav" && path.extension() != ".flac") {
                     return "only WAV or FLAC files can be written";
@@ -113,7 +113,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             if (file.renamed) {
                 const auto filepath = m_output_filepath ? *m_output_filepath : file.path;
 
-                ghc::filesystem::path new_path = filepath;
+                fs::path new_path = filepath;
                 new_path.replace_filename(file.new_filename);
                 new_path.replace_extension(filepath.extension());
 
@@ -125,7 +125,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                                        "subcommands, we will rename the output name from ",
                                        filepath, " to ", new_path);
                 }
-                ghc::filesystem::rename(file.path, new_path);
+                fs::rename(file.path, new_path);
             }
         }
     }
@@ -153,8 +153,8 @@ TEST_CASE("[SignetInterface]") {
         const auto in_file = std::string(TEST_DATA_DIRECTORY "/white-noise.wav");
 
         std::string test_folder = "test-folder";
-        if (!ghc::filesystem::is_directory(test_folder)) {
-            ghc::filesystem::create_directory(test_folder);
+        if (!fs::is_directory(test_folder)) {
+            fs::create_directory(test_folder);
         }
 
         SUBCASE("single file absolute filename writing to output file") {

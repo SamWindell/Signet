@@ -11,8 +11,6 @@
 
 class AudioFilePathSet {
   public:
-    // comma_delimed_parts is a collection of patterns can be a file: file.wav, a directory directory, or a
-    // wildcard pattern (glob)
     static std::optional<AudioFilePathSet> CreateFromPatterns(const std::string_view comma_delimed_parts,
                                                               bool recursive_directory_search,
                                                               std::string *error = nullptr);
@@ -28,12 +26,10 @@ class AudioFilePathSet {
 
   private:
     AudioFilePathSet() {}
-    bool AddNonExcludedPaths(const tcb::span<const ghc::filesystem::path> paths,
+    bool AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                              const std::vector<std::string_view> &exclude_patterns);
-    void Add(const ghc::filesystem::path &path) {
-        m_paths.insert(ghc::filesystem::canonical(path).generic_string());
-    }
-    void Add(const std::vector<ghc::filesystem::path> &paths) {
+    void Add(const fs::path &path) { m_paths.insert(fs::canonical(path).generic_string()); }
+    void Add(const std::vector<fs::path> &paths) {
         for (const auto &p : paths) {
             Add(p);
         }

@@ -117,8 +117,8 @@ TEST_CASE("[Converter]") {
 
         SUBCASE("sine") {
             const std::string folder = "resampling-tests";
-            if (!ghc::filesystem::is_directory(folder)) {
-                ghc::filesystem::create_directory(folder);
+            if (!fs::is_directory(folder)) {
+                fs::create_directory(folder);
             }
 
             const auto PerformResampling = [&](const unsigned starting_sample_rate,

@@ -33,7 +33,7 @@ bool CanFileBeConvertedToBitDepth(const AudioFile &file, const unsigned bit_dept
     return false;
 }
 
-std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &path) {
+std::optional<AudioFile> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", path);
     AudioFile result {};
     const auto ext = path.extension();
@@ -198,9 +198,7 @@ static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f
     }
 }
 
-static bool WriteWaveFile(const ghc::filesystem::path &path,
-                          const AudioFile &audio_file,
-                          const unsigned bits_per_sample) {
+static bool WriteWaveFile(const fs::path &path, const AudioFile &audio_file, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
         WarningWithNewLine("could not write wave file - the given bit depth is invalid");
@@ -318,9 +316,8 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
     }
 }
 
-static bool WriteFlacFile(const ghc::filesystem::path &filename,
-                          const AudioFile &audio_file,
-                          const unsigned bits_per_sample) {
+static bool
+WriteFlacFile(const fs::path &filename, const AudioFile &audio_file, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_flac_bit_depths), std::end(valid_flac_bit_depths), bits_per_sample) ==
         std::end(valid_flac_bit_depths)) {
         WarningWithNewLine("could not write flac file - the given bit depth is invalid");
@@ -367,7 +364,7 @@ static bool WriteFlacFile(const ghc::filesystem::path &filename,
     return true;
 }
 
-bool WriteAudioFile(const ghc::filesystem::path &filename,
+bool WriteAudioFile(const fs::path &filename,
                     const AudioFile &audio_file,
                     std::optional<unsigned> new_bits_per_sample) {
     auto bits_per_sample = audio_file.bits_per_sample;
@@ -480,18 +477,18 @@ TEST_CASE("[AudioFile]") {
         SUBCASE("wave") {
             for (const auto bit_depth : valid_wave_bit_depths) {
                 CAPTURE(bit_depth);
-                const ghc::filesystem::path filename = "test_sine_440.wav";
+                const fs::path filename = "test_sine_440.wav";
                 REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
-                REQUIRE(ghc::filesystem::is_regular_file(filename));
+                REQUIRE(fs::is_regular_file(filename));
                 REQUIRE(ReadAudioFile(filename));
             }
         }
         SUBCASE("flac") {
             for (const auto bit_depth : valid_flac_bit_depths) {
                 CAPTURE(bit_depth);
-                const ghc::filesystem::path filename = "test_sine_440.flac";
+                const fs::path filename = "test_sine_440.flac";
                 REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
-                REQUIRE(ghc::filesystem::is_regular_file(filename));
+                REQUIRE(fs::is_regular_file(filename));
                 REQUIRE(ReadAudioFile(filename));
             }
         }

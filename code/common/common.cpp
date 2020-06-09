@@ -29,7 +29,7 @@ double GetCentsDifference(const double pitch1_hz, const double pitch2_hz) {
     return cents;
 }
 
-std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const ghc::filesystem::path &path, const char *mode) {
+std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode) {
     static const auto SafeFClose = [](FILE *f) {
         if (f) fclose(f);
     };

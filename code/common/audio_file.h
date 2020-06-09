@@ -29,8 +29,8 @@ struct AudioFile {
     AudioFileFormat format {AudioFileFormat::Wave};
 };
 
-std::optional<AudioFile> ReadAudioFile(const ghc::filesystem::path &filename);
-bool WriteAudioFile(const ghc::filesystem::path &filename,
+std::optional<AudioFile> ReadAudioFile(const fs::path &filename);
+bool WriteAudioFile(const fs::path &filename,
                     const AudioFile &audio_file,
                     const std::optional<unsigned> new_bits_per_sample = {});
 

@@ -41,9 +41,8 @@ class StringToArgs {
 class TestSubcommandProcessor : public SubcommandProcessor {
   public:
     template <typename SubcommandType>
-    static TestSubcommandProcessor Run(const std::string_view subcommand_and_args_string,
-                                       const AudioFile &buf,
-                                       const ghc::filesystem::path path) {
+    static TestSubcommandProcessor
+    Run(const std::string_view subcommand_and_args_string, const AudioFile &buf, const fs::path path) {
         std::string whole_args = "signet-test " + std::string(subcommand_and_args_string);
         CAPTURE(whole_args);
         const auto args = TestHelpers::StringToArgs {whole_args};
@@ -75,7 +74,7 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     }
 
   private:
-    TestSubcommandProcessor(Subcommand &subcommand, const AudioFile &buf, const ghc::filesystem::path &path)
+    TestSubcommandProcessor(Subcommand &subcommand, const AudioFile &buf, const fs::path &path)
         : m_buf(buf), m_path(path) {
         subcommand.Run(*this);
     }
@@ -83,7 +82,7 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     bool m_processed {false};
     bool m_processed_filename {false};
     AudioFile m_buf {};
-    ghc::filesystem::path m_path;
+    fs::path m_path;
     std::string m_filename;
 };
 
@@ -96,7 +95,7 @@ std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subc
 template <typename SubcommandType>
 std::optional<std::string> ProcessFilenameWithSubcommand(const std::string_view subcommand_and_args_string,
                                                          const AudioFile &buf,
-                                                         const ghc::filesystem::path path) {
+                                                         const fs::path path) {
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, path).GetFilename();
 }
 

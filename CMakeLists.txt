@@ -52,6 +52,7 @@ add_library(
     code/signet/subcommands/fader/fader.cpp
     code/signet/subcommands/tuner/tuner.cpp
     code/signet/subcommands/trimmer/trimmer.cpp
+    code/signet/subcommands/folderiser/folderiser.cpp
     code/signet/subcommands/normaliser/gain_calculators.cpp
     code/signet/subcommands/normaliser/normaliser.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp

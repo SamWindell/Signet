@@ -15,7 +15,7 @@ To get Signet, you currently have to build it from the source code. However, thi
 
 A C++17 compiler is required. Tested with MSVC 16.5.1 and Apple Clang 11.0.0.
 
-### Current subcommands
+### Subcommands (effects)
 Each subcommand has it's own set of options. To show these add `--help` after the subcommand. For example: `signet norm --help`. You can also run `--help-all` on signet itself to see more info: `signet --help-all`.
 
 - `zcross-offset`: Zero crossing offsetter. Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file; this is useful when used with samples that are seamless loops.
@@ -34,7 +34,7 @@ Each subcommand has it's own set of options. To show these add `--help` after th
 Synopsis: `signet in-files subcommand subcommand-options`
 
 #### Display help text
-Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
+Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
 
 `signet --help`
 `signet --help-all`
@@ -42,7 +42,7 @@ Run signet with the argument `--help` to see information about the available opt
 `signet file.wav fade in --help`
 
 #### Input files
-You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. The input can be one of 3 types:
+You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. Each comma separated section can be one of 3 types:
 
 - A single file such as `file.wav`. 
 - A directory such as `sounds/unprocessed`. In this case Signet will search for all audio files in that directory and process them all. You can specify the option `--recursive-folder-search` to make this also search subfolders.
@@ -56,7 +56,7 @@ You can exclude certain files from being processed by prefixing them with a dash
 #### Subcommands
 Next, you must specify what subcommand to run. A subcommand is the effect that should be applied to the file(s).
 
-Each effect has its own set of arguments; these are described later on.
+Each subcommand has its own set of arguments; these are shown by adding `--help` after the subcommand.
 
 You can use multiple subcommands in the same call by simply specifying them one after the other. The effects of each subcommand will be applied to the file(s) in the order that they appear.
 
@@ -82,3 +82,7 @@ To restore all files that you just overwrote, call signet again with the option 
 `signet "sampler/session 1/*.wav,sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
 
 `signet input-filename.flac output-filename.flac fade out 10s`
+
+`signet one-shots/**/.* rename (.*)-a <1>-b`
+
+`signet my_folder convert 44100 24`

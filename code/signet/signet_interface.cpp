@@ -140,6 +140,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                                        "subcommands, we will rename the output name from ",
                                        file.original_path, " to ", file.path);
                 }
+
+                if (file.path.has_parent_path()) {
+                    const auto &parent = file.path.parent_path();
+                    if (!fs::is_directory(parent)) {
+                        try {
+                            fs::create_directories(parent);
+                        } catch (const fs::filesystem_error &e) {
+                            ErrorWithNewLine("failed to create directory ", e.path1(),
+                                             " for reason: ", e.what());
+                        }
+                    }
+                }
+
                 try {
                     fs::rename(file.original_path, file.path);
                 } catch (const fs::filesystem_error &e) {

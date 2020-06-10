@@ -26,7 +26,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
         return CreateSampleOffsetToNearestZCross(input, m_search_size, m_append_skipped_frames_on_end);
     }
 
-    void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
+    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand("zcross-offset",

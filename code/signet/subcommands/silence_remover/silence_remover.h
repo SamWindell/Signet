@@ -6,7 +6,7 @@ class SilenceRemover final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
-    void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
+    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
 
   private:
     enum class Region { Start, End, Both };

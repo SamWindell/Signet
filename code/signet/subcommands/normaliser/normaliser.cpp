@@ -30,7 +30,7 @@ bool Normaliser::ProcessAudio(AudioFile &input, const std::string_view filename)
     return false;
 }
 
-void Normaliser::Run(SubcommandProcessor &processor) {
+void Normaliser::Run(SubcommandHost &processor) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {

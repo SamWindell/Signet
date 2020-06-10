@@ -38,7 +38,7 @@ class StringToArgs {
     std::vector<std::string> args;
 };
 
-class TestSubcommandProcessor : public SubcommandProcessor {
+class TestSubcommandProcessor : public SubcommandHost {
   public:
     template <typename SubcommandType>
     static TestSubcommandProcessor

@@ -5,7 +5,7 @@
 
 #include "test_helpers.h"
 
-void Converter::Run(SubcommandProcessor &processor) {
+void Converter::Run(SubcommandHost &processor) {
     m_files_can_be_converted = true;
     m_mode = Mode::ValidatingCorrectFormat;
     processor.ProcessAllFiles(*this);

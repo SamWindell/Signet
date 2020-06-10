@@ -10,7 +10,7 @@ class Fader final : public Subcommand {
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
-    void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
+    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
 
   private:
     Shape m_fade_out_shape = Shape::Sine;

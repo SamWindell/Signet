@@ -8,7 +8,7 @@ class Renamer final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     bool ProcessFilename(fs::path &path, const AudioFile &input) override;
-    void Run(SubcommandProcessor &processor) override { processor.ProcessAllFiles(*this); }
+    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
 
   private:
     std::optional<std::string> m_prefix;

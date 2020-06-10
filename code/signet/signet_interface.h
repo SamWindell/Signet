@@ -12,7 +12,7 @@
 #include "input_files.h"
 #include "subcommand.h"
 
-class SignetInterface final : public SubcommandProcessor {
+class SignetInterface final : public SubcommandHost {
   public:
     SignetInterface();
 

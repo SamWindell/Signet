@@ -4,7 +4,8 @@
 #include "subcommands/converter/converter.h"
 
 CLI::App *Tuner::CreateSubcommandCLI(CLI::App &app) {
-    auto tuner = app.add_subcommand("tune", "The the sample by stretching it");
+    auto tuner = app.add_subcommand(
+        "tune", "Tune the sample by stretching or shrinking it. Uses a high quality algorithm.");
     tuner->add_option("tune cents", m_tune_cents, "The cents to change the pitch by")->required();
     return tuner;
 }

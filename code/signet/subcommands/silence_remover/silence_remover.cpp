@@ -24,7 +24,8 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
 
     silence_remover
         ->add_option("-t,--threshold-db", m_silence_threshold_db,
-                     "The threshold in decibels to which anything under it should be considered silence")
+                     "The threshold in decibels to which anything under it should be considered silence. "
+                     "-90dB is the default.")
         ->check(CLI::Range(-200, 0));
     return silence_remover;
 }

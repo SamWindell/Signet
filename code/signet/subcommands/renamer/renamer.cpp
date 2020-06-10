@@ -9,26 +9,45 @@
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "test_helpers.h"
 
+static const std::string replacement_variables_info = R"foo(
+<counter>             A unique number starting from zero. The ordering of these numbers is not specified.
+<detected-pitch>      The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
+<detected-midi-note>  The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+<detected-note>       The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
+<parent-folder>       The name of the folder that contains the audio file.)foo";
+
 CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
-    auto renamer = app.add_subcommand("rename", "Change the filename of a file in various ways");
+    auto renamer = app.add_subcommand(
+        "rename",
+        "Rename the file. All options for this subcommand relate to just the name of the file - "
+        "not the folder or the file extension. Text added via this command can contain special substitution "
+        "variables; these will be replaced by appropriate values as specified in this list: " +
+            replacement_variables_info);
     renamer->require_subcommand();
 
-    auto prefix =
-        renamer->add_subcommand("prefix", "Add text to the end of the filename (before the extension)");
-    prefix->add_option("prefix-text", m_prefix, "The string or variable to add to the end of the filename")
+    auto prefix = renamer->add_subcommand("prefix", "Add text to the start of the filename.");
+    prefix->add_option("prefix-text", m_prefix, "The text to add, may contain substitution variables.")
         ->required();
 
-    auto suffix = renamer->add_subcommand("suffix", "Add text to the start of the filename");
-    suffix->add_option("suffix-text", m_suffix, "The string or variable to add to the start of the filename")
+    auto suffix =
+        renamer->add_subcommand("suffix", "Add text to the end of the filename (before the extension).");
+    suffix->add_option("suffix-text", m_suffix, "The text to add, may contain substitution variables.")
         ->required();
 
-    auto regex_replace = renamer->add_subcommand("regex-replace", "Replace the name using a reqex pattern");
-    regex_replace->add_option("regex-pattern", m_regex_pattern, "The ECMAScript style regex pattern")
+    auto regex_replace =
+        renamer->add_subcommand("regex-replace", "Replace names that match the given regex pattern.");
+    regex_replace
+        ->add_option("regex-pattern", m_regex_pattern,
+                     "The ECMAScript-style regex pattern to match filenames against - folder names or file "
+                     "extensions are ignored.")
         ->required();
     regex_replace
         ->add_option("regex-replacement", m_regex_replacement,
-                     "The replacement string, using brackets <> with the match number to specify where to "
-                     "insert matches. For example <1>.")
+                     "The new filename for files that matched the regex. This may contain substitution "
+                     "variables. Matching groups from the regex can also be substituted into this new name. "
+                     "You achieve this similarly to the special variable substitution. However, this time "
+                     "you are put the regex group index in the angle-brackets (such as <1>). Remember that "
+                     "with regex, group index 0 is always the whole match!")
         ->required();
 
     return renamer;
@@ -65,7 +84,7 @@ bool Renamer::ProcessFilename(fs::path &path, const AudioFile &input) {
         if (Contains(filename, "<counter>")) {
             Replace(filename, "<counter>", std::to_string(m_counter++));
         }
-        if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-node>") ||
+        if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
             Contains(filename, "<detected-note>")) {
             if (const auto pitch = PitchDetector::DetectPitch(input)) {
                 const auto closest_musical_note = FindClosestMidiPitch(*pitch);
@@ -77,10 +96,10 @@ bool Renamer::ProcessFilename(fs::path &path, const AudioFile &input) {
                 WarningWithNewLine(
                     "Renamer: One of the detected pitch variables was used in the file name, but we "
                     "could not find any pitch in the audio. All detected pitch variables will be replaced "
-                    "with NOPITCH.");
-                Replace(filename, "<detected-pitch>", "NOPITCH");
-                Replace(filename, "<detected-midi-note>", "NOPITCH");
-                Replace(filename, "<detected-note>", "NOPITCH");
+                    "substituted with nothing.");
+                Replace(filename, "<detected-pitch>", "");
+                Replace(filename, "<detected-midi-note>", "");
+                Replace(filename, "<detected-note>", "");
             }
         }
         if (Contains(filename, "<parent-folder>")) {

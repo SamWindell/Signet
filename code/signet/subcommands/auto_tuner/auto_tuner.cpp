@@ -8,7 +8,7 @@
 #include "subcommands/tuner/tuner.h"
 
 CLI::App *AutoTuner::CreateSubcommandCLI(CLI::App &app) {
-    auto auto_tuner = app.add_subcommand("auto-tune", "Tune the sample to near nearest detected pitch");
+    auto auto_tuner = app.add_subcommand("auto-tune", "Tune the audio to the nearest detected musical pitch");
     return auto_tuner;
 }
 

@@ -3,14 +3,18 @@
 #include "doctest.hpp"
 
 CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
-    auto norm = app.add_subcommand("norm", "Normalise a sample to a certain level");
+    auto norm = app.add_subcommand(
+        "norm",
+        "Apply a gain to the audio file so that the peak volume of the file is the same as the given target");
     norm->add_option("target-decibels", m_target_decibels,
-                     "The target level in decibels to convert the sample(s) to")
+                     "The target level in decibels, where 0dB is the max volume.")
         ->required()
         ->check(CLI::Range(-200, 0));
     norm->add_flag("-c,--common-gain", m_use_common_gain,
-                   "When there are multiple files, amplifiy all the samples by the same amount");
-    norm->add_flag("--rms", m_use_rms, "(experimental) Use RMS normalisation instead of peak");
+                   "When there are multiple files, amplifiy all the samples by the same amount. This results "
+                   "in only the loudest peak of the loudest sample to be the same as the target decibels.");
+    norm->add_flag("--rms", m_use_rms,
+                   "Use RMS (root mean squared) calculations to work out the required gain amount.");
     return norm;
 }
 

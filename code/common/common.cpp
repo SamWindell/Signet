@@ -1,6 +1,7 @@
 #include "common.h"
 
 #include <regex>
+#include <system_error>
 
 #include "doctest.hpp"
 #include "filesystem.hpp"
@@ -34,22 +35,29 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
         if (f) fclose(f);
     };
 
+    int ec;
 #if _WIN32
     FILE *f;
-    WCHAR wchar_mode[8];
-    for (int i = 0; i < 7; ++i) {
+    std::array<WCHAR, 8> wchar_mode {};
+    for (size_t i = 0; i < wchar_mode.size() - 1; ++i) {
         wchar_mode[i] = mode[i];
         if (mode[i] == '\0') break;
     }
-    const auto ec = _wfopen_s(&f, path.wstring().data(), wchar_mode);
+    ec = _wfopen_s(&f, path.wstring().data(), wchar_mode.data());
     if (ec == 0) {
         return {f, SafeFClose};
-    } else {
-        return {nullptr, SafeFClose};
     }
 #else
-    return {std::fopen(path.generic_string().data(), mode), SafeFClose};
+    auto f = std::fopen(path.string().data(), mode);
+    if (f) {
+        return {f, SafeFClose};
+    }
+    ec = errno;
 #endif
+
+    std::error_code std_ec {ec, std::generic_category()};
+    WarningWithNewLine("could not open file ", path, " for reason: ", std_ec.message());
+    return {nullptr, SafeFClose};
 }
 
 std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces) {

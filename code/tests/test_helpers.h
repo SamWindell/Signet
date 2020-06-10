@@ -59,7 +59,7 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     void ProcessAllFiles(Subcommand &subcommand) override {
         const auto filename = GetJustFilenameWithNoExtension(m_path);
         m_processed = subcommand.ProcessAudio(m_buf, filename);
-        m_processed_filename = subcommand.ProcessFilename(m_path, m_buf);
+        m_processed_path = subcommand.ProcessFilename(m_path, m_buf);
     }
     bool IsProcessingMultipleFiles() const override { return false; }
 
@@ -69,9 +69,14 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     }
 
     std::optional<std::string> GetFilename() const {
-        if (m_processed_filename) {
+        if (m_processed_path) {
             return GetJustFilenameWithNoExtension(m_path);
         }
+        return {};
+    }
+
+    std::optional<std::string> GetPath() const {
+        if (m_processed_path) return m_path.generic_string();
         return {};
     }
 
@@ -82,7 +87,7 @@ class TestSubcommandProcessor : public SubcommandProcessor {
     }
 
     bool m_processed {false};
-    bool m_processed_filename {false};
+    bool m_processed_path {false};
     AudioFile m_buf {};
     fs::path m_path;
 };
@@ -98,6 +103,13 @@ std::optional<std::string> ProcessFilenameWithSubcommand(const std::string_view 
                                                          const AudioFile &buf,
                                                          const fs::path path) {
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, path).GetFilename();
+}
+
+template <typename SubcommandType>
+std::optional<std::string> ProcessPathWithSubcommand(const std::string_view subcommand_and_args_string,
+                                                     const AudioFile &buf,
+                                                     const fs::path path) {
+    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, path).GetPath();
 }
 
 } // namespace TestHelpers

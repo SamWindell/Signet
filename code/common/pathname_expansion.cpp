@@ -11,7 +11,9 @@ static void ForEachFileInDirectory(const std::string_view directory,
                                    const std::function<void(const fs::path &)> callback) {
     for (const auto &entry : DirectoryIterator(directory)) {
         const auto &path = entry.path();
-        callback(path);
+        if (!fs::is_directory(path)) {
+            callback(path);
+        }
     }
 }
 

@@ -8,7 +8,8 @@
 #include "subcommands/auto_tuner/auto_tuner.h"
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
-#include "subcommands/normalise/normaliser.h"
+#include "subcommands/folderiser/folderiser.h"
+#include "subcommands/normaliser/normaliser.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "subcommands/renamer/renamer.h"
 #include "subcommands/silence_remover/silence_remover.h"
@@ -29,6 +30,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Tuner>());
     m_subcommands.push_back(std::make_unique<AutoTuner>());
     m_subcommands.push_back(std::make_unique<Renamer>());
+    m_subcommands.push_back(std::make_unique<Folderiser>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {

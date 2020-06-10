@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15.0)
-project(AudioUtils)
+project(Signet)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -52,8 +52,9 @@ add_library(
     code/signet/subcommands/fader/fader.cpp
     code/signet/subcommands/tuner/tuner.cpp
     code/signet/subcommands/trimmer/trimmer.cpp
-    code/signet/subcommands/normalise/gain_calculators.cpp
-    code/signet/subcommands/normalise/normaliser.cpp
+    code/signet/subcommands/folderiser/folderiser.cpp
+    code/signet/subcommands/normaliser/gain_calculators.cpp
+    code/signet/subcommands/normaliser/normaliser.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
     code/signet/subcommands/silence_remover/silence_remover.cpp
     code/signet/subcommands/renamer/renamer.cpp

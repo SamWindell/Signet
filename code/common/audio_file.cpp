@@ -38,34 +38,59 @@ bool IsAudioFileReadable(const fs::path &path) {
     return ext == ".wav" || ext == ".flac";
 }
 
+static size_t OnReadFile(void *file, void *buffer_out, size_t bytes_to_read) {
+    return std::fread(buffer_out, 1, bytes_to_read, (FILE *)file);
+}
+
+template <typename SeekOrigin>
+static drwav_bool32 OnSeekFile(void *file, int offset, SeekOrigin origin) {
+    static_assert(drwav_seek_origin_start == drflac_seek_origin_start);
+    constexpr int fseek_success = 0;
+    if (std::fseek((FILE *)file, offset, (origin == drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
+        fseek_success) {
+        return 1;
+    }
+    WarningWithNewLine("failed to seek file");
+    return 0;
+}
+
+static u64 OnWaveChunk(void *pChunkUserData,
+                       drwav_read_proc onRead,
+                       drwav_seek_proc onSeek,
+                       void *pReadSeekUserData,
+                       const drwav_chunk_header *pChunkHeader) {
+    return 0;
+}
+
 std::optional<AudioFile> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", path);
+    const auto file = OpenFile(path, "rb");
+    if (!file) return {};
+
     AudioFile result {};
     const auto ext = path.extension();
     std::vector<float> f32_buf {};
     if (ext == ".wav") {
-        std::unique_ptr<drwav, decltype(&drwav_close)> wav(drwav_open_file(path.generic_string().data()),
-                                                           &drwav_close);
-        if (!wav) {
-            WarningWithNewLine("could not open the WAV file ", path);
+        drwav wav;
+        if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0)) {
+            WarningWithNewLine("could not init the WAV file ", path);
             return {};
         }
 
-        result.num_channels = wav->channels;
-        result.sample_rate = wav->sampleRate;
-        result.bits_per_sample = wav->bitsPerSample;
-        result.interleaved_samples.resize(wav->totalPCMFrameCount * wav->channels);
+        result.num_channels = wav.channels;
+        result.sample_rate = wav.sampleRate;
+        result.bits_per_sample = wav.bitsPerSample;
+        result.interleaved_samples.resize(wav.totalPCMFrameCount * wav.channels);
         f32_buf.resize(result.interleaved_samples.size());
-        const auto frames_read =
-            drwav_read_pcm_frames_f32(wav.get(), wav->totalPCMFrameCount, f32_buf.data());
-        if (frames_read != wav->totalPCMFrameCount) {
+        const auto frames_read = drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, f32_buf.data());
+        if (frames_read != wav.totalPCMFrameCount) {
             WarningWithNewLine("failed to get all the frames from file ", path);
             return {};
         }
         result.format = AudioFileFormat::Wave;
     } else if (ext == ".flac") {
         std::unique_ptr<drflac, decltype(&drflac_close)> flac(
-            drflac_open_file(path.generic_string().data(), nullptr), &drflac_close);
+            drflac_open(OnReadFile, OnSeekFile, file.get(), nullptr), &drflac_close);
         if (!flac) {
             WarningWithNewLine("could not open the FLAC file ", path);
             return {};

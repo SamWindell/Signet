@@ -1,44 +1,75 @@
 # Signet
-### Command line program for manipulating audio samples - still a work-in-progess
+### Command-line program for editing audio files (still a work-in-progress)
 
-Signet is a command line program designed to make sample library development easier. Our needs in this domain involve these areas:
-- Bulk processing large amounts of samples, almost exclusively lossless audio formats (WAV, FLAC and AIFF). This processing is not 'creative', but instead it is preparation for professional playback such as fading, adding offsets, trimming, noise removal, applying gain, etc.
-- Organising many audio files - whether that be renaming them, or sorting into subfolders. This is often needed so that samples can be easily understood by a sampler.
+Signet is a command-line program designed for bulk editing audio files. It features common editing functions such as normalisation and fade-out, but also organisation functions such as renaming files.
+This tool was made to make sample library development easier. In this domain, we often have to edit hundreds of separate audio files in preparation of turning them into a playable virtual instrument. As well as this, we often need to rename the files so that a sampler can map them.
+
+Signet tries to make this often repetitive process more automatic.
 
 ### Limitations
 - Currently only supports reading and writing WAV and FLAC files.
 - Any metadata in the file is discarded - such as loop markers in a WAV file.
 
 ### Building
-To get Signet, you currently have to build it from source. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.
+To get Signet, you currently have to build it from the source code. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that. 
+
+A C++17 compiler is required. Tested with MSVC 16.5.1 and Apple Clang 11.0.0.
 
 ### Current subcommands
 Each subcommand has it's own set of options. To show these add `--help` after the subcommand. For example: `signet norm --help`. You can also run `--help-all` on signet itself to see more info: `signet --help-all`.
 
-- `zcross-offset`. Zero crossing offsetter. Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file; this is useful when used with samples that are seamless loops.
-- `norm`. Normalise a sample to a particular decibel level. Can be used on a directory, optionally recursively. With a directory you can normalise the samples to a common gain.
-- `fade`. Fade the start and/or end of the audio. The fade length must be specified. There are options for the shape of the fade curve.
-- `convert`. Converts a file's sample rate and bit depth. Uses the high quality resampler r8brain.
-- `silence-remove`. Removes silence from the end, start or both start and end of the sample.
-- `trim`. Removes a chunk of specified length from the end, start or both start and end of the sample.
-- `detect-pitch`. Prints the detected pitch of the sample.
-- `tune`. Change the pitch of the sample by slowing it down or speeding it up.
-- `auto-tune`. Tune the sample to the nearest musical note. Uses the same tuner as the tune subcommand.
-- `rename`. File renamer. Change the name of the file with regex, prefix or suffix. You can also use special substitution variables, for example adding the detected pitch or note.
-- `folderise`. Use regex to pattern-match files and move them into folders.
+- `zcross-offset`: Zero crossing offsetter. Offsets the start of an audio file to the nearest zero-crossing. Optionally appends the samples that it skipped to the end of the file; this is useful when used with samples that are seamless loops.
+- `norm`: Normalise to a particular decibel level. Can optionally normalise all files to a common gain, and can optionally determine the peak value using RMS.
+- `fade`: Fade the start and/or end of the audio. This has subcommands `in` and `out`. Each of those requires the length of the fade, and an optional shape. The default shape is sine.
+- `convert`: Converts a file's sample rate and bit depth. Uses the high quality resampler, r8brain.
+- `silence-remove`: Removes silence from the end, start or both the start and end of the sample. You can optionally set the dB level to which anything below should be considered silent.
+- `trim`. Removes audio from the end, start or both the start and end of the sample.
+- `detect-pitch`: Prints the detected pitch of the sample.
+- `tune`. Change the pitch of the sample by slowing it down or speeding it up. Specify the pitch change in cents.
+- `auto-tune`: Tunes the samples to the nearest musical note. Uses the same tuner as the tune subcommand.
+- `rename`: File renamer. Change the name of the file with regex, prefix or suffix. You can also use special substitution variables, for example adding the detected pitch or note.
+- `folderise`: Use regex to pattern-match files and move them into folders.
 
 ### Usage
-Signet is run from the command line. You first specify the input filename. This can be either a single filename or a filename pattern (glob). You can also add multiple inputs by comma separating them. You then must specify one or more subcommands. These are the utilites that process the files. They will process the file(s) in the order that they are specified in the command.
+Synopsis: `signet in-files subcommand subcommand-options`
 
-By default, signet overwrites the files that it processes. If you are just processing a single file, you can specify another file-name after the input file to be the output file; this cannot work if your input is a folder or a pattern.
+#### Display help text
+Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
 
-If you make a mistake and want to undo any files that you have just overwritten, you can use the `--load-backup` command. This system is quite primitive - it simply stores a copy of each overwritten file. This backup is reset if you run another command. There is no backup history, it just works as a single undo. The backup system works if you have just written multiple files, in which case they are all reinstated.
+`signet --help`
+`signet --help-all`
+`signet file.wav fade --help`
+`signet file.wav fade in --help`
 
-For example if you did not want to processes this file:
-`signet filename.wav norm -3`
+#### Input files
+You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. The input can be one of 3 types:
 
-You can run this command to reinstate the file prior to normalising it to 3db:
-`signet --load-backup`
+- A single file such as `file.wav`. 
+- A directory such as `sounds/unprocessed`. In this case Signet will search for all audio files in that directory and process them all. You can specify the option `--recursive-folder-search` to make this also search subfolders.
+- A glob-style filename pattern. You can use `*` to match any non-slash character and use `**` to match any character. So essentially use `**` to signify recursively searching folders. For example `*.wav` will match any file that has a `.wav` extension in the current folder. `unprocessed/\*\*/\*.wav` will match any file with the `.wav` extension in the `unprocessed` folder and any subfolder of it.
+
+Input files are processed and then saved back to file (overwritten). Signet features a simple undo option that will restore any files that you overwrote in the last call.
+
+#### Exclude files
+You can exclude certain files from being processed by prefixing them with a dash. For example `file.\*,-\*.wav` will match all files in the current directory that start with `file`, except those with the `.wav` extension.
+
+#### Subcommands
+Next, you must specify what subcommand to run. A subcommand is the effect that should be applied to the file(s).
+
+Each effect has its own set of arguments; these are described later on.
+
+You can use multiple subcommands in the same call by simply specifying them one after the other. The effects of each subcommand will be applied to the file(s) in the order that they appear.
+
+#### Output file
+Signet overwrites the input files so specifying an output file is not normally necessary. There is one exception. If you have just specified a single input file, you can specify a single output file as a second argument. For example:
+
+`signet in-file.wav out-file.wav`
+
+#### Backups (Undo)
+Signet has a simple backup system. It stores a copy of each file before it overwrites it. This backup only saves the files from the last call to Signet. In other words, you cannot go back in history other than the change you just made.
+
+To restore all files that you just overwrote, call signet again with the option `--load-backup`. For example `signet --load-backup`.
+
 
 ### Examples
 

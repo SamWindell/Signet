@@ -30,10 +30,22 @@ SignetBackup::SignetBackup() {
 }
 
 bool SignetBackup::LoadBackup() {
-    if (!m_parsed_json) return false;
+    if (!m_parsed_json) {
+        WarningWithNewLine("Signet", "The backup files could not be read");
+        return false;
+    }
+    if (!m_database["files"].size()) {
+        WarningWithNewLine("Signet", "There are no files to backup");
+        return false;
+    }
     for (auto [hash, path] : m_database["files"].items()) {
         MessageWithNewLine("Signet", "Loading backed-up file ", path);
-        fs::copy_file(m_backup_files_dir / hash, path, fs::copy_options::overwrite_existing);
+        try {
+            fs::copy_file(m_backup_files_dir / hash, path, fs::copy_options::overwrite_existing);
+        } catch (const fs::filesystem_error &e) {
+            ErrorWithNewLine("could not copy file from ", e.path1(), " to ", e.path2(),
+                             " for reason: ", e.what());
+        }
     }
     return true;
 }

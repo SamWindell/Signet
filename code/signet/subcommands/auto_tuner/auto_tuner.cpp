@@ -8,7 +8,9 @@
 #include "subcommands/tuner/tuner.h"
 
 CLI::App *AutoTuner::CreateSubcommandCLI(CLI::App &app) {
-    auto auto_tuner = app.add_subcommand("auto-tune", "Tune the audio to the nearest detected musical pitch");
+    auto auto_tuner = app.add_subcommand(
+        "auto-tune", "Auto-tune: tunes the file(s) to their nearest detected musical pitch. For example, a "
+                     "file with a detected pitch of 450Hz will be tuned to 440Hz (A4).");
     return auto_tuner;
 }
 

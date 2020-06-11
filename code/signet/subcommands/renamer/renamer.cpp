@@ -19,9 +19,9 @@ static const std::string replacement_variables_info = R"foo(
 CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     auto renamer = app.add_subcommand(
         "rename",
-        "Rename the file. All options for this subcommand relate to just the name of the file - "
+        "Renamer: Renames the file. All options for this subcommand relate to just the name of the file - "
         "not the folder or the file extension. Text added via this command can contain special substitution "
-        "variables; these will be replaced by appropriate values as specified in this list: " +
+        "variables; these will be replaced by values specified in this list: " +
             replacement_variables_info);
     renamer->require_subcommand();
 
@@ -47,7 +47,7 @@ CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
                      "variables. Matching groups from the regex can also be substituted into this new name. "
                      "You achieve this similarly to the special variable substitution. However, this time "
                      "you are put the regex group index in the angle-brackets (such as <1>). Remember that "
-                     "with regex, group index 0 is always the whole match!")
+                     "with regex, group index 0 is always the whole match.")
         ->required();
 
     return renamer;

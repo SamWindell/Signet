@@ -11,9 +11,9 @@ static constexpr usize silence_allowence = 4;
 
 CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     auto silence_remover = app.add_subcommand(
-        "silence-remove",
-        "Removes silence from the start or end of the audio. Silence is considered anything under -90dB, "
-        "however this threshold can be changed with the --threshold option.");
+        "silence-remove", "Silence-remover: removes silence from the start or end of the file(s). Silence is "
+                          "considered anything under -90dB, "
+                          "however this threshold can be changed with the --threshold option.");
 
     std::map<std::string, Region> region_name_dictionary;
     for (const auto e : magic_enum::enum_entries<Region>()) {
@@ -21,12 +21,12 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     }
     silence_remover
         ->add_option("start-or-end", m_region,
-                     "Specify whether the removal should be at the start, the end or both")
+                     "Specify whether the removal should be at the start, the end or both.")
         ->transform(CLI::CheckedTransformer(region_name_dictionary, CLI::ignore_case));
 
     silence_remover
         ->add_option("--threshold", m_silence_threshold_db,
-                     "The threshold in decibels to which anything under it should be considered silence")
+                     "The threshold in decibels to which anything under it should be considered silence.")
         ->check(CLI::Range(-200, 0));
     return silence_remover;
 }

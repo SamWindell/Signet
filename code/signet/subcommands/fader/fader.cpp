@@ -13,7 +13,11 @@ static tcb::span<const std::string_view> GetShapeNames() {
 }
 
 CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
-    auto fade = app.add_subcommand("fade", "Add a fade to the start or and of the file(s)");
+    auto fade = app.add_subcommand(
+        "fade",
+        "Fader: adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has "
+        "itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify "
+        "first the fade length. You can then optionally specify the shape of the fade curve.");
     fade->require_subcommand();
 
     std::map<std::string, Shape> shape_name_dictionary;
@@ -21,22 +25,22 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
         shape_name_dictionary[std::string(e.second)] = e.first;
     }
 
-    auto in = fade->add_subcommand("in", "Fade in the volume at the start of the file(s)");
+    auto in = fade->add_subcommand("in", "Fade in the volume at the start of the file(s).");
     in->add_option("fade-in length", m_fade_in_duration,
                    WrapText("The length of the fade in. " + AudioDuration::TypeDescription(), 80))
         ->required();
 
     in->add_option("fade-in shape", m_fade_in_shape,
-                   "The shape of the fade-in curve. The default is the 'sine' shape")
+                   "The shape of the fade-in curve. The default is the 'sine' shape.")
         ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
 
-    auto out = fade->add_subcommand("out", "Fade out the volume at the end of the file(s)");
+    auto out = fade->add_subcommand("out", "Fade out the volume at the end of the file(s).");
     out->add_option("fade-out length", m_fade_out_duration,
                     WrapText("The length of the fade out. " + AudioDuration::TypeDescription(), 80))
         ->required();
 
     out->add_option("fade-out shape", m_fade_out_shape,
-                    "The shape of the fade-out curve. The default is the 'sine' shape")
+                    "The shape of the fade-out curve. The default is the 'sine' shape.")
         ->transform(CLI::CheckedTransformer(shape_name_dictionary, CLI::ignore_case));
 
     return fade;

@@ -10,14 +10,16 @@
 #include "test_helpers.h"
 
 CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
-    auto folderiser =
-        app.add_subcommand("folderise", "Put files that match a regex pattern into folders. These folders "
-                                        "are created if they do not already exist.");
+    auto folderiser = app.add_subcommand(
+        "folderise",
+        "Folderiser: moves files into folders based on their names. This is done by specifying "
+        "a regex pattern to match the name against. The folder in which the matched file should be "
+        "moved to can be based off of the name. These folders are created if they do not already exist.");
 
     folderiser
-        ->add_option(
-            "filename-regex", m_filename_pattern,
-            "The ECMAScript regex pattern used to match filenames against. The file extension is ignored.")
+        ->add_option("filename-regex", m_filename_pattern,
+                     "The ECMAScript-style regex pattern used to match filenames against. The file extension "
+                     "is not part of this comparison.")
         ->required();
 
     folderiser

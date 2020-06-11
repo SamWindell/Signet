@@ -7,7 +7,8 @@
 #include "midi_pitches.h"
 
 CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
-    auto pitch_detector = app.add_subcommand("detect-pitch", "Prints out the detected pitch of the file");
+    auto pitch_detector =
+        app.add_subcommand("detect-pitch", "Pitch-detector: prints out the detected pitch of the file(s).");
     return pitch_detector;
 }
 

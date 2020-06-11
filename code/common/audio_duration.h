@@ -73,7 +73,7 @@ class AudioDuration {
         return "This value is a number directly followed by a unit. The unit can be one of {" +
                GetCommaSeparatedUnits() + "}. These represent {" + GetCommaSeparatedUnitsNames() +
                "} respectively. The percent option specifies the duration relative to the whole "
-               "length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp";
+               "length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.";
     }
 
   private:

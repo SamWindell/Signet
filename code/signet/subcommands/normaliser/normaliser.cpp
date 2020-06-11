@@ -6,16 +6,17 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand(
         "norm",
         "Normaliser: sets the peak amplitude to a certain level. When this is used on multiple files, each "
-        "file is  "
-        " attenuated by the same amount. You can disable this by specifying the flag --independently.");
+        "file is attenuated by the same amount. You can disable this by specifying the flag "
+        "--independently.");
 
     norm->add_option("target-decibels", m_target_decibels,
                      "The target level in decibels, where 0dB is the max volume.")
         ->required()
         ->check(CLI::Range(-200, 0));
 
-    norm->add_flag("--independently", m_normalise_independently,
-                   "When there are multiple files, amplify all the samples by the same amount");
+    norm->add_flag(
+        "--independently", m_normalise_independently,
+        "When there are multiple files, normalise each one individually rather than by a common gain.");
     norm->add_flag("--rms", m_use_rms,
                    "Use RMS (root mean squared) calculations to work out the required gain amount.");
     return norm;

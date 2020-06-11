@@ -44,9 +44,9 @@ static size_t OnReadFile(void *file, void *buffer_out, size_t bytes_to_read) {
 
 template <typename SeekOrigin>
 static drwav_bool32 OnSeekFile(void *file, int offset, SeekOrigin origin) {
-    static_assert(drwav_seek_origin_start == drflac_seek_origin_start);
+    static_assert((int)drwav_seek_origin_start == (int)drflac_seek_origin_start);
     constexpr int fseek_success = 0;
-    if (std::fseek((FILE *)file, offset, (origin == drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
+    if (std::fseek((FILE *)file, offset, (origin == (int)drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
         fseek_success) {
         return 1;
     }

@@ -19,11 +19,12 @@ void Converter::Run(SubcommandHost &processor) {
 }
 
 CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
-    auto convert = app.add_subcommand("convert", "Convert the bit depth and sample rate.");
-    convert->add_option("sample_rate", m_sample_rate, "The target sample rate in Hz")
+    auto convert =
+        app.add_subcommand("convert", "Convert the bit depth and sample rate using high quality algorithms");
+    convert->add_option("sample_rate", m_sample_rate, "The target sample rate in Hz. For example 44100.")
         ->required()
         ->check(CLI::Range(1llu, 4300000000llu));
-    convert->add_option("bit_depth", m_bit_depth, "The target bit depth")
+    convert->add_option("bit_depth", m_bit_depth, "The target bit depth.")
         ->required()
         ->check(CLI::IsMember({8, 16, 20, 24, 32, 64}));
     return convert;

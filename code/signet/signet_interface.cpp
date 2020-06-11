@@ -34,7 +34,9 @@ SignetInterface::SignetInterface() {
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
-    CLI::App app {"Audio file processor"};
+    CLI::App app {"Signet is a command-line program designed for bulk editing audio files. It features "
+                  "common editing functions such as normalisation and fade-out, but also organisation "
+                  "functions such as renaming files."};
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
@@ -56,7 +58,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
            [&](const std::string &input) {
                m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
            },
-           "The file, directory or glob pattern to process")
+           "The audio files to process")
         ->required()
         ->type_name("STRING - a file, directory or glob pattern. To use multiple, separate each one with a "
                     "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
@@ -140,6 +142,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                                        "subcommands, we will rename the output name from ",
                                        file.original_path, " to ", file.path);
                 }
+
+                if (file.path.has_parent_path()) {
+                    const auto &parent = file.path.parent_path();
+                    if (!fs::is_directory(parent)) {
+                        try {
+                            fs::create_directories(parent);
+                        } catch (const fs::filesystem_error &e) {
+                            ErrorWithNewLine("failed to create directory ", e.path1(),
+                                             " for reason: ", e.what());
+                        }
+                    }
+                }
+
                 try {
                     fs::rename(file.original_path, file.path);
                 } catch (const fs::filesystem_error &e) {

@@ -10,17 +10,13 @@ CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
 
     auto start = trimmer->add_subcommand("start", "Remove the start of the file");
     start
-        ->add_option("trim start length", m_start_duration,
-                     WrapText("The size of the chunk of data to remove at the start. " +
-                                  AudioDuration::TypeDescription(),
-                              80))
+        ->add_option("trim-start-length", m_start_duration,
+                     WrapText("The amount to remove from the start. " + AudioDuration::TypeDescription(), 80))
         ->required();
 
     auto end = trimmer->add_subcommand("end", "Remove the end of the file");
-    end->add_option(
-           "trim end length", m_end_duration,
-           WrapText("The size of the chunk of data to remove at the end. " + AudioDuration::TypeDescription(),
-                    80))
+    end->add_option("trim-end-length", m_end_duration,
+                    WrapText("The amount to remove from the end. " + AudioDuration::TypeDescription(), 80))
         ->required();
 
     return trimmer;

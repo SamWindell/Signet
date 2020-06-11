@@ -93,7 +93,7 @@ TEST_CASE("[ZCross Offset]") {
         buf.num_channels = 1;
 
         auto result = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>(
-            "zcross-offset 4smp --append-skipped", buf);
+            "zcross-offset 4smp --append", buf);
         REQUIRE(result);
         REQUIRE(result->interleaved_samples.size() == buf.interleaved_samples.size());
         REQUIRE(result->interleaved_samples[0] == 0);

@@ -10,8 +10,10 @@
 static constexpr usize silence_allowence = 4;
 
 CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
-    auto silence_remover =
-        app.add_subcommand("silence-remove", "Remove silence from the start or end of the audio");
+    auto silence_remover = app.add_subcommand(
+        "silence-remove",
+        "Removes silence from the start or end of the audio. Silence is considered anything under -90dB, "
+        "however this threshold can be changed with the --threshold option.");
 
     std::map<std::string, Region> region_name_dictionary;
     for (const auto e : magic_enum::enum_entries<Region>()) {
@@ -23,7 +25,7 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
         ->transform(CLI::CheckedTransformer(region_name_dictionary, CLI::ignore_case));
 
     silence_remover
-        ->add_option("-t,--threshold-db", m_silence_threshold_db,
+        ->add_option("--threshold", m_silence_threshold_db,
                      "The threshold in decibels to which anything under it should be considered silence")
         ->check(CLI::Range(-200, 0));
     return silence_remover;
@@ -122,12 +124,12 @@ TEST_CASE("[SilenceRemover]") {
 
     SUBCASE("all args") {
         REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>(
-            "silence-remove start --threshold-db -90", buf));
+            "silence-remove start --threshold -90", buf));
     }
 
     SUBCASE("just threshold") {
-        REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>(
-            "silence-remove --threshold-db -90", buf));
+        REQUIRE_NOTHROW(
+            TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>("silence-remove --threshold -90", buf));
     }
 
     SUBCASE("removes start") {

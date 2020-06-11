@@ -48,7 +48,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         "Load the most recent backup");
 
-    app.add_flag("--recursive-folder-search", m_recursive_directory_search,
+    app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");
 
     app.add_option_function<std::string>(

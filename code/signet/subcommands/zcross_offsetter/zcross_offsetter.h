@@ -32,7 +32,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
         auto zcross = app.add_subcommand("zcross-offset",
                                          "Offset the start of the sample to the nearest zero-crossing");
         zcross->add_flag(
-            "-a,--append-skipped", m_append_skipped_frames_on_end,
+            "--append", m_append_skipped_frames_on_end,
             "Append the frames offsetted to the end of the file - useful when the sample is a seamless loop");
 
         zcross

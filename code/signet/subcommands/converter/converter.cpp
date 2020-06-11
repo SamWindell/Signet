@@ -7,8 +7,18 @@
 
 void Converter::Run(SubcommandHost &processor) {
     m_files_can_be_converted = true;
-    m_mode = Mode::ValidatingCorrectFormat;
-    processor.ProcessAllFiles(*this);
+    if (m_bit_depth) {
+        if (!m_file_format) {
+            m_mode = Mode::ValidatingCorrectFormat;
+            processor.ProcessAllFiles(*this);
+        } else {
+            m_files_can_be_converted = CanFileBeConvertedToBitDepth(*m_file_format, *m_bit_depth);
+            if (!m_files_can_be_converted) {
+                WarningWithNewLine("file format ", magic_enum::enum_name(*m_file_format),
+                                   " cannot be converted to bit depths ", *m_bit_depth);
+            }
+        }
+    }
 
     if (m_files_can_be_converted) {
         m_mode = Mode::Converting;
@@ -19,14 +29,37 @@ void Converter::Run(SubcommandHost &processor) {
 }
 
 CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
-    auto convert = app.add_subcommand("convert", "Resampler and bit-depth converter: converts the bit-depth "
-                                                 "and sample rate using high quality algorithms.");
-    convert->add_option("sample_rate", m_sample_rate, "The target sample rate in Hz. For example 44100.")
+    auto convert = app.add_subcommand(
+        "convert", "Sample rate, bit-depth and file format converter: converts the bit-depth "
+                   "and sample rate using high quality algorithms.");
+    convert->require_subcommand();
+
+    auto sample_rate =
+        convert->add_subcommand("sample-rate", "Change the sample rate using a high quality resampler.");
+    sample_rate
+        ->add_option<decltype(m_sample_rate), unsigned>("sample-rate", m_sample_rate,
+                                                        "The target sample rate in Hz. For example 44100")
         ->required()
         ->check(CLI::Range(1llu, 4300000000llu));
-    convert->add_option("bit_depth", m_bit_depth, "The target bit depth.")
+
+    auto bit_depth = convert->add_subcommand("bit-depth", "Change the bit depth of the file(s).");
+    bit_depth
+        ->add_option<decltype(m_sample_rate), unsigned>("bit-depth", m_bit_depth, "The target bit depth.")
         ->required()
         ->check(CLI::IsMember({8, 16, 20, 24, 32, 64}));
+
+    std::map<std::string, AudioFileFormat> file_format_name_dictionary;
+    for (const auto e : magic_enum::enum_entries<AudioFileFormat>()) {
+        file_format_name_dictionary[std::string(e.second)] = e.first;
+    }
+
+    auto file_format = convert->add_subcommand("file-format", "Change the file format.");
+    file_format
+        ->add_option_function<AudioFileFormat>(
+            "file-format", [this](AudioFileFormat f) { m_file_format = f; }, "The output file format.")
+        ->required()
+        ->transform(CLI::CheckedTransformer(file_format_name_dictionary, CLI::ignore_case));
+
     return convert;
 }
 
@@ -56,35 +89,58 @@ void Converter::ConvertSampleRate(std::vector<double> &buffer,
     buffer = result_interleaved_samples;
 }
 
+bool Converter::ProcessFilename(fs::path &path, const AudioFile &input) {
+    if (m_file_format) {
+        std::string ext {magic_enum::enum_name<AudioFileFormat>(*m_file_format)};
+        for (auto &c : ext) {
+            c = (char)std::tolower(c);
+        }
+        path.replace_extension(ext);
+        return true;
+    }
+    return false;
+}
+
 bool Converter::ProcessAudio(AudioFile &input, const std::string_view filename) {
     switch (m_mode) {
         case Mode::ValidatingCorrectFormat: {
-            if (!CanFileBeConvertedToBitDepth(input, m_bit_depth)) {
+            if (!CanFileBeConvertedToBitDepth(input.format, *m_bit_depth)) {
                 WarningWithNewLine("files of type ", magic_enum::enum_name(input.format),
-                                   " cannot be converted to a bit depth of ", m_bit_depth);
+                                   " cannot be converted to a bit depth of ", *m_bit_depth);
                 m_files_can_be_converted = false;
             }
             return false;
         }
         case Mode::Converting: {
             if (!input.interleaved_samples.size()) return false;
-            if (m_bit_depth == input.bits_per_sample && m_sample_rate == input.sample_rate) {
-                MessageWithNewLine("Converter", "No conversion necessary");
-                return false;
-            }
-            input.bits_per_sample = m_bit_depth;
-            if (input.sample_rate == m_sample_rate) {
+            bool edited = false;
+            if (m_bit_depth) {
                 MessageWithNewLine("Converter", "Seting the bit rate from ", input.bits_per_sample, " to ",
-                                   m_bit_depth);
-                return true;
+                                   *m_bit_depth);
+                input.bits_per_sample = *m_bit_depth;
+                edited = true;
+            }
+            if (m_sample_rate && input.sample_rate != *m_sample_rate) {
+                ConvertSampleRate(input.interleaved_samples, input.num_channels, input.sample_rate,
+                                  (double)*m_sample_rate);
+                MessageWithNewLine("Converter", "Converting sample rate from ", input.sample_rate, " to ",
+                                   *m_sample_rate);
+                input.sample_rate = *m_sample_rate;
+                edited = true;
+            }
+            if (m_file_format && input.format != *m_file_format) {
+                const auto from_name = magic_enum::enum_name(input.format);
+                const auto to_name = magic_enum::enum_name(*m_file_format);
+                MessageWithNewLine("Converter", "Converting file format from ", from_name, " to ", to_name);
+                input.format = *m_file_format;
+                edited = true;
             }
 
-            MessageWithNewLine("Converter", "Converting sample rate from ", input.sample_rate, " to ",
-                               m_sample_rate);
-            ConvertSampleRate(input.interleaved_samples, input.num_channels, input.sample_rate,
-                              (double)m_sample_rate);
-            input.sample_rate = m_sample_rate;
-            return true;
+            if (!edited) {
+                MessageWithNewLine("Converter", "No conversion necessary");
+            }
+
+            return edited;
         }
     }
 
@@ -94,13 +150,8 @@ bool Converter::ProcessAudio(AudioFile &input, const std::string_view filename) 
 
 TEST_CASE("[Converter]") {
     SUBCASE("args") {
-        SUBCASE("requires both") {
+        SUBCASE("requires a subcommand") {
             REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert", {}));
-            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 44100", {}));
-            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 44100 16", {}));
-        }
-        SUBCASE("invalid vals") {
-            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 0.2 2", {}));
         }
     }
     SUBCASE("conversion") {
@@ -111,7 +162,8 @@ TEST_CASE("[Converter]") {
             buf.sample_rate = 48000;
             buf.bits_per_sample = 16;
 
-            auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>("convert 96000 16", buf);
+            auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>(
+                "convert sample-rate 96000 bit-depth 16", buf);
             REQUIRE(out);
             REQUIRE(out->NumFrames() == 12);
         }
@@ -132,8 +184,8 @@ TEST_CASE("[Converter]") {
                 }
 
                 const auto target_str = std::to_string(target_sample_rate);
-                const auto out =
-                    TestHelpers::ProcessBufferWithSubcommand<Converter>("convert " + target_str + " 16", buf);
+                const auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>(
+                    "convert sample-rate " + target_str + " bit-depth 16", buf);
                 if (starting_sample_rate != target_sample_rate) {
                     REQUIRE(out);
                     REQUIRE(out->sample_rate == target_sample_rate);

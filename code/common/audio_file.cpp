@@ -10,6 +10,7 @@
 #include "doctest.hpp"
 #include "dr_flac.h"
 #include "dr_wav.h"
+#include "magic_enum.hpp"
 
 #include "common.h"
 #include "test_helpers.h"
@@ -18,8 +19,8 @@
 static constexpr unsigned valid_wave_bit_depths[] = {8, 16, 24, 32, 64};
 static constexpr unsigned valid_flac_bit_depths[] = {8, 16, 20, 24};
 
-bool CanFileBeConvertedToBitDepth(const AudioFile &file, const unsigned bit_depth) {
-    switch (file.format) {
+bool CanFileBeConvertedToBitDepth(AudioFileFormat file, const unsigned bit_depth) {
+    switch (file) {
         case AudioFileFormat::Wave: {
             const auto &arr = valid_wave_bit_depths;
             return std::find(std::begin(arr), std::end(arr), bit_depth) != std::end(arr);

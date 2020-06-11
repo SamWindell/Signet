@@ -34,5 +34,5 @@ bool WriteAudioFile(const fs::path &filename,
                     const AudioFile &audio_file,
                     const std::optional<unsigned> new_bits_per_sample = {});
 
-bool CanFileBeConvertedToBitDepth(const AudioFile &file, unsigned bit_depth);
+bool CanFileBeConvertedToBitDepth(AudioFileFormat file, unsigned bit_depth);
 bool IsAudioFileReadable(const fs::path &path);

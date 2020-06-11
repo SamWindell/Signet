@@ -89,7 +89,11 @@ Trimmer: removes the start or end of the file(s). This subcommand has itself 2 s
 `detect-pitch`
 
 Pitch-detector: prints out the detected pitch of the file(s).
-`tune` Tuner: changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
+
+### Tuner
+`tune`
+
+Tuner: changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
 
 ### Auto-tuner
 `auto-tune`

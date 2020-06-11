@@ -62,7 +62,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                     "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
                     "exclude all .wav files.");
 
-    app.add_option("output-filename", m_output_filepath,
+    app.add_option("--out", m_output_filepath,
                    "The filename to write to - only relevant if the input is a single file")
         ->check([&](const std::string &str) {
             MessageWithNewLine("Signet", "Checking if output file ", str, " is valid");
@@ -179,8 +179,8 @@ TEST_CASE("[SignetInterface]") {
         }
 
         SUBCASE("single file absolute filename writing to output file") {
-            const auto args =
-                TestHelpers::StringToArgs {"signet " + in_file + " test-folder/test-out.wav fade in 50smp"};
+            const auto args = TestHelpers::StringToArgs {"signet " + in_file +
+                                                         " --out test-folder/test-out.wav fade in 50smp"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
@@ -191,14 +191,14 @@ TEST_CASE("[SignetInterface]") {
         }
 
         SUBCASE("single file with single output that is not a wav or flac") {
-            const auto args =
-                TestHelpers::StringToArgs {"signet " + in_file + " test-folder/test-out.ogg fade in 50smp"};
+            const auto args = TestHelpers::StringToArgs {"signet " + in_file +
+                                                         " --out test-folder/test-out.ogg fade in 50smp"};
             REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
         SUBCASE("when the input file is a single file the output cannot be a directory") {
             const auto args =
-                TestHelpers::StringToArgs {"signet test-folder/test-out.wav test-folder norm -3"};
+                TestHelpers::StringToArgs {"signet test-folder/test-out.wav --out=test-folder norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
@@ -208,7 +208,7 @@ TEST_CASE("[SignetInterface]") {
         }
 
         SUBCASE("when the input path is a pattern there cannot be an output file") {
-            const auto args = TestHelpers::StringToArgs {"signet test-folder/*.wav output.wav norm -3"};
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/*.wav --out output.wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
@@ -237,7 +237,7 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("read and write a flac file") {
             const auto args =
                 TestHelpers::StringToArgs {"signet " + std::string(TEST_DATA_DIRECTORY "/test.flac") +
-                                           " test-folder/test-out.flac fade in 50smp"};
+                                           " --out test-folder/test-out.flac fade in 50smp"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
     }

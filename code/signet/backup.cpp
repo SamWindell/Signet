@@ -20,6 +20,10 @@ SignetBackup::SignetBackup() {
     if (fs::is_regular_file(m_database_file)) {
         try {
             std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
+            if (!i) {
+                ErrorWithNewLine("could not open backup database file ", m_database_file);
+                return;
+            }
             i >> m_database;
             m_parsed_json = true;
             i.close();
@@ -66,12 +70,21 @@ void SignetBackup::AddFileToBackup(const fs::path &path) {
         fs::create_directory(m_backup_files_dir);
     }
 
+    MessageWithNewLine("Signet", "Backing-up file ", path);
     const auto hash_string = std::to_string(fs::hash_value(path));
-    fs::copy_file(path, m_backup_files_dir / hash_string, fs::copy_options::update_existing);
+    try {
+        fs::copy_file(path, m_backup_files_dir / hash_string, fs::copy_options::update_existing);
+    } catch (const fs::filesystem_error &e) {
+        ErrorWithNewLine("backing up file failed! Could not copy file from ", e.path1(), " to ", e.path2(),
+                         " for reason: ", e.what());
+    }
     m_database["files"][hash_string] = path.generic_string();
 
-    MessageWithNewLine("Signet", "Backing-up file ", path);
     std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
+    if (!o) {
+        ErrorWithNewLine("could not write to backup database file ", m_database_file);
+        return;
+    }
     o << std::setw(2) << m_database << std::endl;
     o.close();
 }

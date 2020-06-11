@@ -3,12 +3,16 @@
 #include "doctest.hpp"
 
 CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
-    auto norm = app.add_subcommand("norm", "Sets the peak amplitude of the file to a certain level");
+    auto norm = app.add_subcommand(
+        "norm",
+        "Normaliser: sets the peak amplitude to a certain level. When this is used on multiple files, each "
+        "file is  "
+        " attenuated by the same amount. You can disable this by specifying the flag --independently.");
     norm->add_option("target-decibels", m_target_decibels,
                      "The target level in decibels to convert the sample(s) to")
         ->required()
         ->check(CLI::Range(-200, 0));
-    norm->add_flag("--common-gain", m_use_common_gain,
+    norm->add_flag("--independently", m_normalise_independently,
                    "When there are multiple files, amplify all the samples by the same amount");
     norm->add_flag("--rms", m_use_rms, "(experimental) Use RMS normalisation instead of peak");
     return norm;
@@ -38,7 +42,7 @@ void Normaliser::Run(SubcommandHost &processor) {
     }
 
     m_successfully_found_common_gain = true;
-    if (processor.IsProcessingMultipleFiles() && m_use_common_gain) {
+    if (processor.IsProcessingMultipleFiles() && !m_normalise_independently) {
         m_current_stage = ProcessingStage::FindingCommonGain;
         processor.ProcessAllFiles(*this);
     }
@@ -54,7 +58,7 @@ void Normaliser::Run(SubcommandHost &processor) {
 }
 
 bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
-    if (!m_use_common_gain) {
+    if (m_normalise_independently) {
         m_processor->RegisterBufferMagnitudes(input_audio);
     }
     const double gain = m_processor->GetGain(DBToAmp(m_target_decibels));

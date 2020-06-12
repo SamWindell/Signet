@@ -30,8 +30,9 @@ void Converter::Run(SubcommandHost &processor) {
 
 CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
     auto convert = app.add_subcommand(
-        "convert", "Sample rate, bit-depth and file format converter: converts the bit-depth "
-                   "and sample rate using high quality algorithms.");
+        "convert", "Converter: converts the file format, bit-depth or sample "
+                   "rate. Features a high quality resampling algorithm. This subcommand has subcommands, it "
+                   "requires at least one of sample-rate, bit-depth or file-format to be specified.");
     convert->require_subcommand();
 
     auto sample_rate =
@@ -87,18 +88,6 @@ void Converter::ConvertSampleRate(std::vector<double> &buffer,
     });
 
     buffer = result_interleaved_samples;
-}
-
-bool Converter::ProcessFilename(fs::path &path, const AudioFile &input) {
-    if (m_file_format) {
-        std::string ext {magic_enum::enum_name<AudioFileFormat>(*m_file_format)};
-        for (auto &c : ext) {
-            c = (char)std::tolower(c);
-        }
-        path.replace_extension(ext);
-        return true;
-    }
-    return false;
 }
 
 bool Converter::ProcessAudio(AudioFile &input, const std::string_view filename) {

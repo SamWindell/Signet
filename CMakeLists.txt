@@ -40,6 +40,7 @@ add_library(
     common OBJECT
     code/common/audio_duration.cpp
     code/common/audio_file.cpp
+    code/signet/input_files.cpp
     code/common/common.cpp
     code/common/pathname_expansion.cpp
     code/common/string_utils.cpp

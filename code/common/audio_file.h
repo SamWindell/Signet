@@ -36,3 +36,4 @@ bool WriteAudioFile(const fs::path &filename,
 
 bool CanFileBeConvertedToBitDepth(AudioFileFormat file, unsigned bit_depth);
 bool IsAudioFileReadable(const fs::path &path);
+std::string GetLowercaseExtension(AudioFileFormat file);

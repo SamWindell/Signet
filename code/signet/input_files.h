@@ -3,6 +3,7 @@
 #include "CLI11.hpp"
 
 #include "audio_file.h"
+#include "backup.h"
 #include "pathname_expansion.h"
 #include "string_utils.h"
 #include "types.h"
@@ -13,6 +14,7 @@ struct InputAudioFile {
         path = _path;
         original_path = _path;
         new_filename = GetJustFilenameWithNoExtension(path);
+        original_file_format = file.format;
     }
 
     AudioFile file {};
@@ -21,38 +23,24 @@ struct InputAudioFile {
     std::string new_filename {};
     bool renamed {};
     bool file_edited {};
+    AudioFileFormat original_file_format {};
 };
 
 class InputAudioFiles {
   public:
     InputAudioFiles() {}
-    InputAudioFiles(const std::string &pathnames_comma_delimed, const bool recursive_directory_search) {
-        std::string parse_error;
-        const auto all_matched_filenames = FilePathSet::CreateFromPatterns(
-            pathnames_comma_delimed, recursive_directory_search, &parse_error);
-        if (!all_matched_filenames) {
-            throw CLI::ValidationError("Input files", parse_error);
-        }
-
-        if (all_matched_filenames->Size() == 0) {
-            throw CLI::ValidationError("Input files", "there are no files that match the pattern " +
-                                                          pathnames_comma_delimed);
-        }
-
-        m_is_single_file = all_matched_filenames->IsSingleFile();
-        for (const auto &path : *all_matched_filenames) {
-            if (!IsAudioFileReadable(path)) continue;
-            if (auto file = ReadAudioFile(path)) {
-                m_all_files.push_back({*file, path});
-            }
-        }
-    }
+    InputAudioFiles(const std::string &pathnames_comma_delimed, const bool recursive_directory_search);
 
     bool IsSingleFile() const { return m_is_single_file; }
     std::vector<InputAudioFile> &GetAllFiles() { return m_all_files; }
     usize NumFiles() const { return m_all_files.size(); }
 
+    bool WriteAllAudioFiles(SignetBackup &backup);
+
   private:
+    void ReadAllAudioFiles(const FilePathSet &paths);
+    bool WouldWritingAllFilesCreateConflicts();
+
     bool m_is_single_file {};
     std::vector<InputAudioFile> m_all_files {};
 };

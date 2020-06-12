@@ -64,23 +64,6 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                     "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
                     "exclude all .wav files.");
 
-    app.add_option("--out", m_output_filepath,
-                   "The filename to write to - only relevant if the input is a single file")
-        ->check([&](const std::string &str) {
-            MessageWithNewLine("Signet", "Checking if output file ", str, " is valid");
-            if (!m_input_audio_files.IsSingleFile()) {
-                return "the input path is a directory or pattern, there must be no output filepath";
-            } else {
-                fs::path path(str);
-                if (fs::is_directory(path)) {
-                    return "output filepath cannot be a directory if the input filepath is a file";
-                } else if (path.extension() != ".wav" && path.extension() != ".flac") {
-                    return "only WAV or FLAC files can be written";
-                }
-            }
-            return "";
-        });
-
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {
         auto s = subcommand->CreateSubcommandCLI(app);
@@ -100,68 +83,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     m_backup.ResetBackup(); // if we have gotten here we must not be wanting to load a backup
 
     if (m_num_files_processed) {
-        {
-            std::unordered_set<std::string> files_set;
-            bool file_conflicts = false;
-            for (const auto &f : m_input_audio_files.GetAllFiles()) {
-                const auto generic = f.path.generic_string();
-                if (files_set.find(generic) != files_set.end()) {
-                    ErrorWithNewLine("filepath ", generic, " would have the same filename as another file");
-                    file_conflicts = true;
-                }
-                files_set.insert(generic);
-            }
-            if (file_conflicts) {
-                ErrorWithNewLine(
-                    "files could be unexpectedly overwritten, please review your renaming settings, "
-                    "no action will be taken now");
-                return 1;
-            }
-        }
-
-        for (const auto &file : m_input_audio_files.GetAllFiles()) {
-            if (file.file_edited) {
-                auto filepath = file.path;
-                if (m_output_filepath) {
-                    filepath = *m_output_filepath;
-                } else {
-                    m_backup.AddFileToBackup(filepath);
-                }
-
-                if (!WriteAudioFile(filepath, file.file)) {
-                    ErrorWithNewLine("could not write the wave file ", filepath);
-                }
-            }
-
-            if (file.renamed) {
-                if (!m_output_filepath) {
-                    MessageWithNewLine("Signet", "Renaming the file ", file.original_path, " to ", file.path);
-                } else {
-                    MessageWithNewLine("Signet",
-                                       "The output name has been specified but also has been renamed by the "
-                                       "subcommands, we will rename the output name from ",
-                                       file.original_path, " to ", file.path);
-                }
-
-                if (file.path.has_parent_path()) {
-                    const auto &parent = file.path.parent_path();
-                    if (!fs::is_directory(parent)) {
-                        try {
-                            fs::create_directories(parent);
-                        } catch (const fs::filesystem_error &e) {
-                            ErrorWithNewLine("failed to create directory ", e.path1(),
-                                             " for reason: ", e.what());
-                        }
-                    }
-                }
-
-                try {
-                    fs::rename(file.original_path, file.path);
-                } catch (const fs::filesystem_error &e) {
-                    ErrorWithNewLine("failed to rename ", e.path1(), " to ", e.path2(),
-                                     " for reason: ", e.what());
-                }
-            }
+        if (!m_input_audio_files.WriteAllAudioFiles(m_backup)) {
+            return 1;
         }
     }
 
@@ -185,46 +108,31 @@ void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
 TEST_CASE("[SignetInterface]") {
     SignetInterface signet;
 
+    const auto in_file = std::string(TEST_DATA_DIRECTORY "/white-noise.wav");
+    std::string test_folder = "test-folder";
+    if (!fs::is_directory(test_folder)) {
+        fs::create_directory(test_folder);
+    }
+    REQUIRE(fs::copy_file(TEST_DATA_DIRECTORY "/white-noise.wav", "test-folder/tf1.wav",
+                          fs::copy_options::skip_existing));
+    REQUIRE(fs::copy_file(TEST_DATA_DIRECTORY "/white-noise.wav", "test-folder/tf2.wav",
+                          fs::copy_options::skip_existing));
+
     SUBCASE("args") {
-        const auto in_file = std::string(TEST_DATA_DIRECTORY "/white-noise.wav");
 
-        std::string test_folder = "test-folder";
-        if (!fs::is_directory(test_folder)) {
-            fs::create_directory(test_folder);
-        }
-
-        SUBCASE("single file absolute filename writing to output file") {
-            const auto args = TestHelpers::StringToArgs {"signet " + in_file +
-                                                         " --out test-folder/test-out.wav fade in 50smp"};
+        SUBCASE("single file absolute filename") {
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav fade in 50smp"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
-        SUBCASE("single file relative filename overwrite") {
-            const auto args =
-                TestHelpers::StringToArgs {"signet test-folder/../test-folder/test-out.wav norm -3"};
+        SUBCASE("single file relative filename") {
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/../test-folder/tf1.wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
-        }
-
-        SUBCASE("single file with single output that is not a wav or flac") {
-            const auto args = TestHelpers::StringToArgs {"signet " + in_file +
-                                                         " --out test-folder/test-out.ogg fade in 50smp"};
-            REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
-        }
-
-        SUBCASE("when the input file is a single file the output cannot be a directory") {
-            const auto args =
-                TestHelpers::StringToArgs {"signet test-folder/test-out.wav --out=test-folder norm -3"};
-            REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
         SUBCASE("match all WAVs in a dir by using a wildcard") {
             const auto args = TestHelpers::StringToArgs {"signet test-folder/*wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
-        }
-
-        SUBCASE("when the input path is a pattern there cannot be an output file") {
-            const auto args = TestHelpers::StringToArgs {"signet test-folder/*.wav --out output.wav norm -3"};
-            REQUIRE(signet.Main(args.Size(), args.Args()) != 0);
         }
 
         SUBCASE("when input path is a patternless directory scan all files in that") {
@@ -248,12 +156,164 @@ TEST_CASE("[SignetInterface]") {
                 TestHelpers::StringToArgs {"signet test-folder/test.wav,test-folder/test-out.wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
+    }
 
-        SUBCASE("read and write a flac file") {
-            const auto args =
-                TestHelpers::StringToArgs {"signet " + std::string(TEST_DATA_DIRECTORY "/test.flac") +
-                                           " --out test-folder/test-out.flac fade in 50smp"};
+    SUBCASE("backups") {
+        SUBCASE("backup of tf1.wav") {
+            auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav trim start 50%"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+            auto f = ReadAudioFile("test-folder/tf1.wav");
+            REQUIRE(f);
+            auto starting_size = f->interleaved_samples.size();
+
+            args = TestHelpers::StringToArgs {"signet --load-backup"};
+            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+            f = ReadAudioFile("test-folder/tf1.wav");
+            REQUIRE(f);
+            REQUIRE(f->interleaved_samples.size() > starting_size);
+        }
+
+        SUBCASE("backup of tf1.wav and tf2.wav") {
+            usize trimmed_size_tf1 = 0;
+            usize trimmed_size_tf2 = 0;
+            {
+                const auto args = TestHelpers::StringToArgs {"signet test-folder/tf*.wav trim start 50%"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                {
+                    auto f = ReadAudioFile("test-folder/tf1.wav");
+                    REQUIRE(f);
+                    trimmed_size_tf1 = f->interleaved_samples.size();
+
+                    f = ReadAudioFile("test-folder/tf2.wav");
+                    REQUIRE(f);
+                    trimmed_size_tf2 = f->interleaved_samples.size();
+                }
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                {
+                    auto f = ReadAudioFile("test-folder/tf1.wav");
+                    REQUIRE(f);
+                    REQUIRE(f->interleaved_samples.size() > trimmed_size_tf1);
+
+                    f = ReadAudioFile("test-folder/tf2.wav");
+                    REQUIRE(f);
+                    REQUIRE(f->interleaved_samples.size() > trimmed_size_tf2);
+                }
+            }
+        }
+
+        SUBCASE("backup of renaming tf1.wav") {
+            {
+                const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav rename prefix foo_"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/foo_tf1.wav"));
+                REQUIRE(!fs::exists("test-folder/tf1.wav"));
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
+                REQUIRE(!fs::exists("test-folder/foo_tf1.wav"));
+            }
+        }
+
+        SUBCASE("backing up of changing file format") {
+            {
+                const auto args =
+                    TestHelpers::StringToArgs {"signet test-folder/tf1.wav convert file-format flac"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.flac"));
+                REQUIRE(ReadAudioFile("test-folder/tf1.flac"));
+                REQUIRE(!fs::exists("test-folder/tf1.wav"));
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
+                REQUIRE(ReadAudioFile("test-folder/tf1.wav"));
+                REQUIRE(!fs::exists("test-folder/tf1.flac"));
+            }
+        }
+
+        SUBCASE("backing up of changing format and renaming") {
+            {
+                const auto args = TestHelpers::StringToArgs {
+                    "signet test-folder/tf1.wav convert file-format flac rename prefix foo_"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/foo_tf1.flac"));
+                REQUIRE(ReadAudioFile("test-folder/foo_tf1.flac"));
+                REQUIRE(!fs::exists("test-folder/tf1.wav"));
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
+                REQUIRE(ReadAudioFile("test-folder/tf1.wav"));
+                REQUIRE(!fs::exists("test-folder/foo_tf1.flac"));
+            }
+        }
+
+        SUBCASE("backing up of renaming and changing the format") {
+            {
+                const auto args = TestHelpers::StringToArgs {
+                    "signet test-folder/tf1.wav rename prefix foo_ convert file-format flac"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/foo_tf1.flac"));
+                REQUIRE(ReadAudioFile("test-folder/foo_tf1.flac"));
+                REQUIRE(!fs::exists("test-folder/tf1.wav"));
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
+                REQUIRE(ReadAudioFile("test-folder/tf1.wav"));
+                REQUIRE(!fs::exists("test-folder/foo_tf1.flac"));
+            }
+        }
+
+        SUBCASE("backing up of renaming, changing the format and changing the data") {
+            usize trimmed_size = 0;
+            {
+                const auto args = TestHelpers::StringToArgs {
+                    "signet test-folder/tf1.wav rename prefix foo_ convert file-format flac trim start 50%"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/foo_tf1.flac"));
+                const auto f = ReadAudioFile("test-folder/foo_tf1.flac");
+                REQUIRE(f);
+                trimmed_size = f->interleaved_samples.size();
+                REQUIRE(!fs::exists("test-folder/tf1.wav"));
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
+                const auto f = ReadAudioFile("test-folder/tf1.wav");
+                REQUIRE(f);
+                REQUIRE(f->interleaved_samples.size() > trimmed_size);
+                REQUIRE(!fs::exists("test-folder/foo_tf1.flac"));
+            }
         }
     }
 }

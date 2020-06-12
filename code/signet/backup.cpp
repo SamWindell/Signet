@@ -38,10 +38,31 @@ bool SignetBackup::LoadBackup() {
         WarningWithNewLine("Signet", "The backup files could not be read");
         return false;
     }
-    if (!m_database["files"].size()) {
-        WarningWithNewLine("Signet", "There are no files to backup");
+    if (!m_database["files"].size() && !m_database["file_moves"].size() &&
+        !m_database["files_created"].size()) {
+        WarningWithNewLine("Signet", "There is no backed-up data");
         return false;
     }
+
+    for (const auto &f : m_database["files_created"]) {
+        MessageWithNewLine("Signet", "Deleting generated file ", f);
+        try {
+            fs::remove(f);
+        } catch (const fs::filesystem_error &e) {
+            ErrorWithNewLine("could not remove file from ", f, " for reason: ", e.what());
+        }
+    }
+
+    for (auto [from, to] : m_database["file_moves"].items()) {
+        MessageWithNewLine("Signet", "Loading backed-up file move from ", from, " to ", to);
+        try {
+            fs::rename(to, from);
+        } catch (const fs::filesystem_error &e) {
+            ErrorWithNewLine("could not move file from ", e.path1(), " to ", e.path2(),
+                             " for reason: ", e.what());
+        }
+    }
+
     for (auto [hash, path] : m_database["files"].items()) {
         MessageWithNewLine("Signet", "Loading backed-up file ", path);
         try {
@@ -65,6 +86,35 @@ void SignetBackup::ResetBackup() {
     m_database = {};
 }
 
+void SignetBackup::WriteDatabaseFile() {
+    std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
+    if (!o) {
+        ErrorWithNewLine("could not write to backup database file ", m_database_file);
+        return;
+    }
+    o << std::setw(2) << m_database << std::endl;
+    o.close();
+}
+
+void SignetBackup::AddNewlyCreatedFileToBackup(const fs::path &path) {
+    if (!fs::is_directory(m_backup_files_dir)) {
+        fs::create_directory(m_backup_files_dir);
+    }
+
+    m_database["files_created"].push_back(path.generic_string());
+    WriteDatabaseFile();
+}
+
+void SignetBackup::AddMovedFileToBackup(const fs::path &from, const fs::path &to) {
+    if (!fs::is_directory(m_backup_files_dir)) {
+        fs::create_directory(m_backup_files_dir);
+    }
+
+    MessageWithNewLine("Signet", "Backing-up file move from ", from, " to ", to);
+    m_database["file_moves"][from.generic_string()] = to.generic_string();
+    WriteDatabaseFile();
+}
+
 void SignetBackup::AddFileToBackup(const fs::path &path) {
     if (!fs::is_directory(m_backup_files_dir)) {
         fs::create_directory(m_backup_files_dir);
@@ -79,14 +129,7 @@ void SignetBackup::AddFileToBackup(const fs::path &path) {
                          " for reason: ", e.what());
     }
     m_database["files"][hash_string] = path.generic_string();
-
-    std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
-    if (!o) {
-        ErrorWithNewLine("could not write to backup database file ", m_database_file);
-        return;
-    }
-    o << std::setw(2) << m_database << std::endl;
-    o.close();
+    WriteDatabaseFile();
 }
 
 TEST_CASE("[SignetBackup]") {

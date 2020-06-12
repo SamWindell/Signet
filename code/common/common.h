@@ -29,10 +29,10 @@ void WarningWithNewLine(Arg &&arg, Args &&... args) {
 
 template <typename Arg, typename... Args>
 void MessageWithNewLine(const std::string_view heading, Arg &&arg, Args &&... args) {
-    std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
-    std::cout << std::forward<Arg>(arg);
-    ((std::cout << std::forward<Args>(args)), ...);
-    std::cout << "\n";
+    // std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
+    // std::cout << std::forward<Arg>(arg);
+    // ((std::cout << std::forward<Args>(args)), ...);
+    // std::cout << "\n";
 }
 
 template <typename V, typename... T>

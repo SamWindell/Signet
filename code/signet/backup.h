@@ -9,8 +9,12 @@ class SignetBackup {
     bool LoadBackup();
     void ResetBackup();
     void AddFileToBackup(const fs::path &path);
+    void AddMovedFileToBackup(const fs::path &from, const fs::path &to);
+    void AddNewlyCreatedFileToBackup(const fs::path &path);
 
   private:
+    void WriteDatabaseFile();
+
     fs::path m_database_file {};
     fs::path m_backup_dir {};
     fs::path m_backup_files_dir {};

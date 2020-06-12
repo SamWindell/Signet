@@ -38,11 +38,6 @@ Input files are processed and then saved back to file (overwritten). Signet feat
 ### Exclude files
 You can exclude certain files from being processed by prefixing them with a dash. For example `file.\*,-\*.wav` will match all files in the current directory that start with `file`, except those with the `.wav` extension.
 
-### Output file
-Signet overwrites the input files so specifying an output file is not normally necessary. There is one exception. If you have just specified a single input file, you can specify a single output file by usind the --out option. For example:
-
-`signet in-file.wav --out out-file.wav`
-
 ### Backups (Undo)
 Signet has a simple backup system. It stores a copy of each file before it overwrites it. This backup only saves the files from the last call to Signet. In other words, you cannot go back in history other than the change you just made.
 
@@ -70,10 +65,10 @@ Normaliser: sets the peak amplitude to a certain level. When this is used on mul
 
 Zero-crossing Offsetter: offsets the start of an audio file to the nearest zero-crossing (or the closest thing to a zero crossing). You can use the option --append to cause the samples that were offsetted to be appended to the end of the file. This is useful for when the file is a seamless loop.
 
-### Format converter
+### Convert sample rate, bit depth and file format
 `convert`
 
-Resampler and bit-depth converter: converts the bit-depth and sample rate using high quality algorithms.
+Converter: converts the file format, bit-depth or sample rate. Features a high quality resampling algorithm. This subcommand has subcommands, it requires at least one of sample-rate, bit-depth or file-format to be specified.
 
 ### Silence remover
 `silence-remove`
@@ -128,13 +123,9 @@ Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
 
 `signet filename1.wav,filename2.flac norm -1`
 
-Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav. 
+Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav.
 
 `signet "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
-
-Perform a fade-out of 10 seconds to input-filename.flac and instead of overwriting it, writing to a file called output-filename.flac.
-
-`signet input-filename.flac -out output-filename.flac fade out 10s`
 
 Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
 
@@ -142,4 +133,4 @@ Rename any file in any of the folders of "one-shots" that match the regex "(.\*)
 
 Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24.
 
-`signet my_folder convert 44100 24`
+`signet my_folder convert sample-rate 44100 bit-depth 24`

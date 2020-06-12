@@ -34,6 +34,14 @@ bool CanFileBeConvertedToBitDepth(AudioFileFormat file, const unsigned bit_depth
     return false;
 }
 
+std::string GetLowercaseExtension(AudioFileFormat format) {
+    std::string result {magic_enum::enum_name(format)};
+    for (auto &c : result) {
+        c = (char)std::tolower(c);
+    }
+    return result;
+}
+
 bool IsAudioFileReadable(const fs::path &path) {
     const auto ext = path.extension();
     return ext == ".wav" || ext == ".flac";
@@ -93,7 +101,7 @@ std::optional<AudioFile> ReadAudioFile(const fs::path &path) {
         std::unique_ptr<drflac, decltype(&drflac_close)> flac(
             drflac_open(OnReadFile, OnSeekFile, file.get(), nullptr), &drflac_close);
         if (!flac) {
-            WarningWithNewLine("could not open the FLAC file ", path);
+            WarningWithNewLine("could not init the FLAC file ", path);
             return {};
         }
 

@@ -290,6 +290,25 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
+        SUBCASE("backing up of folderising") {
+            {
+                const auto args =
+                    TestHelpers::StringToArgs {"signet test-folder/tf1.wav folderise .* folderise-output"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("folderise-output/tf1.wav"));
+                REQUIRE(!fs::exists("test-folder/tf1.wav"));
+            }
+
+            {
+                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
+
+                REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
+                REQUIRE(!fs::exists("folderise-output/tf1.wav"));
+            }
+        }
+
         SUBCASE("backing up of renaming, changing the format and changing the data") {
             usize trimmed_size = 0;
             {

@@ -45,7 +45,7 @@ bool SignetBackup::LoadBackup() {
     }
 
     for (const auto &f : m_database["files_created"]) {
-        MessageWithNewLine("Signet", "Deleting generated file ", f);
+        MessageWithNewLine("Signet", "Deleting file created by Signet ", f);
         try {
             fs::remove(f);
         } catch (const fs::filesystem_error &e) {
@@ -54,7 +54,7 @@ bool SignetBackup::LoadBackup() {
     }
 
     for (auto [from, to] : m_database["file_moves"].items()) {
-        MessageWithNewLine("Signet", "Loading backed-up file move from ", from, " to ", to);
+        MessageWithNewLine("Signet", "Restoring moved file to ", from);
         try {
             fs::rename(to, from);
         } catch (const fs::filesystem_error &e) {

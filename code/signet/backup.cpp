@@ -75,7 +75,7 @@ bool SignetBackup::LoadBackup() {
     return true;
 }
 
-void SignetBackup::ResetBackup() {
+void SignetBackup::ClearBackup() {
     if (fs::is_directory(m_backup_files_dir)) {
         fs::remove_all(m_backup_files_dir);
         fs::create_directory(m_backup_files_dir);
@@ -144,7 +144,7 @@ TEST_CASE("[SignetBackup]") {
     // back it up
     {
         SignetBackup b;
-        b.ResetBackup();
+        b.ClearBackup();
         b.AddFileToBackup(filename);
     }
 

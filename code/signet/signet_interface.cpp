@@ -41,14 +41,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
     app.add_flag_callback(
-        "--load-backup",
+        "--undo",
         [this]() {
-            MessageWithNewLine("Signet", "Loading most recent backup...");
+            MessageWithNewLine("Signet", "Undoing changes made by the last run of Signet...");
             m_backup.LoadBackup();
             MessageWithNewLine("Signet", "Done.");
             throw CLI::Success();
         },
-        "Load the most recent backup");
+        "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new "
+        "files that were created are destroyed, and files that were renamed are un-renamed. You can only "
+        "undo once - you cannot keep going back in history.");
 
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");
@@ -80,7 +82,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         return app.exit(e);
     }
 
-    m_backup.ResetBackup(); // if we have gotten here we must not be wanting to load a backup
+    m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
 
     if (m_num_files_processed) {
         if (!m_input_audio_files.WriteAllAudioFiles(m_backup)) {
@@ -146,8 +148,8 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
-        SUBCASE("load backup") {
-            const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+        SUBCASE("load undo") {
+            const auto args = TestHelpers::StringToArgs {"signet --undo"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
@@ -158,8 +160,8 @@ TEST_CASE("[SignetInterface]") {
         }
     }
 
-    SUBCASE("backups") {
-        SUBCASE("backup of tf1.wav") {
+    SUBCASE("undos") {
+        SUBCASE("undo of tf1.wav") {
             auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav trim start 50%"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
@@ -167,7 +169,7 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(f);
             auto starting_size = f->interleaved_samples.size();
 
-            args = TestHelpers::StringToArgs {"signet --load-backup"};
+            args = TestHelpers::StringToArgs {"signet --undo"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
             f = ReadAudioFile("test-folder/tf1.wav");
@@ -175,7 +177,7 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(f->interleaved_samples.size() > starting_size);
         }
 
-        SUBCASE("backup of tf1.wav and tf2.wav") {
+        SUBCASE("undo of tf1.wav and tf2.wav") {
             usize trimmed_size_tf1 = 0;
             usize trimmed_size_tf2 = 0;
             {
@@ -194,7 +196,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 {
@@ -209,7 +211,7 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
-        SUBCASE("backup of renaming tf1.wav") {
+        SUBCASE("undo of renaming tf1.wav") {
             {
                 const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav rename prefix foo_"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
@@ -219,7 +221,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -227,7 +229,7 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
-        SUBCASE("backing up of changing file format") {
+        SUBCASE("undoing changing file format") {
             {
                 const auto args =
                     TestHelpers::StringToArgs {"signet test-folder/tf1.wav convert file-format flac"};
@@ -239,7 +241,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -248,7 +250,7 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
-        SUBCASE("backing up of changing format and renaming") {
+        SUBCASE("undoing changing format and renaming") {
             {
                 const auto args = TestHelpers::StringToArgs {
                     "signet test-folder/tf1.wav convert file-format flac rename prefix foo_"};
@@ -260,7 +262,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -269,7 +271,7 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
-        SUBCASE("backing up of renaming and changing the format") {
+        SUBCASE("undoing renaming and changing the format") {
             {
                 const auto args = TestHelpers::StringToArgs {
                     "signet test-folder/tf1.wav rename prefix foo_ convert file-format flac"};
@@ -281,7 +283,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -290,7 +292,7 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
-        SUBCASE("backing up of folderising") {
+        SUBCASE("undoing folderising") {
             {
                 const auto args =
                     TestHelpers::StringToArgs {"signet test-folder/tf1.wav folderise .* folderise-output"};
@@ -301,7 +303,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -309,7 +311,7 @@ TEST_CASE("[SignetInterface]") {
             }
         }
 
-        SUBCASE("backing up of renaming, changing the format and changing the data") {
+        SUBCASE("undoing renaming, changing the format and changing the data") {
             usize trimmed_size = 0;
             {
                 const auto args = TestHelpers::StringToArgs {
@@ -324,7 +326,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --load-backup"};
+                const auto args = TestHelpers::StringToArgs {"signet --undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));

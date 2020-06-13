@@ -9,8 +9,19 @@
 #include "test_helpers.h"
 #include "tests_config.h"
 
+static fs::path GetTempDir() {
+    try {
+        const auto temp_dir = fs::temp_directory_path();
+        return temp_dir;
+    } catch (const fs::filesystem_error &e) {
+        WarningWithNewLine("could not get the temporary file folder from the OS for reason: ", e.what(),
+                           ". Reverting to using the current working directory.");
+    }
+    return "."; // cwd
+}
+
 SignetBackup::SignetBackup() {
-    m_backup_dir = "signet-backup";
+    m_backup_dir = GetTempDir() / "signet-backup";
     if (!fs::is_directory(m_backup_dir)) {
         fs::create_directory(m_backup_dir);
     }

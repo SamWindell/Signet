@@ -40,6 +40,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
+
     app.add_flag_callback(
         "--undo",
         [this]() {
@@ -51,6 +52,20 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new "
         "files that were created are destroyed, and files that were renamed are un-renamed. You can only "
         "undo once - you cannot keep going back in history.");
+
+    app.add_flag_callback(
+        "--clear-backup",
+        [this]() {
+            MessageWithNewLine("Signet", "Clearing all backed-up files...");
+            m_backup.ClearBackup();
+            MessageWithNewLine("Signet", "Done.");
+            throw CLI::Success();
+        },
+        "Deletes all temporary files created by Signet. These files are needed for the undo system and are "
+        "saved to your OS's temporary folder. These files are cleared and new ones created every time you "
+        "run Signet. This option is only really useful if you have just processed lots of files and you "
+        "won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the "
+        "backup.");
 
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");

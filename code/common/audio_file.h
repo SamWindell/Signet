@@ -5,8 +5,10 @@
 #include "doctest.hpp"
 #include "filesystem.hpp"
 
+#include "types.h"
+
 enum class AudioFileFormat {
-    Wave,
+    Wav,
     Flac,
 };
 
@@ -21,12 +23,25 @@ struct AudioFile {
     const double &GetSample(unsigned channel, size_t frame) const {
         return interleaved_samples[frame * num_channels + channel];
     }
+    void MultiplyByScalar(const double amount) {
+        for (auto &s : interleaved_samples) {
+            s *= amount;
+        }
+    }
+    void AddOther(const AudioFile &other) {
+        if (other.interleaved_samples.size() > interleaved_samples.size()) {
+            interleaved_samples.resize(other.interleaved_samples.size());
+        }
+        for (usize i = 0; i < other.interleaved_samples.size(); ++i) {
+            interleaved_samples[i] += other.interleaved_samples[i];
+        }
+    }
 
     std::vector<double> interleaved_samples {};
     unsigned num_channels {};
     unsigned sample_rate {};
     unsigned bits_per_sample = 24;
-    AudioFileFormat format {AudioFileFormat::Wave};
+    AudioFileFormat format {AudioFileFormat::Wav};
 };
 
 std::optional<AudioFile> ReadAudioFile(const fs::path &filename);

@@ -45,4 +45,18 @@ AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
     return buf;
 }
 
+AudioFile CreateSquareWaveAtFrequency(const unsigned num_channels,
+                                      const unsigned sample_rate,
+                                      const double length_seconds,
+                                      const double frequency_hz) {
+    auto result = CreateSineWaveAtFrequency(num_channels, sample_rate, length_seconds, frequency_hz);
+    for (auto &s : result.interleaved_samples) {
+        if (s < 0)
+            s = -1;
+        else
+            s = 1;
+    }
+    return result;
+}
+
 } // namespace TestHelpers

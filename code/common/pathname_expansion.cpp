@@ -17,9 +17,9 @@ static void ForEachFileInDirectory(const std::string_view directory,
     }
 }
 
-static void ForEachFileInDirectory(const std::string_view directory,
-                                   const bool recursively,
-                                   const std::function<void(const fs::path &)> callback) {
+void ForEachFileInDirectory(const std::string_view directory,
+                            const bool recursively,
+                            const std::function<void(const fs::path &)> callback) {
     if (recursively) {
         ForEachFileInDirectory<fs::recursive_directory_iterator>(directory, callback);
     } else {

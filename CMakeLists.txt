@@ -59,7 +59,9 @@ add_library(
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
     code/signet/subcommands/silence_remover/silence_remover.cpp
     code/signet/subcommands/renamer/renamer.cpp
-    code/tests/test_helpers.cpp)
+    code/tests/test_helpers.cpp
+    code/signet-gen/signet_gen_interface.cpp
+    code/signet-gen/sample_blender.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 if (WIN32)
@@ -94,6 +96,10 @@ configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
 # Signet
 add_executable(signet code/signet/signet_main.cpp)
 target_link_libraries(signet PRIVATE common)
+
+# Signet-gen
+add_executable(signet-gen code/signet-gen/signet_gen_main.cpp)
+target_link_libraries(signet-gen PRIVATE common)
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)

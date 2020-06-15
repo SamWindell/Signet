@@ -15,6 +15,11 @@ AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
                                     const unsigned sample_rate,
                                     const double length_seconds,
                                     const double frequency_hz);
+AudioFile CreateSquareWaveAtFrequency(const unsigned num_channels,
+                                      const unsigned sample_rate,
+                                      const double length_seconds,
+                                      const double frequency_hz);
+
 class StringToArgs {
   public:
     StringToArgs(std::string_view s) {

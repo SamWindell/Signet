@@ -45,3 +45,7 @@ class FilePathSet {
     int m_num_directory_parts {};
     std::unordered_set<std::string> m_paths {};
 };
+
+void ForEachFileInDirectory(const std::string_view directory,
+                            const bool recursively,
+                            const std::function<void(const fs::path &)> callback);

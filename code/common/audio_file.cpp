@@ -21,7 +21,7 @@ static constexpr unsigned valid_flac_bit_depths[] = {8, 16, 20, 24};
 
 bool CanFileBeConvertedToBitDepth(AudioFileFormat file, const unsigned bit_depth) {
     switch (file) {
-        case AudioFileFormat::Wave: {
+        case AudioFileFormat::Wav: {
             const auto &arr = valid_wave_bit_depths;
             return std::find(std::begin(arr), std::end(arr), bit_depth) != std::end(arr);
         }
@@ -96,7 +96,7 @@ std::optional<AudioFile> ReadAudioFile(const fs::path &path) {
             WarningWithNewLine("failed to get all the frames from file ", path);
             return {};
         }
-        result.format = AudioFileFormat::Wave;
+        result.format = AudioFileFormat::Wav;
     } else if (ext == ".flac") {
         std::unique_ptr<drflac, decltype(&drflac_close)> flac(
             drflac_open(OnReadFile, OnSeekFile, file.get(), nullptr), &drflac_close);
@@ -439,6 +439,42 @@ struct BufferConversionTest {
 };
 
 TEST_CASE("[AudioFile]") {
+    SUBCASE("AudioFile object") {
+        SUBCASE("MultiplyByScalar") {
+            AudioFile file;
+            file.interleaved_samples = {1, 1};
+            file.MultiplyByScalar(0.5);
+            REQUIRE(file.interleaved_samples[0] == doctest::Approx(0.5));
+            REQUIRE(file.interleaved_samples[1] == doctest::Approx(0.5));
+        }
+        SUBCASE("AddOther") {
+            AudioFile file;
+            file.interleaved_samples = {1, 1};
+            SUBCASE("larger") {
+                AudioFile file2;
+                file2.interleaved_samples = {1, 1, 1};
+                file.AddOther(file2);
+                REQUIRE(file.interleaved_samples[0] == 2);
+                REQUIRE(file.interleaved_samples[1] == 2);
+                REQUIRE(file.interleaved_samples[2] == 1);
+            }
+            SUBCASE("smaller") {
+                AudioFile file2;
+                file2.interleaved_samples = {1};
+                file.AddOther(file2);
+                REQUIRE(file.interleaved_samples[0] == 2);
+                REQUIRE(file.interleaved_samples[1] == 1);
+            }
+            SUBCASE("equal") {
+                AudioFile file2;
+                file2.interleaved_samples = {1, 1};
+                file.AddOther(file2);
+                REQUIRE(file.interleaved_samples[0] == 2);
+                REQUIRE(file.interleaved_samples[1] == 2);
+            }
+        }
+    }
+
     SUBCASE("conversion") {
         SUBCASE("signed single samples") {
             REQUIRE(ScaleSampleToSignedInt<s16>(1, 16) == INT16_MAX);

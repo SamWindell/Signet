@@ -2,6 +2,8 @@
 
 #include "common.h"
 #include "subcommands/converter/converter.h"
+#include "subcommands/pitch_detector/pitch_detector.h"
+#include "test_helpers.h"
 
 CLI::App *Tuner::CreateSubcommandCLI(CLI::App &app) {
     auto tuner = app.add_subcommand("tune", "Tuner: changes the tune the file(s) by stretching or shrinking "
@@ -23,4 +25,49 @@ bool Tuner::ProcessAudio(AudioFile &input, const std::string_view filename) {
     MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
     ChangePitch(input, m_tune_cents);
     return true;
+}
+
+TEST_CASE("Tuner") {
+    auto sine = TestHelpers::CreateSineWaveAtFrequency(1, 44100, 1, 220);
+
+    SUBCASE("220 is detected") {
+        const auto detected = PitchDetector::DetectPitch(sine);
+        REQUIRE(detected);
+        REQUIRE(*detected == doctest::Approx(220).epsilon(1.0));
+    }
+
+    SUBCASE("tuned down 1 octave") {
+        Tuner::ChangePitch(sine, -1200);
+        const auto detected = PitchDetector::DetectPitch(sine);
+        REQUIRE(detected);
+        REQUIRE(*detected == doctest::Approx(110).epsilon(1.0));
+    }
+
+    SUBCASE("tuned down 2 octaves") {
+        Tuner::ChangePitch(sine, -2400);
+        const auto detected = PitchDetector::DetectPitch(sine);
+        REQUIRE(detected);
+        REQUIRE(*detected == doctest::Approx(55).epsilon(1.0));
+    }
+
+    SUBCASE("tuned up 1 octave") {
+        Tuner::ChangePitch(sine, 1200);
+        const auto detected = PitchDetector::DetectPitch(sine);
+        REQUIRE(detected);
+        REQUIRE(*detected == doctest::Approx(440).epsilon(1.0));
+    }
+
+    SUBCASE("tuned down 1 semitone") {
+        Tuner::ChangePitch(sine, -100);
+        const auto detected = PitchDetector::DetectPitch(sine);
+        REQUIRE(detected);
+        REQUIRE(*detected == doctest::Approx(207.65).epsilon(1.0));
+    }
+
+    SUBCASE("tuned up 1 semitone") {
+        Tuner::ChangePitch(sine, 100);
+        const auto detected = PitchDetector::DetectPitch(sine);
+        REQUIRE(detected);
+        REQUIRE(*detected == doctest::Approx(233.08).epsilon(1.0));
+    }
 }

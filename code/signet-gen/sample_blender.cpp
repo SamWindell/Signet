@@ -140,9 +140,9 @@ TEST_CASE("SampleBlender") {
         sine.MultiplyByScalar(0.25);
         REQUIRE(WriteAudioFile("test-folder/pitched-sine-69.wav", sine));
 
-        auto sqare2 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 1, g_midi_pitches[73].pitch);
+        auto square2 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 1, g_midi_pitches[73].pitch);
         sine.MultiplyByScalar(0.25);
-        REQUIRE(WriteAudioFile("test-folder/pitched-square-73.wav", sine));
+        REQUIRE(WriteAudioFile("test-folder/pitched-square-73.wav", square2));
     }
 
     CLI::App app {"test"};

@@ -55,7 +55,7 @@ bool SignetBackup::LoadBackup() {
         return false;
     }
 
-    for (const auto &f : m_database["files_created"]) {
+    for (const std::string &f : m_database["files_created"]) {
         MessageWithNewLine("Signet", "Deleting file created by Signet ", f);
         try {
             fs::remove(f);
@@ -64,20 +64,21 @@ bool SignetBackup::LoadBackup() {
         }
     }
 
-    for (auto [from, to] : m_database["file_moves"].items()) {
+    for (const auto &[from, to] : m_database["file_moves"].items()) {
         MessageWithNewLine("Signet", "Restoring moved file to ", from);
         try {
-            fs::rename(to, from);
+            fs::rename(to.get<std::string>(), from);
         } catch (const fs::filesystem_error &e) {
             ErrorWithNewLine("could not move file from ", e.path1(), " to ", e.path2(),
                              " for reason: ", e.what());
         }
     }
 
-    for (auto [hash, path] : m_database["files"].items()) {
+    for (const auto &[hash, path] : m_database["files"].items()) {
         MessageWithNewLine("Signet", "Loading backed-up file ", path);
         try {
-            fs::copy_file(m_backup_files_dir / hash, path, fs::copy_options::overwrite_existing);
+            fs::copy_file(m_backup_files_dir / hash, path.get<std::string>(),
+                          fs::copy_options::overwrite_existing);
         } catch (const fs::filesystem_error &e) {
             ErrorWithNewLine("could not copy file from ", e.path1(), " to ", e.path2(),
                              " for reason: ", e.what());

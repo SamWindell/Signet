@@ -250,13 +250,13 @@ TEST_CASE("Pathname Expansion") {
 
         std::vector<std::string> canonical_matches;
         for (const auto &match : *matches) {
-            canonical_matches.push_back(fs::canonical(match));
+            canonical_matches.push_back(fs::canonical(match).generic_string());
         }
         std::sort(canonical_matches.begin(), canonical_matches.end());
 
         std::vector<std::string> canonical_expected;
         for (auto expected : expected_matches) {
-            canonical_expected.push_back(fs::canonical(expected));
+            canonical_expected.push_back(fs::canonical(expected).generic_string());
         }
         std::sort(canonical_expected.begin(), canonical_expected.end());
 

@@ -41,7 +41,7 @@ struct ProcessFiles {
 static void GenerateSamplesByBlending(const ProcessFiles &f1,
                                       const ProcessFiles &f2,
                                       const int semitone_interval,
-                                      const std::string &dir) {
+                                      const fs::path &dir) {
     if (f1.root_note + semitone_interval >= f2.root_note) {
         MessageWithNewLine("SampleBlender", "Samples are close enough together already");
         return;
@@ -71,7 +71,7 @@ static void GenerateSamplesByBlending(const ProcessFiles &f1,
 
         out.AddOther(other);
 
-        const auto filename = dir + "/blended-sample-" + std::to_string(root_note) + "." +
+        const auto filename = dir.generic_string() + "/blended-sample-" + std::to_string(root_note) + "." +
                               GetLowercaseExtension(f1.file.format);
         WriteAudioFile(filename, out);
     }

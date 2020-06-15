@@ -63,6 +63,7 @@ void Normaliser::Run(SubcommandHost &processor) {
 
 bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
     if (m_normalise_independently) {
+        m_processor->Reset();
         m_processor->RegisterBufferMagnitudes(input_audio);
     }
     const double gain = m_processor->GetGain(DBToAmp(m_target_decibels));

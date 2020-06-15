@@ -13,6 +13,7 @@ class NormalisationGainCalculator {
     virtual double GetGain(double target_amp) const = 0;
     virtual const char *GetName() const = 0;
     virtual double GetLargestRegisteredMagnitude() const = 0;
+    virtual void Reset() {}
 };
 
 class RMSGainCalculator : public NormalisationGainCalculator {
@@ -57,6 +58,11 @@ class RMSGainCalculator : public NormalisationGainCalculator {
 
     const char *GetName() const override { return "RMS"; };
 
+    void Reset() override {
+        m_sum_of_squares_channels.clear();
+        m_num_frames = 0;
+    }
+
   private:
     static double
     GetLinearGainForTargetAmpRMS(double target_rms_amp, double sum_of_squares, double num_samples) {
@@ -86,6 +92,8 @@ class PeakGainCalculator : public NormalisationGainCalculator {
     }
 
     const char *GetName() const override { return "Peak"; };
+
+    void Reset() override { m_max_magnitude = 0; }
 
   private:
     double m_max_magnitude;

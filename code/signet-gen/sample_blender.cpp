@@ -34,7 +34,13 @@ void SampleBlender::Create(CLI::App &app) {
                     "substitution variable <root-num> or <root-note> which will be replaced by the root note "
                     "of the generated file. <root-num> is replaced by the MIDI note number, and <root-name> "
                     "is replaced by the note name, such as C3.")
-        ->required();
+        ->required()
+        ->check([](const std::string &str) -> std::string {
+            if (!Contains(str, "<root-num>") && !Contains(str, "<root-note>")) {
+                return str + " does not at least one of either <root-num> or <root-note>";
+            }
+            return "";
+        });
 
     cli->callback([sample_blender]() { sample_blender->Run(); });
 }
@@ -106,9 +112,15 @@ void SampleBlender::Run() {
                                  "Expected exactly 1 regex group to be captured to represent the root note");
                 return;
             }
-            files.push_back({p, std::stoi(pieces_match[1])});
-            MessageWithNewLine("SampleBlender", "found file ", files.back().path, " with root note ",
-                               files.back().root_note);
+            const auto root_note = std::stoi(pieces_match[1]);
+            if (root_note < 0 || root_note > 127) {
+                WarningWithNewLine("SampleBlender: root note of file ", name,
+                                   " is not in the range 0-127 so cannot be processed");
+            } else {
+                files.push_back({p, std::stoi(pieces_match[1])});
+                MessageWithNewLine("SampleBlender", "found file ", files.back().path, " with root note ",
+                                   files.back().root_note);
+            }
         }
     }
 
@@ -168,6 +180,6 @@ TEST_CASE("SampleBlender") {
     SampleBlender::Create(app);
 
     const auto args = TestHelpers::StringToArgs(
-        "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 1 pitched-blend-<root-num>");
+        "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 1 out-pitched-blend-<root-num>");
     REQUIRE_NOTHROW(app.parse(args.Size(), args.Args()));
 }

@@ -29,6 +29,13 @@ void SampleBlender::Create(CLI::App &app) {
                     "The semitone interval at which to generate new samples by")
         ->required();
 
+    cli->add_option("out-filename", sample_blender->m_out_filename,
+                    "The filename of the generated files (excluding extension). It should contain either the "
+                    "substitution variable <root-num> or <root-note> which will be replaced by the root note "
+                    "of the generated file. <root-num> is replaced by the MIDI note number, and <root-name> "
+                    "is replaced by the note name, such as C3.")
+        ->required();
+
     cli->callback([sample_blender]() { sample_blender->Run(); });
 }
 
@@ -41,7 +48,8 @@ struct ProcessFiles {
 static void GenerateSamplesByBlending(const ProcessFiles &f1,
                                       const ProcessFiles &f2,
                                       const int semitone_interval,
-                                      const fs::path &dir) {
+                                      const fs::path &dir,
+                                      const std::string &filename_pattern) {
     if (f1.root_note + semitone_interval >= f2.root_note) {
         MessageWithNewLine("SampleBlender", "Samples are close enough together already");
         return;
@@ -71,9 +79,12 @@ static void GenerateSamplesByBlending(const ProcessFiles &f1,
 
         out.AddOther(other);
 
-        const auto filename = dir.generic_string() + "/blended-sample-" + std::to_string(root_note) + "." +
-                              GetLowercaseExtension(f1.file.format);
-        WriteAudioFile(filename, out);
+        auto filename = filename_pattern;
+        Replace(filename, "<root-num>", std::to_string(root_note));
+        Replace(filename, "<root-note>", g_midi_pitches[root_note].name);
+
+        const auto path = dir / (filename + "." + GetLowercaseExtension(f1.file.format));
+        WriteAudioFile(path, out);
     }
 }
 
@@ -100,6 +111,13 @@ void SampleBlender::Run() {
                                files.back().root_note);
         }
     }
+
+    if (files.size() < 2) {
+        ErrorWithNewLine("SampleBlender: regex pattern ", m_regex,
+                         " does not match any filename in directory ", m_directory);
+        return;
+    }
+
     REQUIRE(files.size() >= 2);
 
     std::sort(files.begin(), files.end(),
@@ -123,7 +141,7 @@ void SampleBlender::Run() {
     }
 
     for (usize i = 0; i < files.size() - 1; ++i) {
-        GenerateSamplesByBlending(files[i], files[i + 1], m_semitone_interval, m_directory);
+        GenerateSamplesByBlending(files[i], files[i + 1], m_semitone_interval, m_directory, m_out_filename);
     }
 }
 
@@ -149,7 +167,7 @@ TEST_CASE("SampleBlender") {
 
     SampleBlender::Create(app);
 
-    const auto args =
-        TestHelpers::StringToArgs("signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 1");
+    const auto args = TestHelpers::StringToArgs(
+        "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 1 pitched-blend-<root-num>");
     REQUIRE_NOTHROW(app.parse(args.Size(), args.Args()));
 }

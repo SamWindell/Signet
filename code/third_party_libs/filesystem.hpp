@@ -8,12 +8,9 @@
 #endif
 
 #ifdef _WIN32
-#define GHC_USE_STD_FS
 #include <filesystem>
 namespace fs = std::filesystem;
-#endif
-
-#ifndef GHC_USE_STD_FS
+#else
 #include "filesystem_ghc.hpp"
 namespace fs = ghc::filesystem;
 #endif

@@ -8,14 +8,17 @@
 #include <vector>
 
 #include "filesystem.hpp"
-#include "rang.hpp"
 
 bool GetMessagesEnabled();
 void SetMessagesEnabled(bool v);
 
+void PrintErrorPrefix();
+void PrintWarningPrefix();
+void PrintMessagePrefix(std::string_view heading);
+
 template <typename Arg, typename... Args>
 void ErrorWithNewLine(Arg &&arg, Args &&... args) {
-    std::cout << rang::fg::red << rang::style::bold << "ERROR: " << rang::fg::reset << rang::style::reset;
+    PrintErrorPrefix();
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
@@ -23,8 +26,7 @@ void ErrorWithNewLine(Arg &&arg, Args &&... args) {
 
 template <typename Arg, typename... Args>
 void WarningWithNewLine(Arg &&arg, Args &&... args) {
-    std::cout << rang::fg::yellow << rang::style::bold << "WARNING: " << rang::fg::reset
-              << rang::style::reset;
+    PrintWarningPrefix();
     std::cout << std::forward<Arg>(arg);
     ((std::cout << std::forward<Args>(args)), ...);
     std::cout << "\n";
@@ -33,7 +35,7 @@ void WarningWithNewLine(Arg &&arg, Args &&... args) {
 template <typename Arg, typename... Args>
 void MessageWithNewLine(const std::string_view heading, Arg &&arg, Args &&... args) {
     if (GetMessagesEnabled()) {
-        std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
+        PrintMessagePrefix(heading);
         std::cout << std::forward<Arg>(arg);
         ((std::cout << std::forward<Args>(args)), ...);
         std::cout << "\n";

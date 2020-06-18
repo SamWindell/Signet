@@ -5,12 +5,27 @@
 
 #include "doctest.hpp"
 #include "filesystem.hpp"
+#include "rang.hpp"
+
 #include "types.h"
 
 static bool g_messages_enabled = true;
 
 bool GetMessagesEnabled() { return g_messages_enabled; }
 void SetMessagesEnabled(bool v) { g_messages_enabled = v; }
+
+void PrintErrorPrefix() {
+    std::cout << rang::fg::red << rang::style::bold << "ERROR: " << rang::fg::reset << rang::style::reset;
+}
+
+void PrintWarningPrefix() {
+    std::cout << rang::fg::yellow << rang::style::bold << "WARNING: " << rang::fg::reset
+              << rang::style::reset;
+}
+
+void PrintMessagePrefix(const std::string_view heading) {
+    std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
+}
 
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,

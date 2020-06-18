@@ -3,6 +3,7 @@
 #include <functional>
 
 #include "doctest.hpp"
+#include "rang.hpp"
 
 #include "audio_file.h"
 #include "edit/subcommands/auto_tuner/auto_tuner.h"
@@ -112,8 +113,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         app.parse(argc, argv);
     } catch (const CLI::ParseError &e) {
         if (e.get_exit_code() != 0) {
-            std::atexit([]() { std::cout << rang::style::reset; });
             std::cout << rang::fg::red;
+            std::atexit([]() { std::cout << rang::style::reset; });
         }
         return app.exit(e);
     }

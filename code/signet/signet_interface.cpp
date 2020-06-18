@@ -134,9 +134,9 @@ TEST_CASE("[SignetInterface]") {
         fs::create_directory(test_folder);
     }
     REQUIRE(fs::copy_file(TEST_DATA_DIRECTORY "/white-noise.wav", "test-folder/tf1.wav",
-                          fs::copy_options::skip_existing));
+                          fs::copy_options::overwrite_existing));
     REQUIRE(fs::copy_file(TEST_DATA_DIRECTORY "/white-noise.wav", "test-folder/tf2.wav",
-                          fs::copy_options::skip_existing));
+                          fs::copy_options::overwrite_existing));
 
     SUBCASE("args") {
 

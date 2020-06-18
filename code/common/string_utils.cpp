@@ -19,6 +19,17 @@ bool Contains(std::string_view haystack, std::string_view needle) {
 
 std::string PutNumberInAngleBracket(usize num) { return "<" + std::to_string(num) + ">"; }
 
+bool Replace(std::string &str, const char a, const char b) {
+    bool changed = false;
+    for (auto &c : str) {
+        if (c == a) {
+            c = b;
+            changed = true;
+        }
+    }
+    return changed;
+}
+
 bool Replace(std::string &str, std::string_view a, std::string_view b) {
     bool replaced = false;
     usize pos;
@@ -79,6 +90,35 @@ std::string GetJustFilenameWithNoExtension(fs::path path) {
     return filename.generic_string();
 }
 
+void Lowercase(std::string &str) {
+    for (auto &c : str) {
+        c = (char)std::tolower(c);
+    }
+}
+
+std::string ToSnakeCase(const std::string_view str) {
+    std::string result {str};
+    Lowercase(result);
+    Replace(result, ' ', '_');
+    Replace(result, '-', '_');
+    return result;
+}
+
+std::string ToCamelCase(const std::string_view str) {
+    std::string result;
+    result.reserve(str.size());
+    bool capitalise_next = true;
+    for (const auto c : str) {
+        if (c == ' ') {
+            capitalise_next = true;
+        } else {
+            result += capitalise_next ? (char)std::toupper(c) : c;
+            capitalise_next = std::isdigit(c);
+        }
+    }
+    return result;
+}
+
 std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces) {
     std::string result;
     usize col = 0;
@@ -96,14 +136,29 @@ std::string WrapText(const std::string &text, const unsigned width, const usize 
     }
     return result;
 }
+
 TEST_CASE("String Utils") {
-    std::string s {"th<>sef<> < seofi>"};
-    REQUIRE(Replace(s, "<>", ".."));
-    REQUIRE(s == "th..sef.. < seofi>");
+    {
+        std::string s {"th<>sef<> < seofi>"};
+        REQUIRE(Replace(s, "<>", ".."));
+        REQUIRE(s == "th..sef.. < seofi>");
 
-    s = "only one";
-    REQUIRE(Replace(s, "one", "two"));
-    REQUIRE(s == "only two");
+        s = "only one";
+        REQUIRE(Replace(s, "one", "two"));
+        REQUIRE(s == "only two");
 
-    REQUIRE(!Replace(s, "foo", ""));
+        REQUIRE(!Replace(s, "foo", ""));
+    }
+
+    {
+        std::string s {"HI"};
+        Lowercase(s);
+        REQUIRE(s == "hi");
+    }
+
+    {
+        REQUIRE(ToSnakeCase("Two Words") == "two_words");
+        REQUIRE(ToCamelCase("folder name") == "FolderName");
+        REQUIRE(ToCamelCase("123 what who") == "123WhatWho");
+    }
 }

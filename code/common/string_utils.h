@@ -13,6 +13,12 @@ bool WildcardMatch(std::string_view pattern, std::string_view name);
 
 bool RegexReplace(std::string &str, std::string pattern, std::string replacement);
 bool Replace(std::string &str, std::string_view a, std::string_view b);
+bool Replace(std::string &str, char a, char b);
+bool Remove(std::string &str, char c);
+
+void Lowercase(std::string &str);
+std::string ToSnakeCase(std::string_view str);
+std::string ToCamelCase(std::string_view str);
 
 std::string PutNumberInAngleBracket(usize num);
 std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces = 0);

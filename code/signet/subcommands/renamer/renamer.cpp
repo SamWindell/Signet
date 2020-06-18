@@ -10,11 +10,13 @@
 #include "test_helpers.h"
 
 static const std::string replacement_variables_info = R"foo(
-<counter>             A unique number starting from zero. The ordering of these numbers is not specified.
-<detected-pitch>      The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
-<detected-midi-note>  The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
-<detected-note>       The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
-<parent-folder>       The name of the folder that contains the audio file.)foo";
+<counter>              A unique number starting from zero. The ordering of these numbers is not specified.
+<detected-pitch>       The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
+<detected-midi-note>   The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+<detected-note>        The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
+<parent-folder>        The name of the folder that contains the audio file.
+<parent-folder-snake>  The snake-case name of the folder that contains the audio file.
+<parent-folder-camel>  The camel-case name of the folder that contains the audio file.)foo";
 
 CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     auto renamer = app.add_subcommand(
@@ -173,12 +175,16 @@ bool Renamer::ProcessFilename(fs::path &path, const AudioFile &input) {
                 Replace(filename, "<detected-note>", "");
             }
         }
-        if (Contains(filename, "<parent-folder>")) {
+        if (Contains(filename, "<parent-folder>") || Contains(filename, "<parent-folder-snake>") ||
+            Contains(filename, "<parent-folder-camel>")) {
             bool replaced = false;
             if (path.has_parent_path()) {
                 const auto parent_folder = path.parent_path().filename();
                 if (parent_folder != ".") {
-                    Replace(filename, "<parent-folder>", parent_folder.generic_string());
+                    const auto folder = parent_folder.generic_string();
+                    Replace(filename, "<parent-folder>", folder);
+                    Replace(filename, "<parent-folder-snake>", ToSnakeCase(folder));
+                    Replace(filename, "<parent-folder-camel>", ToCamelCase(folder));
                     replaced = true;
                 }
             }
@@ -249,21 +255,15 @@ TEST_CASE("Renamer") {
         }
         SUBCASE("suffix") {
             const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
-                "rename suffix <parent-folder>bar", {}, "foo/file.wav");
+                "rename suffix _<parent-folder-snake>_suf", {}, "folder name/file.wav");
             REQUIRE(f);
-            REQUIRE(*f == "filefoobar");
+            REQUIRE(*f == "file_folder_name_suf");
         }
         SUBCASE("regex-replace") {
             const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
-                "rename regex-replace .* <0><parent-folder>", {}, "foo/file.wav");
+                "rename regex-replace .* <0><parent-folder-camel>", {}, "not relavent/foo/file.wav");
             REQUIRE(f);
-            REQUIRE(*f == "filefoo");
-        }
-        SUBCASE("regex-replace") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
-                "rename regex-replace .* <0><parent-folder>", {}, "foo/file.wav");
-            REQUIRE(f);
-            REQUIRE(*f == "filefoo");
+            REQUIRE(*f == "fileFoo");
         }
     }
 }

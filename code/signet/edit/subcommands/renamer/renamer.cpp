@@ -21,9 +21,7 @@ static const std::string replacement_variables_info = R"foo(
 CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     auto renamer = app.add_subcommand(
         "rename",
-        "Renamer: Renames the file. All options for this subcommand relate to just the name of the file - "
-        "not the folder or the file extension. Text added via this command can contain special substitution "
-        "variables; these will be replaced by values specified in this list: " +
+        R"aa(Renamer: Renames the file. Features an auto-mapper that has the ability to fill out the mapping of an audio file in a sampler (adding the low, high, and root MIDI note). All options for this subcommand relate to just the name of the file - not the folder or the file extension. Text added via this command can contain special substitution variables; these will be replaced by values specified in this list: )aa" +
             replacement_variables_info);
     renamer->require_subcommand();
 

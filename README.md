@@ -27,9 +27,11 @@ Signet has 2 modes:
 To use the commands for editing audio files, you must specify `edit` as the first argument. And to the commands for generating you specify `gen` instead.
 
 Synopsis:
-```signet edit in-files subcommand subcommand-options
+```
+signet edit in-files subcommand subcommand-options
 or
-signet gen subcommand subcommand-options```
+signet gen subcommand subcommand-options
+```
 
 ### Display help text
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:

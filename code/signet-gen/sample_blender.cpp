@@ -117,7 +117,7 @@ void SampleBlender::Run() {
                 WarningWithNewLine("SampleBlender: root note of file ", name,
                                    " is not in the range 0-127 so cannot be processed");
             } else {
-                files.push_back({p, std::stoi(pieces_match[1])});
+                files.push_back({p, root_note});
                 MessageWithNewLine("SampleBlender", "found file ", files.back().path, " with root note ",
                                    files.back().root_note);
             }
@@ -180,6 +180,6 @@ TEST_CASE("SampleBlender") {
     SampleBlender::Create(app);
 
     const auto args = TestHelpers::StringToArgs(
-        "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 1 out-pitched-blend-<root-num>");
+        "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 2 out-pitched-blend-<root-num>");
     REQUIRE_NOTHROW(app.parse(args.Size(), args.Args()));
 }

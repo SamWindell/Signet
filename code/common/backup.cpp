@@ -5,6 +5,7 @@
 
 #include "doctest.hpp"
 
+#include "audio_file.h"
 #include "common.h"
 #include "test_helpers.h"
 #include "tests_config.h"
@@ -142,6 +143,62 @@ void SignetBackup::AddFileToBackup(const fs::path &path) {
     }
     m_database["files"][hash_string] = path.generic_string();
     WriteDatabaseFile();
+}
+
+bool SignetBackup::DeleteFile(const fs::path &path) {
+    AddFileToBackup(path);
+    MessageWithNewLine("Signet", "Deleting file ", path);
+    try {
+        fs::remove(path);
+        return true;
+    } catch (const fs::filesystem_error &e) {
+        ErrorWithNewLine("failed to remove file ", path, " for reason: ", e.what());
+    }
+    return false;
+}
+
+static void CreateParentDirectories(const fs::path &path) {
+    if (path.has_parent_path()) {
+        const auto &parent = path.parent_path();
+        if (!fs::is_directory(parent)) {
+            try {
+                fs::create_directories(parent);
+            } catch (const fs::filesystem_error &e) {
+                ErrorWithNewLine("failed to create directory ", e.path1(), " for reason: ", e.what());
+            }
+        }
+    }
+}
+
+bool SignetBackup::MoveFile(const fs::path &from, const fs::path &to) {
+    AddMovedFileToBackup(from, to);
+    MessageWithNewLine("Signet", "Moving file from ", from, " to ", to);
+    CreateParentDirectories(to);
+    try {
+        fs::rename(from, to);
+        return true;
+    } catch (const fs::filesystem_error &e) {
+        ErrorWithNewLine("failed to rename ", e.path1(), " to ", e.path2(), " for reason: ", e.what());
+    }
+    return false;
+}
+
+static bool WriteFile(const fs::path &path, const AudioFile &file) {
+    if (!WriteAudioFile(path, file)) {
+        ErrorWithNewLine("could not write the wave file ", path);
+        return false;
+    }
+    return true;
+}
+
+bool SignetBackup::CreateFile(const fs::path &path, const AudioFile &file) {
+    AddNewlyCreatedFileToBackup(path);
+    return WriteFile(path, file);
+}
+
+bool SignetBackup::OverwriteFile(const fs::path &path, const AudioFile &file) {
+    AddFileToBackup(path);
+    return WriteFile(path, file);
 }
 
 TEST_CASE("[SignetBackup]") {

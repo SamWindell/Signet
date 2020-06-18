@@ -13,12 +13,12 @@
 #include "string_utils.h"
 #include "test_helpers.h"
 
-void SampleBlender::Create(CLI::App &app) {
+void SampleBlender::Create(CLI::App &app, SignetBackup &backup) {
     auto cli = app.add_subcommand(
         "sample-blender",
         R"aa(Multi-sample Sample Blender: creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled with small intervals.)aa");
 
-    auto sample_blender = std::make_shared<SampleBlender>();
+    auto sample_blender = std::make_shared<SampleBlender>(backup);
     cli->add_option("root_note_regex", sample_blender->m_regex,
                     "Regex pattern containing 1 group that is to match the root note")
         ->required();
@@ -45,26 +45,16 @@ void SampleBlender::Create(CLI::App &app) {
     cli->callback([sample_blender]() { sample_blender->Run(); });
 }
 
-struct ProcessFiles {
-    fs::path path;
-    int root_note;
-    AudioFile file;
-};
-
-static void GenerateSamplesByBlending(const ProcessFiles &f1,
-                                      const ProcessFiles &f2,
-                                      const int semitone_interval,
-                                      const fs::path &dir,
-                                      const std::string &filename_pattern) {
-    if (f1.root_note + semitone_interval >= f2.root_note) {
+void SampleBlender::GenerateSamplesByBlending(const BaseBlendFiles &f1, const BaseBlendFiles &f2) {
+    if (f1.root_note + m_semitone_interval >= f2.root_note) {
         MessageWithNewLine("SampleBlender", "Samples are close enough together already");
         return;
     }
     MessageWithNewLine("SampleBlender", "Blending between ", f1.path, " and ", f2.path);
 
     const auto max_semitone_distance = f2.root_note - f1.root_note;
-    for (int root_note = f1.root_note + semitone_interval; root_note < f2.root_note;
-         root_note += semitone_interval) {
+    for (int root_note = f1.root_note + m_semitone_interval; root_note < f2.root_note;
+         root_note += m_semitone_interval) {
 
         const auto distance_from_f1 =
             1 - ((double)(root_note - f1.root_note) / (double)max_semitone_distance);
@@ -85,12 +75,12 @@ static void GenerateSamplesByBlending(const ProcessFiles &f1,
 
         out.AddOther(other);
 
-        auto filename = filename_pattern;
+        auto filename = m_out_filename;
         Replace(filename, "<root-num>", std::to_string(root_note));
         Replace(filename, "<root-note>", g_midi_pitches[root_note].name);
 
-        const auto path = dir / (filename + "." + GetLowercaseExtension(f1.file.format));
-        WriteAudioFile(path, out);
+        const auto path = m_directory / (filename + "." + GetLowercaseExtension(f1.file.format));
+        m_backup.CreateFile(path, out);
     }
 }
 
@@ -100,7 +90,7 @@ void SampleBlender::Run() {
         if (IsAudioFileReadable(p)) paths.push_back({p});
     });
 
-    std::vector<ProcessFiles> files;
+    std::vector<BaseBlendFiles> files;
     for (auto &p : paths) {
         const std::regex r {m_regex};
         std::smatch pieces_match;
@@ -153,7 +143,7 @@ void SampleBlender::Run() {
     }
 
     for (usize i = 0; i < files.size() - 1; ++i) {
-        GenerateSamplesByBlending(files[i], files[i + 1], m_semitone_interval, m_directory, m_out_filename);
+        GenerateSamplesByBlending(files[i], files[i + 1]);
     }
 }
 
@@ -176,8 +166,9 @@ TEST_CASE("SampleBlender") {
     }
 
     CLI::App app {"test"};
+    SignetBackup backup;
 
-    SampleBlender::Create(app);
+    SampleBlender::Create(app, backup);
 
     const auto args = TestHelpers::StringToArgs(
         "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 2 out-pitched-blend-<root-num>");

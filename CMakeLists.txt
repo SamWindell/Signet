@@ -61,8 +61,10 @@ add_library(
     code/signet/edit/subcommands/renamer/renamer.cpp
     code/signet/gen/subcommands/sample_blender/sample_blender.cpp
     code/tests/test_helpers.cpp)
+
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+
 if (WIN32)
     set(WARNINGS_TO_ENABLE
         /W4

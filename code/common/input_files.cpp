@@ -48,47 +48,9 @@ bool InputAudioFiles::WouldWritingAllFilesCreateConflicts() {
     return false;
 }
 
-static void CreateParentDirectories(const fs::path &path) {
-    if (path.has_parent_path()) {
-        const auto &parent = path.parent_path();
-        if (!fs::is_directory(parent)) {
-            try {
-                fs::create_directories(parent);
-            } catch (const fs::filesystem_error &e) {
-                ErrorWithNewLine("failed to create directory ", e.path1(), " for reason: ", e.what());
-            }
-        }
-    }
-}
-
-static void MoveFile(const fs::path &from, const fs::path &to) {
-    MessageWithNewLine("Signet", "Moving file from ", from, " to ", to);
-    CreateParentDirectories(to);
-    try {
-        fs::rename(from, to);
-    } catch (const fs::filesystem_error &e) {
-        ErrorWithNewLine("failed to rename ", e.path1(), " to ", e.path2(), " for reason: ", e.what());
-    }
-}
-
-static void DeleteFile(const fs::path &path) {
-    MessageWithNewLine("Signet", "Deleting file ", path);
-    try {
-        fs::remove(path);
-    } catch (const fs::filesystem_error &e) {
-        ErrorWithNewLine("failed to remove file ", path, " for reason: ", e.what());
-    }
-}
-
 static fs::path PathWithNewExtension(fs::path path, AudioFileFormat format) {
     path.replace_extension(GetLowercaseExtension(format));
     return path;
-}
-
-static void WriteFile(const fs::path &path, const AudioFile &file) {
-    if (!WriteAudioFile(path, file)) {
-        ErrorWithNewLine("could not write the wave file ", path);
-    }
 }
 
 bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
@@ -104,38 +66,26 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
         if (file_renamed) {
             if (!file_data_changed && !file_format_changed) {
                 // only renamed
-                backup.AddMovedFileToBackup(file.original_path, file.path);
-                MoveFile(file.original_path, file.path);
+                backup.MoveFile(file.original_path, file.path);
             } else if ((!file_data_changed && file_format_changed) ||
                        (file_data_changed && file_format_changed)) {
                 // renamed and new format
-                auto new_file = PathWithNewExtension(file.path, file.file.format);
-                backup.AddNewlyCreatedFileToBackup(new_file);
-                WriteFile(new_file, file.file);
-
-                backup.AddFileToBackup(file.original_path);
-                DeleteFile(file.original_path);
+                backup.CreateFile(PathWithNewExtension(file.path, file.file.format), file.file);
+                backup.DeleteFile(file.original_path);
             } else if (file_data_changed && !file_format_changed) {
                 // renamed and new data
-                WriteFile(file.path, file.file);
-
-                backup.AddFileToBackup(file.original_path);
-                DeleteFile(file.original_path);
+                backup.CreateFile(file.path, file.file);
+                backup.DeleteFile(file.original_path);
             }
         } else {
             REQUIRE(file.path == file.original_path);
             if ((file_format_changed && !file_data_changed) || (file_format_changed && file_data_changed)) {
                 // only new format
-                auto new_file = PathWithNewExtension(file.original_path, file.file.format);
-                backup.AddNewlyCreatedFileToBackup(new_file);
-                WriteFile(new_file, file.file);
-
-                backup.AddFileToBackup(file.original_path);
-                DeleteFile(file.original_path);
+                backup.CreateFile(PathWithNewExtension(file.original_path, file.file.format), file.file);
+                backup.DeleteFile(file.original_path);
             } else if (!file_format_changed && file_data_changed) {
                 // only new data
-                backup.AddFileToBackup(file.original_path);
-                WriteFile(file.original_path, file.file);
+                backup.OverwriteFile(file.original_path, file.file);
             }
         }
     }

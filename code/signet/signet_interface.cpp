@@ -106,7 +106,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             "'gen' features various subcommands for generating new audio files based off of other ones.");
         gen->require_subcommand();
 
-        SampleBlender::Create(*gen);
+        SampleBlender::Create(*gen, m_backup);
     }
 
     try {

@@ -4,9 +4,9 @@
 
 #include "audio_file.h"
 #include "common.h"
-#include "edit/subcommands/pitch_detector/pitch_detector.h"
 #include "midi_pitches.h"
 #include "string_utils.h"
+#include "subcommands/pitch_detector/pitch_detector.h"
 #include "test_helpers.h"
 
 static const std::string replacement_variables_info = R"foo(

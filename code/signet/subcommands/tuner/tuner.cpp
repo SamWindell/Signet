@@ -1,8 +1,8 @@
 #include "tuner.h"
 
 #include "common.h"
-#include "edit/subcommands/converter/converter.h"
-#include "edit/subcommands/pitch_detector/pitch_detector.h"
+#include "subcommands/converter/converter.h"
+#include "subcommands/pitch_detector/pitch_detector.h"
 #include "test_helpers.h"
 
 CLI::App *Tuner::CreateSubcommandCLI(CLI::App &app) {

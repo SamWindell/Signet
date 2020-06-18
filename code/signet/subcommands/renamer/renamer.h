@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "edit/subcommand.h"
+#include "subcommand.h"
 #include "types.h"
 
 class Renamer final : public Subcommand {

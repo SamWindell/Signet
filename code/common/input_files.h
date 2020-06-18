@@ -9,21 +9,22 @@
 #include "types.h"
 
 struct InputAudioFile {
-    InputAudioFile(const AudioFile &_file, const fs::path &_path) {
+    InputAudioFile(const AudioFile &_file, const fs::path &_path)
+        : filename(GetJustFilenameWithNoExtension(_path))
+        , original_path(_path)
+        , original_file_format(_file.format) {
         file = _file;
         path = _path;
-        original_path = _path;
-        new_filename = GetJustFilenameWithNoExtension(path);
-        original_file_format = file.format;
     }
 
     AudioFile file {};
     fs::path path {};
-    fs::path original_path {};
-    std::string new_filename {};
     bool renamed {};
     bool file_edited {};
-    AudioFileFormat original_file_format {};
+
+    const std::string filename;
+    const fs::path original_path;
+    const AudioFileFormat original_file_format;
 };
 
 class InputAudioFiles {

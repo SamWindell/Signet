@@ -28,7 +28,7 @@ To use the commands for editing audio files, you must specify `edit` as the firs
 
 Synopsis:
 ```
-signet edit in-files subcommand subcommand-options
+signet in-files subcommand subcommand-options
 or
 signet gen subcommand subcommand-options
 ```
@@ -38,13 +38,13 @@ Care has been taken to ensure the help text is comprehensive and understandable.
 
 `signet --help`
 `signet --help-all`
-`signet edit --help`
+`signet --help`
 `signet gen --help`
-`signet edit file.wav fade --help`
-`signet edit file.wav fade in --help`
+`signet file.wav fade --help`
+`signet file.wav fade in --help`
 
 ## Usage: Edit
-This sections covers how to use Signet for editing audio files. To do this you must first specify edit as the first argument. `signet edit`.
+This sections covers how to use Signet for editing audio files. To do this you must first specify edit as the first argument. `signet`.
 
 ### Input files
 You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. Each comma separated section can be one of 3 types:
@@ -144,24 +144,24 @@ Creates samples in between other samples that are different pitches. It takes 2 
 ## Examples
 Adds a fade-in of 1 second to filename.wav
 
-`signet edit filename.wav fade in 1s`
+`signet filename.wav fade in 1s`
 
 Normalises (to a common gain) all .wav files in the current directory to -3dB
 
-`signet edit *.wav norm -3`
+`signet *.wav norm -3`
 
 Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
 
-`signet edit filename1.wav,filename2.flac norm -1`
+`signet filename1.wav,filename2.flac norm -1`
 
 Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav.
 
-`signet edit "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
+`signet "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
 
 Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
 
-`signet edit one-shots/**/.* rename (.*)-a <1>-b`
+`signet one-shots/**/.* rename (.*)-a <1>-b`
 
 Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24.
 
-`signet edit my_folder convert sample-rate 44100 bit-depth 24`
+`signet my_folder convert sample-rate 44100 bit-depth 24`

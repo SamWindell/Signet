@@ -6,18 +6,18 @@
 #include "rang.hpp"
 
 #include "audio_file.h"
-#include "edit/subcommands/auto_tuner/auto_tuner.h"
-#include "edit/subcommands/converter/converter.h"
-#include "edit/subcommands/fader/fader.h"
-#include "edit/subcommands/folderiser/folderiser.h"
-#include "edit/subcommands/normaliser/normaliser.h"
-#include "edit/subcommands/pitch_detector/pitch_detector.h"
-#include "edit/subcommands/renamer/renamer.h"
-#include "edit/subcommands/silence_remover/silence_remover.h"
-#include "edit/subcommands/trimmer/trimmer.h"
-#include "edit/subcommands/tuner/tuner.h"
-#include "edit/subcommands/zcross_offsetter/zcross_offsetter.h"
-#include "gen/subcommands/sample_blender/sample_blender.h"
+#include "subcommands/auto_tuner/auto_tuner.h"
+#include "subcommands/converter/converter.h"
+#include "subcommands/fader/fader.h"
+#include "subcommands/folderiser/folderiser.h"
+#include "subcommands/normaliser/normaliser.h"
+#include "subcommands/pitch_detector/pitch_detector.h"
+#include "subcommands/renamer/renamer.h"
+#include "subcommands/sample_blender/sample_blender.h"
+#include "subcommands/silence_remover/silence_remover.h"
+#include "subcommands/trimmer/trimmer.h"
+#include "subcommands/tuner/tuner.h"
+#include "subcommands/zcross_offsetter/zcross_offsetter.h"
 #include "test_helpers.h"
 #include "tests_config.h"
 
@@ -33,6 +33,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<AutoTuner>());
     m_subcommands.push_back(std::make_unique<Renamer>());
     m_subcommands.push_back(std::make_unique<Folderiser>());
+    m_subcommands.push_back(std::make_unique<SampleBlender>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
@@ -40,7 +41,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                   "common editing functions such as normalisation and fade-out, but also organisation "
                   "functions such as renaming files."};
 
-    app.require_subcommand(1);
+    app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
 
     app.add_flag_callback(
@@ -72,41 +73,27 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag_callback(
         "--silent", []() { SetMessagesEnabled(true); }, "Disable all messages");
 
-    {
-        auto edit = app.add_subcommand(
-            "edit", "'edit' features various subcomamnds for editing audio files. "
-                    "Specifically: editing the audio data, renaming the files, or moving them.");
-        edit->require_subcommand();
+    app.add_flag("--recursive", m_recursive_directory_search,
+                 "When the input is a directory, scan for files in it recursively");
 
-        edit->add_flag("--recursive", m_recursive_directory_search,
-                       "When the input is a directory, scan for files in it recursively");
+    app.add_option_function<std::string>(
+           "input-files",
+           [&](const std::string &input) {
+               m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
+           },
+           "The audio files to process")
+        ->required()
+        ->type_name("STRING - a file, directory or glob pattern. To use multiple, separate each one with a "
+                    "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
+                    "exclude all .wav files.");
 
-        edit->add_option_function<std::string>(
-                "input-files",
-                [&](const std::string &input) {
-                    m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
-                },
-                "The audio files to process")
-            ->required()
-            ->type_name(
-                "STRING - a file, directory or glob pattern. To use multiple, separate each one with a "
-                "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
-                "exclude all .wav files.");
-
-        std::vector<CLI::App *> subcommand_clis;
-        for (auto &subcommand : m_subcommands) {
-            auto s = subcommand->CreateSubcommandCLI(*edit);
-            s->final_callback([&] { subcommand->Run(*this); });
-        }
-    }
-
-    {
-        auto gen = app.add_subcommand(
-            "gen",
-            "'gen' features various subcommands for generating new audio files based off of other ones.");
-        gen->require_subcommand();
-
-        SampleBlender::Create(*gen, m_backup);
+    std::vector<CLI::App *> subcommand_clis;
+    for (auto &subcommand : m_subcommands) {
+        auto s = subcommand->CreateSubcommandCLI(app);
+        s->final_callback([&] {
+            subcommand->Run(*this);
+            subcommand->GenerateFiles(m_input_audio_files.GetAllFiles(), m_backup);
+        });
     }
 
     try {
@@ -132,7 +119,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
 void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
     for (auto &file : m_input_audio_files.GetAllFiles()) {
-        if (subcommand.ProcessAudio(file.file, file.new_filename)) {
+        if (subcommand.ProcessAudio(file.file, file.filename)) {
             file.file_edited = true;
         }
         if (subcommand.ProcessFilename(file.path, file.file)) {
@@ -160,29 +147,28 @@ TEST_CASE("[SignetInterface]") {
     SUBCASE("args") {
 
         SUBCASE("single file absolute filename") {
-            const auto args = TestHelpers::StringToArgs {"signet edit test-folder/tf1.wav fade in 50smp"};
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav fade in 50smp"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("single file relative filename") {
-            const auto args =
-                TestHelpers::StringToArgs {"signet edit test-folder/../test-folder/tf1.wav norm -3"};
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/../test-folder/tf1.wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("match all WAVs in a dir by using a wildcard") {
-            const auto args = TestHelpers::StringToArgs {"signet edit test-folder/*wav norm -3"};
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/*wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("when input path is a patternless directory scan all files in that") {
             const auto wildcard = test_folder;
-            const auto args = TestHelpers::StringToArgs {"signet edit test-folder norm -3"};
+            const auto args = TestHelpers::StringToArgs {"signet test-folder norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
         SUBCASE("when input path is a patternless directory with ending slash scan all files in that") {
-            const auto args = TestHelpers::StringToArgs {"signet edit test-folder/ norm -3"};
+            const auto args = TestHelpers::StringToArgs {"signet test-folder/ norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
@@ -192,15 +178,15 @@ TEST_CASE("[SignetInterface]") {
         }
 
         SUBCASE("multiple comma separated files") {
-            const auto args = TestHelpers::StringToArgs {
-                "signet edit test-folder/test.wav,test-folder/test-out.wav norm -3"};
+            const auto args =
+                TestHelpers::StringToArgs {"signet test-folder/test.wav,test-folder/test-out.wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
     }
 
     SUBCASE("undos") {
         SUBCASE("undo of tf1.wav") {
-            auto args = TestHelpers::StringToArgs {"signet edit test-folder/tf1.wav trim start 50%"};
+            auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav trim start 50%"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
             auto f = ReadAudioFile("test-folder/tf1.wav");
@@ -219,8 +205,7 @@ TEST_CASE("[SignetInterface]") {
             usize trimmed_size_tf1 = 0;
             usize trimmed_size_tf2 = 0;
             {
-                const auto args =
-                    TestHelpers::StringToArgs {"signet edit test-folder/tf*.wav trim start 50%"};
+                const auto args = TestHelpers::StringToArgs {"signet test-folder/tf*.wav trim start 50%"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 {
@@ -252,8 +237,7 @@ TEST_CASE("[SignetInterface]") {
 
         SUBCASE("undo of renaming tf1.wav") {
             {
-                const auto args =
-                    TestHelpers::StringToArgs {"signet edit test-folder/tf1.wav rename prefix foo_"};
+                const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav rename prefix foo_"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/foo_tf1.wav"));
@@ -272,7 +256,7 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("undoing changing file format") {
             {
                 const auto args =
-                    TestHelpers::StringToArgs {"signet edit test-folder/tf1.wav convert file-format flac"};
+                    TestHelpers::StringToArgs {"signet test-folder/tf1.wav convert file-format flac"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.flac"));
@@ -293,7 +277,7 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("undoing changing format and renaming") {
             {
                 const auto args = TestHelpers::StringToArgs {
-                    "signet edit test-folder/tf1.wav convert file-format flac rename prefix foo_"};
+                    "signet test-folder/tf1.wav convert file-format flac rename prefix foo_"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/foo_tf1.flac"));
@@ -314,7 +298,7 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("undoing renaming and changing the format") {
             {
                 const auto args = TestHelpers::StringToArgs {
-                    "signet edit test-folder/tf1.wav rename prefix foo_ convert file-format flac"};
+                    "signet test-folder/tf1.wav rename prefix foo_ convert file-format flac"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/foo_tf1.flac"));
@@ -334,8 +318,8 @@ TEST_CASE("[SignetInterface]") {
 
         SUBCASE("undoing folderising") {
             {
-                const auto args = TestHelpers::StringToArgs {
-                    "signet edit test-folder/tf1.wav folderise .* folderise-output"};
+                const auto args =
+                    TestHelpers::StringToArgs {"signet test-folder/tf1.wav folderise .* folderise-output"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("folderise-output/tf1.wav"));
@@ -354,7 +338,7 @@ TEST_CASE("[SignetInterface]") {
         SUBCASE("undoing renaming, changing the format and changing the data") {
             usize trimmed_size = 0;
             {
-                const auto args = TestHelpers::StringToArgs {"signet edit test-folder/tf1.wav rename prefix "
+                const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav rename prefix "
                                                              "foo_ convert file-format flac trim start 50%"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 

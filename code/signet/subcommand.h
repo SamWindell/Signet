@@ -5,6 +5,8 @@
 #include "filesystem.hpp"
 
 struct AudioFile;
+struct InputAudioFile;
+class SignetBackup;
 
 class Subcommand;
 
@@ -19,7 +21,9 @@ class Subcommand {
   public:
     virtual ~Subcommand() {}
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
-    virtual void Run(SubcommandHost &) = 0;
+    virtual void Run(SubcommandHost &) {}
+    virtual void GenerateFiles(const std::vector<InputAudioFile> &files, SignetBackup &backup) {}
+
     virtual bool ProcessAudio(AudioFile &input, const std::string_view filename) { return false; };
     virtual bool ProcessFilename(fs::path &path, const AudioFile &input) { return false; };
 };

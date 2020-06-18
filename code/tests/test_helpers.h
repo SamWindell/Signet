@@ -2,9 +2,12 @@
 #include <cmath>
 
 #include "CLI11.hpp"
+
 #include "audio_file.h"
-#include "edit/subcommand.h"
+#include "backup.h"
+#include "input_files.h"
 #include "string_utils.h"
+#include "subcommand.h"
 
 namespace TestHelpers {
 
@@ -62,39 +65,39 @@ class TestSubcommandProcessor : public SubcommandHost {
     }
 
     void ProcessAllFiles(Subcommand &subcommand) override {
-        const auto filename = GetJustFilenameWithNoExtension(m_path);
-        m_processed = subcommand.ProcessAudio(m_buf, filename);
-        m_processed_path = subcommand.ProcessFilename(m_path, m_buf);
+        m_file.file_edited = subcommand.ProcessAudio(m_file.file, m_file.filename);
+        m_file.renamed = subcommand.ProcessFilename(m_file.path, m_file.file);
     }
     bool IsProcessingMultipleFiles() const override { return false; }
 
     std::optional<AudioFile> GetBuf() const {
-        if (m_processed) return m_buf;
+        if (m_file.file_edited) return m_file.file;
         return {};
     }
 
     std::optional<std::string> GetFilename() const {
-        if (m_processed_path) {
-            return GetJustFilenameWithNoExtension(m_path);
+        if (m_file.renamed) {
+            return GetJustFilenameWithNoExtension(m_file.path);
         }
         return {};
     }
 
     std::optional<std::string> GetPath() const {
-        if (m_processed_path) return m_path.generic_string();
+        if (m_file.renamed) return m_file.path.generic_string();
         return {};
     }
 
   private:
     TestSubcommandProcessor(Subcommand &subcommand, const AudioFile &buf, const fs::path &path)
-        : m_buf(buf), m_path(path) {
+        : m_file(buf, path) {
         subcommand.Run(*this);
+
+        SignetBackup backup;
+        std::vector<InputAudioFile> vec {m_file};
+        subcommand.GenerateFiles(vec, backup);
     }
 
-    bool m_processed {false};
-    bool m_processed_path {false};
-    AudioFile m_buf {};
-    fs::path m_path;
+    InputAudioFile m_file;
 };
 
 template <typename SubcommandType>

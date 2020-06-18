@@ -8,9 +8,9 @@
 #include "audio_file.h"
 #include "backup.h"
 #include "common.h"
+#include "edit/subcommand.h"
 #include "filesystem.hpp"
 #include "input_files.h"
-#include "subcommand.h"
 
 class SignetInterface final : public SubcommandHost {
   public:

@@ -3,8 +3,8 @@
 
 #include "CLI11.hpp"
 #include "audio_file.h"
+#include "edit/subcommand.h"
 #include "string_utils.h"
-#include "subcommand.h"
 
 namespace TestHelpers {
 
@@ -48,7 +48,7 @@ class TestSubcommandProcessor : public SubcommandHost {
     template <typename SubcommandType>
     static TestSubcommandProcessor
     Run(const std::string_view subcommand_and_args_string, const AudioFile &buf, const fs::path path) {
-        std::string whole_args = "signet-test " + std::string(subcommand_and_args_string);
+        std::string whole_args = "signet-edit " + std::string(subcommand_and_args_string);
         CAPTURE(whole_args);
         const auto args = TestHelpers::StringToArgs {whole_args};
 

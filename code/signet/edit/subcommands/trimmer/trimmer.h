@@ -3,7 +3,7 @@
 #include <optional>
 
 #include "audio_duration.h"
-#include "subcommand.h"
+#include "edit/subcommand.h"
 
 class Trimmer final : public Subcommand {
   public:

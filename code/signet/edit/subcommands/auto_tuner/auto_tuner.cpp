@@ -3,9 +3,9 @@
 #include "audio_file.h"
 #include "common.h"
 #include "doctest.hpp"
+#include "edit/subcommands/pitch_detector/pitch_detector.h"
+#include "edit/subcommands/tuner/tuner.h"
 #include "midi_pitches.h"
-#include "subcommands/pitch_detector/pitch_detector.h"
-#include "subcommands/tuner/tuner.h"
 
 CLI::App *AutoTuner::CreateSubcommandCLI(CLI::App &app) {
     auto auto_tuner = app.add_subcommand(

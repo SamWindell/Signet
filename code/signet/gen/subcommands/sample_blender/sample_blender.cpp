@@ -7,10 +7,10 @@
 
 #include "audio_file.h"
 #include "common.h"
+#include "edit/subcommands/tuner/tuner.h"
 #include "midi_pitches.h"
 #include "pathname_expansion.h"
 #include "string_utils.h"
-#include "subcommands/tuner/tuner.h"
 #include "test_helpers.h"
 
 void SampleBlender::Create(CLI::App &app) {

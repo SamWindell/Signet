@@ -47,21 +47,20 @@ add_library(
     code/common/midi_pitches.cpp
     code/common/backup.cpp
     code/signet/signet_interface.cpp
-    code/signet/subcommands/converter/converter.cpp
-    code/signet/subcommands/auto_tuner/auto_tuner.cpp
-    code/signet/subcommands/pitch_detector/pitch_detector.cpp
-    code/signet/subcommands/fader/fader.cpp
-    code/signet/subcommands/tuner/tuner.cpp
-    code/signet/subcommands/trimmer/trimmer.cpp
-    code/signet/subcommands/folderiser/folderiser.cpp
-    code/signet/subcommands/normaliser/gain_calculators.cpp
-    code/signet/subcommands/normaliser/normaliser.cpp
-    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
-    code/signet/subcommands/silence_remover/silence_remover.cpp
-    code/signet/subcommands/renamer/renamer.cpp
-    code/tests/test_helpers.cpp
-    code/signet-gen/signet_gen_interface.cpp
-    code/signet-gen/sample_blender.cpp)
+    code/signet/edit/subcommands/converter/converter.cpp
+    code/signet/edit/subcommands/auto_tuner/auto_tuner.cpp
+    code/signet/edit/subcommands/pitch_detector/pitch_detector.cpp
+    code/signet/edit/subcommands/fader/fader.cpp
+    code/signet/edit/subcommands/tuner/tuner.cpp
+    code/signet/edit/subcommands/trimmer/trimmer.cpp
+    code/signet/edit/subcommands/folderiser/folderiser.cpp
+    code/signet/edit/subcommands/normaliser/gain_calculators.cpp
+    code/signet/edit/subcommands/normaliser/normaliser.cpp
+    code/signet/edit/subcommands/zcross_offsetter/zcross_offsetter.cpp
+    code/signet/edit/subcommands/silence_remover/silence_remover.cpp
+    code/signet/edit/subcommands/renamer/renamer.cpp
+    code/signet/gen/subcommands/sample_blender/sample_blender.cpp
+    code/tests/test_helpers.cpp)
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 if (WIN32)
@@ -96,10 +95,6 @@ configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
 # Signet
 add_executable(signet code/signet/signet_main.cpp)
 target_link_libraries(signet PRIVATE common)
-
-# Signet-gen
-add_executable(signet-gen code/signet-gen/signet_gen_main.cpp)
-target_link_libraries(signet-gen PRIVATE common)
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)

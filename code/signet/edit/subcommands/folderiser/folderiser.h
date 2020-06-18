@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "subcommand.h"
+#include "edit/subcommand.h"
 
 class Folderiser final : public Subcommand {
   public:

@@ -10,6 +10,9 @@
 #include "filesystem.hpp"
 #include "rang.hpp"
 
+bool GetMessagesEnabled();
+void SetMessagesEnabled(bool v);
+
 template <typename Arg, typename... Args>
 void ErrorWithNewLine(Arg &&arg, Args &&... args) {
     std::cout << rang::fg::red << rang::style::bold << "ERROR: " << rang::fg::reset << rang::style::reset;
@@ -29,10 +32,12 @@ void WarningWithNewLine(Arg &&arg, Args &&... args) {
 
 template <typename Arg, typename... Args>
 void MessageWithNewLine(const std::string_view heading, Arg &&arg, Args &&... args) {
-    std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
-    std::cout << std::forward<Arg>(arg);
-    ((std::cout << std::forward<Args>(args)), ...);
-    std::cout << "\n";
+    if (GetMessagesEnabled()) {
+        std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
+        std::cout << std::forward<Arg>(arg);
+        ((std::cout << std::forward<Args>(args)), ...);
+        std::cout << "\n";
+    }
 }
 
 template <typename V, typename... T>

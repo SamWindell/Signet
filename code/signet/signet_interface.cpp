@@ -67,6 +67,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         "won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the "
         "backup.");
 
+    app.add_flag_callback(
+        "--silent", []() { SetMessagesEnabled(true); }, "Disable all messages");
+
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");
 

@@ -7,6 +7,11 @@
 #include "filesystem.hpp"
 #include "types.h"
 
+static bool g_messages_enabled = true;
+
+bool GetMessagesEnabled() { return g_messages_enabled; }
+void SetMessagesEnabled(bool v) { g_messages_enabled = v; }
+
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,
     const unsigned num_channels,

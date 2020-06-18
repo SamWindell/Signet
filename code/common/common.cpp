@@ -64,32 +64,3 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     WarningWithNewLine("could not open file ", path, " for reason: ", std_ec.message());
     return {nullptr, SafeFClose};
 }
-
-std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces) {
-    std::string result;
-    usize col = 0;
-    for (const auto c : text) {
-        if (col >= width && c == ' ') {
-            result += '\n';
-            for (usize i = 0; i < indent_spaces; ++i) {
-                result += ' ';
-            }
-            col = 0;
-        } else {
-            result += c;
-            col++;
-        }
-    }
-    return result;
-}
-
-TEST_CASE("WrapText") {
-    std::cout << "WrapText\n";
-    std::cout << WrapText("hello there my friend", 5, 0) << "\n";
-    std::cout
-        << WrapText(
-               "hello there my friend, this is a rather long line, I'd like to split it up into multiple "
-               "lines. This will be better for readability. I want to use this with the CLI descriptions.",
-               15, 0)
-        << "\n";
-}

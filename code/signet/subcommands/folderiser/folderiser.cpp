@@ -39,9 +39,7 @@ bool Folderiser::ProcessFilename(fs::path &path, const AudioFile &input) {
 
     const std::regex r {m_filename_pattern};
     std::smatch pieces_match;
-    std::cout << "comparing " << filename << " to " << m_filename_pattern << "\n";
     if (std::regex_match(filename, pieces_match, r)) {
-        std::cout << "matched\n";
         std::string output_folder = m_out_folder;
         for (size_t i = 0; i < pieces_match.size(); ++i) {
             const std::ssub_match sub_match = pieces_match[i];

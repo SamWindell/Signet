@@ -79,6 +79,23 @@ std::string GetJustFilenameWithNoExtension(fs::path path) {
     return filename.generic_string();
 }
 
+std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces) {
+    std::string result;
+    usize col = 0;
+    for (const auto c : text) {
+        if (col >= width && c == ' ') {
+            result += '\n';
+            for (usize i = 0; i < indent_spaces; ++i) {
+                result += ' ';
+            }
+            col = 0;
+        } else {
+            result += c;
+            col++;
+        }
+    }
+    return result;
+}
 TEST_CASE("String Utils") {
     std::string s {"th<>sef<> < seofi>"};
     REQUIRE(Replace(s, "<>", ".."));

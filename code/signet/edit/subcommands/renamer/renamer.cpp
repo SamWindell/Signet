@@ -132,12 +132,13 @@ bool Renamer::ProcessFilename(fs::path &path, const AudioFile &input) {
         const std::regex r {*m_regex_pattern};
         std::smatch pieces_match;
         if (std::regex_match(filename, pieces_match, r)) {
+            auto replacement = m_regex_replacement;
             for (size_t i = 0; i < pieces_match.size(); ++i) {
                 const std::ssub_match sub_match = pieces_match[i];
                 const std::string piece = sub_match.str();
-                Replace(m_regex_replacement, PutNumberInAngleBracket(i), piece);
+                Replace(replacement, PutNumberInAngleBracket(i), piece);
             }
-            filename = m_regex_replacement;
+            filename = replacement;
             renamed = true;
         }
     }

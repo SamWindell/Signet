@@ -16,7 +16,7 @@
 void SampleBlender::Create(CLI::App &app) {
     auto cli = app.add_subcommand(
         "sample-blender",
-        "Sample Blender: Generates new samples by cross-fading between samples in a given directory.");
+        R"aa(Multi-sample Sample Blender: creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled with small intervals.)aa");
 
     auto sample_blender = std::make_shared<SampleBlender>();
     cli->add_option("root_note_regex", sample_blender->m_regex,

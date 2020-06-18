@@ -1,10 +1,13 @@
 # Signet
-## Command-line program for editing audio files (still a work-in-progress)
+## Command-line program for editing audio files, and assisting sample library development (still a work-in-progress)
 
-Signet is a command-line program designed for bulk editing audio files. It features common editing functions such as normalisation and fade-out, but also organisation functions such as renaming files.
-This tool was made to make sample library development easier. In this domain, we often have to edit hundreds of separate audio files in preparation of turning them into a playable virtual instrument. As well as this, we often need to rename the files so that a sampler can map them.
+Signet makes sample library development (multi-sampling) easier and more effective by offering a suite of tools covering these areas:
+- Bulk editing audio files
+- Bulk renaming audio files
+- Bulk organising files (moving them into folders)
+- Generating files based off of existing files
 
-Signet tries to make this often repetitive process more automatic.
+Signet is not exclusively useful for sample library development though. The editing features in particular could be useful to anyone working with large sets of audio files.
 
 ## Limitations
 - Currently only supports reading and writing WAV and FLAC files.
@@ -15,16 +18,31 @@ To get Signet, you currently have to build it from the source code. However, thi
 
 A C++17 compiler is required. Tested with MSVC 16.5.1 and Apple Clang 11.0.0.
 
-## Usage
-Synopsis: `signet in-files subcommand subcommand-options`
+## Usage Overview
+### Edit or generate
+Signet has 2 modes:
+- Edit: Editing already existing audio files.
+- Generate: Generating audio files based off of others.
+
+To use the commands for editing audio files, you must specify `edit` as the first argument. And to the commands for generating you specify `gen` instead.
+
+Synopsis:
+```signet edit in-files subcommand subcommand-options
+or
+signet gen subcommand subcommand-options```
 
 ### Display help text
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
 
 `signet --help`
 `signet --help-all`
-`signet file.wav fade --help`
-`signet file.wav fade in --help`
+`signet edit --help`
+`signet gen --help`
+`signet edit file.wav fade --help`
+`signet edit file.wav fade in --help`
+
+## Usage: Edit
+This sections covers how to use Signet for editing audio files. To do this you must first specify edit as the first argument. `signet edit`.
 
 ### Input files
 You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. Each comma separated section can be one of 3 types:
@@ -45,7 +63,7 @@ However, Signet can help with safety too. It features a simple undo system. You 
 
 Files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
-## Subcommands (effects)
+## Editing Subcommands (effects)
 Next, you must specify what subcommand to run. A subcommand is the effect that should be applied to the file(s).
 
 Each subcommand has its own set of arguments; these are shown by adding `--help` after the subcommand.
@@ -106,33 +124,42 @@ Renamer: Renames the file. All options for this subcommand relate to just the na
 - `<detected-midi-note>`: The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
 - `<detected-note>`: The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
 - `<parent-folder>`: The name of the folder that contains the audio file.
+- `<parent-folder-snake>`: The snake-case name of the folder that contains the audio file.
+- `<parent-folder-camel>`: The camel-case name of the folder that contains the audio file.
 
 ### File organiser
 `folderise`
 
 Folderiser: moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
 
+## Usage: Generate
+This section covers how to use the audio file generating features of Signet. To use these features you specify `gen` as the first argument: `signet gen`.
+
+## Generating Subcommands
+### Multi-sample Sample Blender (WIP)
+Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multisampled instrument, but it was sampled only at large intervals; such as every octave. This tool will generate samples to create an instrument that sounds like it was sampled with close intervals.
+
 ## Examples
 Adds a fade-in of 1 second to filename.wav
 
-`signet filename.wav fade in 1s`
+`signet edit filename.wav fade in 1s`
 
 Normalises (to a common gain) all .wav files in the current directory to -3dB
 
-`signet *.wav norm -3`
+`signet edit *.wav norm -3`
 
 Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
 
-`signet filename1.wav,filename2.flac norm -1`
+`signet edit filename1.wav,filename2.flac norm -1`
 
 Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav.
 
-`signet "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
+`signet edit "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
 
 Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
 
-`signet one-shots/**/.* rename (.*)-a <1>-b`
+`signet edit one-shots/**/.* rename (.*)-a <1>-b`
 
 Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24.
 
-`signet my_folder convert sample-rate 44100 bit-depth 24`
+`signet edit my_folder convert sample-rate 44100 bit-depth 24`

@@ -22,7 +22,7 @@
                 {
                     "name": "Run Tests",
                     "windows": {
-                        "shell_cmd": "call ninja && call tests.exe --test-case=SampleBlender,Tuner",
+                        "shell_cmd": "call ninja && call tests.exe --silent",
                         "file_regex": "^(?:\\x1b\\[[;\\d]*[A-Za-z])*(?:[^\\\\\\/]*\\\\\\/)*([^\\s].*)\\((\\d+),?(?:\\d+)?\\)\\s*:\\s+((?>error|warning|fatal error).+)"
                     },
                     "osx": {

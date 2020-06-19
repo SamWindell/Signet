@@ -40,26 +40,28 @@ add_library(
     common OBJECT
     code/common/audio_duration.cpp
     code/common/audio_file.cpp
-    code/common/input_files.cpp
+    code/common/backup.cpp
+    code/common/filter.cpp
     code/common/common.cpp
+    code/common/input_files.cpp
+    code/common/midi_pitches.cpp
     code/common/pathname_expansion.cpp
     code/common/string_utils.cpp
-    code/common/midi_pitches.cpp
-    code/common/backup.cpp
     code/signet/signet_interface.cpp
-    code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/auto_tuner/auto_tuner.cpp
-    code/signet/subcommands/pitch_detector/pitch_detector.cpp
+    code/signet/subcommands/converter/converter.cpp
     code/signet/subcommands/fader/fader.cpp
-    code/signet/subcommands/tuner/tuner.cpp
-    code/signet/subcommands/trimmer/trimmer.cpp
     code/signet/subcommands/folderiser/folderiser.cpp
     code/signet/subcommands/normaliser/gain_calculators.cpp
     code/signet/subcommands/normaliser/normaliser.cpp
-    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
-    code/signet/subcommands/silence_remover/silence_remover.cpp
+    code/signet/subcommands/pitch_detector/pitch_detector.cpp
     code/signet/subcommands/renamer/renamer.cpp
     code/signet/subcommands/sample_blender/sample_blender.cpp
+    code/signet/subcommands/silence_remover/silence_remover.cpp
+    code/signet/subcommands/trimmer/trimmer.cpp
+    code/signet/subcommands/tuner/tuner.cpp
+    code/signet/subcommands/highpass/highpass.cpp
+    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
     code/tests/test_helpers.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)

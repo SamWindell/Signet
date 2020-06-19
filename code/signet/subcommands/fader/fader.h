@@ -9,8 +9,7 @@ class Fader final : public Subcommand {
     enum class Shape { Linear, Sine, SCurve, Log, Exp, Sqrt };
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
-    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
+    void ProcessFiles(const tcb::span<InputAudioFile> files) override;
 
   private:
     Shape m_fade_out_shape = Shape::Sine;

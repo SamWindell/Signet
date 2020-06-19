@@ -8,8 +8,7 @@
 class Trimmer final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
-    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
+    void ProcessFiles(const tcb::span<InputAudioFile> files) override;
 
   private:
     std::optional<AudioDuration> m_start_duration;

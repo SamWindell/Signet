@@ -4,6 +4,7 @@
 
 #include "audio_file.h"
 #include "common.h"
+#include "input_files.h"
 #include "midi_pitches.h"
 
 CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
@@ -12,17 +13,17 @@ CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
     return pitch_detector;
 }
 
-std::optional<double> PitchDetector::DetectPitch(const AudioFile &input) {
+std::optional<double> PitchDetector::DetectPitch(const AudioFile &audio) {
     std::vector<double> channel_pitches;
     ForEachDeinterleavedChannel(
-        input.interleaved_samples, input.num_channels, [&](const auto &channel_buffer, auto channel) {
+        audio.interleaved_samples, audio.num_channels, [&](const auto &channel_buffer, auto channel) {
             dywapitchtracker pitch_tracker;
             dywapitch_inittracking(&pitch_tracker);
 
             auto detected_pitch = dywapitch_computepitch(
                 &pitch_tracker, const_cast<double *>(channel_buffer.data()), 0, (int)channel_buffer.size());
-            if (input.sample_rate != 44100) {
-                detected_pitch *= static_cast<double>(input.sample_rate) / 44100.0;
+            if (audio.sample_rate != 44100) {
+                detected_pitch *= static_cast<double>(audio.sample_rate) / 44100.0;
             }
             channel_pitches.push_back(detected_pitch);
         });
@@ -44,18 +45,17 @@ std::optional<double> PitchDetector::DetectPitch(const AudioFile &input) {
     }
 }
 
-bool PitchDetector::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    if (!input.interleaved_samples.size()) return false;
-
-    const auto pitch = DetectPitch(input);
-    if (pitch) {
-        const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-        MessageWithNewLine("Pitch-Dectector", filename, " detected a pitch of ", *pitch,
-                           "Hz, this has a difference of ",
-                           GetCentsDifference(*pitch, closest_musical_note.pitch),
-                           " cents off of the closest note ", closest_musical_note.ToString());
-    } else {
-        MessageWithNewLine("Pitch-Dectector", "No pitch could be found");
+void PitchDetector::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    for (auto &f : files) {
+        const auto pitch = DetectPitch(f.GetAudio());
+        if (pitch) {
+            const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+            MessageWithNewLine("Pitch-Dectector", f.filename, " detected a pitch of ", *pitch,
+                               "Hz, this has a difference of ",
+                               GetCentsDifference(*pitch, closest_musical_note.pitch),
+                               " cents off of the closest note ", closest_musical_note.ToString());
+        } else {
+            MessageWithNewLine("Pitch-Dectector", "No pitch could be found");
+        }
     }
-    return false;
 }

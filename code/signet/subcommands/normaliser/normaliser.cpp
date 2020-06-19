@@ -22,23 +22,7 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     return norm;
 }
 
-bool Normaliser::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    switch (m_current_stage) {
-        case ProcessingStage::FindingCommonGain: {
-            if (!ReadFileForCommonGain(input)) {
-                m_successfully_found_common_gain = false;
-            }
-            return false;
-        }
-        case ProcessingStage::ApplyingGain: {
-            return PerformNormalisation(input);
-        }
-        default: REQUIRE(0);
-    }
-    return false;
-}
-
-void Normaliser::Run(SubcommandHost &processor) {
+void Normaliser::ProcessFiles(const tcb::span<InputAudioFile> files) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {
@@ -46,9 +30,12 @@ void Normaliser::Run(SubcommandHost &processor) {
     }
 
     m_successfully_found_common_gain = true;
-    if (processor.IsProcessingMultipleFiles() && !m_normalise_independently) {
-        m_current_stage = ProcessingStage::FindingCommonGain;
-        processor.ProcessAllFiles(*this);
+    if (files.size() < 1 && !m_normalise_independently) {
+        for (auto &f : files) {
+            if (!ReadFileForCommonGain(f.GetAudio())) {
+                m_successfully_found_common_gain = false;
+            }
+        }
     }
 
     if (!m_successfully_found_common_gain) {
@@ -57,8 +44,9 @@ void Normaliser::Run(SubcommandHost &processor) {
         return;
     }
 
-    m_current_stage = ProcessingStage::ApplyingGain;
-    processor.ProcessAllFiles(*this);
+    for (auto &f : files) {
+        PerformNormalisation(f.GetWritableAudio());
+    }
 }
 
 bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {

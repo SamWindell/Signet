@@ -93,7 +93,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     for (auto &subcommand : m_subcommands) {
         auto s = subcommand->CreateSubcommandCLI(app);
         s->final_callback([&] {
-            subcommand->Run(*this);
+            subcommand->ProcessFiles(m_input_audio_files.GetAllFiles());
             subcommand->GenerateFiles(m_input_audio_files.GetAllFiles(), m_backup);
         });
     }
@@ -110,27 +110,13 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
 
-    if (m_num_files_processed) {
+    if (m_input_audio_files.GetNumFilesProcessed()) {
         if (!m_input_audio_files.WriteAllAudioFiles(m_backup)) {
             return 1;
         }
     }
 
-    return (m_num_files_processed != 0) ? 0 : 1;
-}
-
-void SignetInterface::ProcessAllFiles(Subcommand &subcommand) {
-    for (auto &file : m_input_audio_files.GetAllFiles()) {
-        if (subcommand.ProcessAudio(file.file, file.filename)) {
-            file.file_edited = true;
-        }
-        if (subcommand.ProcessFilename(file.path, file.file)) {
-            file.renamed = true;
-        }
-        if (file.renamed || file.file_edited) {
-            m_num_files_processed++;
-        }
-    }
+    return (m_input_audio_files.GetNumFilesProcessed() != 0) ? 0 : 1;
 }
 
 TEST_CASE("[SignetInterface]") {

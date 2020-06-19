@@ -12,19 +12,19 @@ CLI::App *Tuner::CreateSubcommandCLI(CLI::App &app) {
     return tuner;
 }
 
-void Tuner::ChangePitch(AudioFile &input, const double cents) {
+void Tuner::ChangePitch(AudioFile &audio, const double cents) {
     constexpr auto cents_in_octave = 100.0 * 12.0;
     const auto multiplier = std::pow(2, -cents / cents_in_octave);
-    const auto new_sample_rate = (double)input.sample_rate * multiplier;
-    Converter::ConvertSampleRate(input.interleaved_samples, input.num_channels, (double)input.sample_rate,
+    const auto new_sample_rate = (double)audio.sample_rate * multiplier;
+    Converter::ConvertSampleRate(audio.interleaved_samples, audio.num_channels, (double)audio.sample_rate,
                                  new_sample_rate);
 }
 
-bool Tuner::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    if (!input.interleaved_samples.size()) return false;
-    MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
-    ChangePitch(input, m_tune_cents);
-    return true;
+void Tuner::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    for (auto &f : files) {
+        MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
+        ChangePitch(f.GetWritableAudio(), m_tune_cents);
+    }
 }
 
 TEST_CASE("Tuner") {

@@ -13,6 +13,7 @@ enum class AudioFileFormat {
 };
 
 struct AudioFile {
+    bool IsEmpty() const { return interleaved_samples.empty(); }
     size_t NumFrames() const {
         REQUIRE(num_channels != 0);
         return interleaved_samples.size() / num_channels;

@@ -5,29 +5,6 @@
 
 #include "test_helpers.h"
 
-void Converter::Run(SubcommandHost &processor) {
-    m_files_can_be_converted = true;
-    if (m_bit_depth) {
-        if (!m_file_format) {
-            m_mode = Mode::ValidatingCorrectFormat;
-            processor.ProcessAllFiles(*this);
-        } else {
-            m_files_can_be_converted = CanFileBeConvertedToBitDepth(*m_file_format, *m_bit_depth);
-            if (!m_files_can_be_converted) {
-                WarningWithNewLine("file format ", magic_enum::enum_name(*m_file_format),
-                                   " cannot be converted to bit depths ", *m_bit_depth);
-            }
-        }
-    }
-
-    if (m_files_can_be_converted) {
-        m_mode = Mode::Converting;
-        processor.ProcessAllFiles(*this);
-    } else {
-        WarningWithNewLine("one or more files cannot be converted therefore no conversion will take place");
-    }
-}
-
 CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
     auto convert = app.add_subcommand(
         "convert", "Converter: converts the file format, bit-depth or sample "
@@ -90,51 +67,61 @@ void Converter::ConvertSampleRate(std::vector<double> &buffer,
     buffer = result_interleaved_samples;
 }
 
-bool Converter::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    switch (m_mode) {
-        case Mode::ValidatingCorrectFormat: {
-            if (!CanFileBeConvertedToBitDepth(input.format, *m_bit_depth)) {
-                WarningWithNewLine("files of type ", magic_enum::enum_name(input.format),
-                                   " cannot be converted to a bit depth of ", *m_bit_depth);
-                m_files_can_be_converted = false;
+void Converter::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    m_files_can_be_converted = true;
+    if (m_bit_depth) {
+        if (!m_file_format) {
+            for (auto &f : files) {
+                auto &audio = f.GetAudio();
+                if (!CanFileBeConvertedToBitDepth(audio.format, *m_bit_depth)) {
+                    WarningWithNewLine("files of type ", magic_enum::enum_name(audio.format),
+                                       " cannot be converted to a bit depth of ", *m_bit_depth);
+                    m_files_can_be_converted = false;
+                }
             }
-            return false;
+        } else {
+            m_files_can_be_converted = CanFileBeConvertedToBitDepth(*m_file_format, *m_bit_depth);
+            if (!m_files_can_be_converted) {
+                WarningWithNewLine("file format ", magic_enum::enum_name(*m_file_format),
+                                   " cannot be converted to bit depths ", *m_bit_depth);
+            }
         }
-        case Mode::Converting: {
-            if (!input.interleaved_samples.size()) return false;
+    }
+
+    if (m_files_can_be_converted) {
+        for (auto &f : files) {
+            const auto &audio = f.GetAudio();
             bool edited = false;
             if (m_bit_depth) {
-                MessageWithNewLine("Converter", "Seting the bit rate from ", input.bits_per_sample, " to ",
+                MessageWithNewLine("Converter", "Seting the bit rate from ", audio.bits_per_sample, " to ",
                                    *m_bit_depth);
-                input.bits_per_sample = *m_bit_depth;
+                f.GetWritableAudio().bits_per_sample = *m_bit_depth;
                 edited = true;
             }
-            if (m_sample_rate && input.sample_rate != *m_sample_rate) {
-                ConvertSampleRate(input.interleaved_samples, input.num_channels, input.sample_rate,
-                                  (double)*m_sample_rate);
-                MessageWithNewLine("Converter", "Converting sample rate from ", input.sample_rate, " to ",
+            if (m_sample_rate && audio.sample_rate != *m_sample_rate) {
+                auto &audio_out = f.GetWritableAudio();
+                ConvertSampleRate(audio_out.interleaved_samples, audio_out.num_channels,
+                                  audio_out.sample_rate, (double)*m_sample_rate);
+                MessageWithNewLine("Converter", "Converting sample rate from ", audio_out.sample_rate, " to ",
                                    *m_sample_rate);
-                input.sample_rate = *m_sample_rate;
+                audio_out.sample_rate = *m_sample_rate;
                 edited = true;
             }
-            if (m_file_format && input.format != *m_file_format) {
-                const auto from_name = magic_enum::enum_name(input.format);
+            if (m_file_format && audio.format != *m_file_format) {
+                const auto from_name = magic_enum::enum_name(audio.format);
                 const auto to_name = magic_enum::enum_name(*m_file_format);
                 MessageWithNewLine("Converter", "Converting file format from ", from_name, " to ", to_name);
-                input.format = *m_file_format;
+                f.GetWritableAudio().format = *m_file_format;
                 edited = true;
             }
 
             if (!edited) {
                 MessageWithNewLine("Converter", "No conversion necessary");
             }
-
-            return edited;
         }
+    } else {
+        WarningWithNewLine("one or more files cannot be converted therefore no conversion will take place");
     }
-
-    REQUIRE(false);
-    return false;
 }
 
 TEST_CASE("[Converter]") {

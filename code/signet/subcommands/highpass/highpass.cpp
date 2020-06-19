@@ -14,21 +14,22 @@ CLI::App *Highpass::CreateSubcommandCLI(CLI::App &app) {
     return hp;
 }
 
-bool Highpass::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    if (input.interleaved_samples.size() == 0) return false;
+void Highpass::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    for (auto &f : files) {
+        auto &audio = f.GetWritableAudio();
 
-    Filter::Params params;
-    Filter::Coeffs coeffs;
-    Filter::SetParamsAndCoeffs(Filter::Type::RBJ, params, coeffs, static_cast<int>(Filter::RBJType::HighPass),
-                               (double)input.sample_rate, m_cutoff, 1, 0);
+        Filter::Params params;
+        Filter::Coeffs coeffs;
+        Filter::SetParamsAndCoeffs(Filter::Type::RBJ, params, coeffs,
+                                   static_cast<int>(Filter::RBJType::HighPass), (double)audio.sample_rate,
+                                   m_cutoff, 1, 0);
 
-    for (unsigned chan = 0; chan < input.num_channels; ++chan) {
-        Filter::Data data {};
-        for (auto frame = 0; frame < input.NumFrames(); ++frame) {
-            auto &v = input.GetSample(chan, frame);
-            v = Filter::Process(data, coeffs, v);
+        for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+            Filter::Data data {};
+            for (auto frame = 0; frame < audio.NumFrames(); ++frame) {
+                auto &v = audio.GetSample(chan, frame);
+                v = Filter::Process(data, coeffs, v);
+            }
         }
     }
-
-    return true;
 }

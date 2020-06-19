@@ -7,8 +7,7 @@
 class Folderiser final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool ProcessFilename(fs::path &path, const AudioFile &input) override;
-    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
+    void ProcessFiles(const tcb::span<InputAudioFile> files) override;
 
   private:
     std::string m_filename_pattern;

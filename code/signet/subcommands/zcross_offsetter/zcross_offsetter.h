@@ -17,16 +17,18 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                                  const size_t num_frames,
                                                  const unsigned num_channels);
 
-    static bool CreateSampleOffsetToNearestZCross(AudioFile &input,
+    static bool CreateSampleOffsetToNearestZCross(AudioFile &audio,
                                                   const AudioDuration &search_size,
                                                   const bool append_skipped_frames_on_end);
 
-    bool ProcessAudio(AudioFile &input, const std::string_view file_name) override {
-        if (!input.interleaved_samples.size()) return false;
-        return CreateSampleOffsetToNearestZCross(input, m_search_size, m_append_skipped_frames_on_end);
+    void ProcessFiles(const tcb::span<InputAudioFile> files) override {
+        for (auto &f : files) {
+            auto &audio = f.GetAudio();
+            if (audio.IsEmpty()) continue;
+            CreateSampleOffsetToNearestZCross(f.GetWritableAudio(), m_search_size,
+                                              m_append_skipped_frames_on_end);
+        }
     }
-
-    void Run(SubcommandHost &processor) override { processor.ProcessAllFiles(*this); }
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand(

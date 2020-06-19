@@ -4,27 +4,63 @@
 
 #include "audio_file.h"
 #include "backup.h"
+#include "common.h"
 #include "pathname_expansion.h"
 #include "string_utils.h"
 #include "types.h"
 
 struct InputAudioFile {
-    InputAudioFile(const AudioFile &_file, const fs::path &_path)
-        : filename(GetJustFilenameWithNoExtension(_path))
-        , original_path(_path)
-        , original_file_format(_file.format) {
-        file = _file;
-        path = _path;
+    InputAudioFile(const fs::path &path)
+        : filename(GetJustFilenameWithNoExtension(path)), original_path(path), m_path(path) {}
+
+    AudioFile &GetWritableAudio() {
+        m_file_edited = true;
+        return const_cast<AudioFile &>(GetAudio());
     }
 
-    AudioFile file {};
-    fs::path path {};
-    bool renamed {};
-    bool file_edited {};
+    const AudioFile &GetAudio() {
+        if (!m_file_loaded && m_file_valid) {
+            if (const auto file = ReadAudioFile(original_path)) {
+                LoadAudioData(*file);
+            } else {
+                ErrorWithNewLine("could not load audio file ", original_path);
+                m_file_valid = false;
+            }
+        }
+        return m_file;
+    }
+
+    const fs::path &GetPath() const { return m_path; }
+
+    void SetPath(const fs::path &path) {
+        m_path_edited = true;
+        m_path = path;
+    }
 
     const std::string filename;
     const fs::path original_path;
-    const AudioFileFormat original_file_format;
+
+    bool AudioChanged() const { return m_file_edited && m_file_valid; }
+    bool FilepathChanged() const { return m_path_edited; }
+    bool FormatChanged() const {
+        if (!m_file_loaded) return false;
+        return m_original_file_format != m_file.format;
+    }
+
+    void LoadAudioData(const AudioFile &file) {
+        m_file = file;
+        m_original_file_format = m_file.format;
+        m_file_loaded = true;
+    }
+
+  private:
+    AudioFileFormat m_original_file_format {};
+    AudioFile m_file {};
+    bool m_file_loaded = false;
+    bool m_file_valid = true;
+    bool m_file_edited = false;
+    fs::path m_path {};
+    bool m_path_edited = false;
 };
 
 class InputAudioFiles {
@@ -37,6 +73,15 @@ class InputAudioFiles {
     usize NumFiles() const { return m_all_files.size(); }
 
     bool WriteAllAudioFiles(SignetBackup &backup);
+    int GetNumFilesProcessed() {
+        int n = 0;
+        for (const auto &f : GetAllFiles()) {
+            if (f.AudioChanged() || f.FilepathChanged() || f.FormatChanged()) {
+                n++;
+            }
+        }
+        return n;
+    }
 
   private:
     void ReadAllAudioFiles(const FilePathSet &paths);

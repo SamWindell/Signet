@@ -86,12 +86,12 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
     }
 }
 
-void SampleBlender::GenerateFiles(const std::vector<InputAudioFile> &input_files, SignetBackup &backup) {
+void SampleBlender::GenerateFiles(const tcb::span<InputAudioFile> input_files, SignetBackup &backup) {
     std::vector<BaseBlendFiles> files;
     for (const auto &p : input_files) {
         const std::regex r {m_regex};
         std::smatch pieces_match;
-        const auto name = GetJustFilenameWithNoExtension(p.path);
+        const auto name = GetJustFilenameWithNoExtension(p.GetPath());
 
         if (std::regex_match(name, pieces_match, r)) {
             if (pieces_match.size() != 2) {
@@ -104,7 +104,7 @@ void SampleBlender::GenerateFiles(const std::vector<InputAudioFile> &input_files
                 WarningWithNewLine("SampleBlender: root note of file ", name,
                                    " is not in the range 0-127 so cannot be processed");
             } else {
-                files.push_back({p.path, root_note});
+                files.push_back({p.GetPath(), root_note});
                 MessageWithNewLine("SampleBlender", "found file ", files.back().path, " with root note ",
                                    files.back().root_note);
             }

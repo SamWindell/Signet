@@ -46,7 +46,7 @@ class StringToArgs {
     std::vector<std::string> args;
 };
 
-class TestSubcommandProcessor : public SubcommandHost {
+class TestSubcommandProcessor {
   public:
     template <typename SubcommandType>
     static TestSubcommandProcessor
@@ -64,36 +64,31 @@ class TestSubcommandProcessor : public SubcommandHost {
         return processor;
     }
 
-    void ProcessAllFiles(Subcommand &subcommand) override {
-        m_file.file_edited = subcommand.ProcessAudio(m_file.file, m_file.filename);
-        m_file.renamed = subcommand.ProcessFilename(m_file.path, m_file.file);
-    }
-    bool IsProcessingMultipleFiles() const override { return false; }
-
-    std::optional<AudioFile> GetBuf() const {
-        if (m_file.file_edited) return m_file.file;
+    std::optional<AudioFile> GetBuf() {
+        if (m_file.AudioChanged()) return m_file.GetAudio();
         return {};
     }
 
-    std::optional<std::string> GetFilename() const {
-        if (m_file.renamed) {
-            return GetJustFilenameWithNoExtension(m_file.path);
+    std::optional<std::string> GetFilename() {
+        if (m_file.FilepathChanged()) {
+            return GetJustFilenameWithNoExtension(m_file.GetPath());
         }
         return {};
     }
 
-    std::optional<std::string> GetPath() const {
-        if (m_file.renamed) return m_file.path.generic_string();
+    std::optional<std::string> GetPath() {
+        if (m_file.FilepathChanged()) return m_file.GetPath().generic_string();
         return {};
     }
 
   private:
     TestSubcommandProcessor(Subcommand &subcommand, const AudioFile &buf, const fs::path &path)
-        : m_file(buf, path) {
-        subcommand.Run(*this);
+        : m_file(path) {
+        m_file.LoadAudioData(buf);
 
+        tcb::span<InputAudioFile> vec {&m_file, 1};
+        subcommand.ProcessFiles(vec);
         SignetBackup backup;
-        std::vector<InputAudioFile> vec {m_file};
         subcommand.GenerateFiles(vec, backup);
     }
 

@@ -107,100 +107,106 @@ void Renamer::ConstructAllAutomappings() {
     }
 }
 
-bool Renamer::ProcessFilename(fs::path &path, const AudioFile &input) {
-    if (m_mode == Mode::BuildingFolderMap) {
-        AddToFolderMap(path);
-        return false;
-    }
-
-    std::string filename = GetJustFilenameWithNoExtension(path);
-    bool renamed = false;
-
+void Renamer::ProcessFiles(const tcb::span<InputAudioFile> files) {
     if (m_automap_pattern) {
-        auto &folder = m_folder_map[path.parent_path().generic_string()];
-        if (const auto file = folder.GetFile(path)) {
-            auto new_name = *m_automap_out;
-            Replace(new_name, "<lo>", std::to_string(file->low));
-            Replace(new_name, "<hi>", std::to_string(file->high));
-            Replace(new_name, "<root>", std::to_string(file->root));
-            filename = new_name;
-            renamed = true;
+        for (auto &f : files) {
+            AddToFolderMap(f.GetPath());
         }
+        ConstructAllAutomappings();
     }
 
-    if (m_regex_pattern) {
-        const std::regex r {*m_regex_pattern};
-        std::smatch pieces_match;
-        if (std::regex_match(filename, pieces_match, r)) {
-            auto replacement = m_regex_replacement;
-            for (size_t i = 0; i < pieces_match.size(); ++i) {
-                const std::ssub_match sub_match = pieces_match[i];
-                const std::string piece = sub_match.str();
-                Replace(replacement, PutNumberInAngleBracket(i), piece);
-            }
-            filename = replacement;
-            renamed = true;
-        }
-    }
+    for (auto &f : files) {
+        std::string filename = GetJustFilenameWithNoExtension(f.GetPath());
+        bool renamed = false;
 
-    if (m_prefix) {
-        filename = *m_prefix + filename;
-        renamed = true;
-    }
-    if (m_suffix) {
-        filename = filename + *m_suffix;
-        renamed = true;
-    }
-
-    if (renamed) {
-        if (Contains(filename, "<counter>")) {
-            Replace(filename, "<counter>", std::to_string(m_counter++));
-        }
-        if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
-            Contains(filename, "<detected-note>")) {
-            if (const auto pitch = PitchDetector::DetectPitch(input)) {
-                const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-
-                Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
-                Replace(filename, "<detected-midi-note>", std::to_string(closest_musical_note.midi_note));
-                Replace(filename, "<detected-note>", closest_musical_note.name);
-            } else {
-                WarningWithNewLine(
-                    "Renamer: One of the detected pitch variables was used in the file name, but we "
-                    "could not find any pitch in the audio. All detected pitch variables will be replaced "
-                    "substituted with nothing.");
-                Replace(filename, "<detected-pitch>", "");
-                Replace(filename, "<detected-midi-note>", "");
-                Replace(filename, "<detected-note>", "");
+        if (m_automap_pattern) {
+            auto &folder = m_folder_map[f.GetPath().parent_path().generic_string()];
+            if (const auto file = folder.GetFile(f.GetPath())) {
+                auto new_name = *m_automap_out;
+                Replace(new_name, "<lo>", std::to_string(file->low));
+                Replace(new_name, "<hi>", std::to_string(file->high));
+                Replace(new_name, "<root>", std::to_string(file->root));
+                filename = new_name;
+                renamed = true;
             }
         }
-        if (Contains(filename, "<parent-folder>") || Contains(filename, "<parent-folder-snake>") ||
-            Contains(filename, "<parent-folder-camel>")) {
-            bool replaced = false;
-            if (path.has_parent_path()) {
-                const auto parent_folder = path.parent_path().filename();
-                if (parent_folder != ".") {
-                    const auto folder = parent_folder.generic_string();
-                    Replace(filename, "<parent-folder>", folder);
-                    Replace(filename, "<parent-folder-snake>", ToSnakeCase(folder));
-                    Replace(filename, "<parent-folder-camel>", ToCamelCase(folder));
-                    replaced = true;
+
+        if (m_regex_pattern) {
+            const std::regex r {*m_regex_pattern};
+            std::smatch pieces_match;
+            if (std::regex_match(filename, pieces_match, r)) {
+                auto replacement = m_regex_replacement;
+                for (size_t i = 0; i < pieces_match.size(); ++i) {
+                    const std::ssub_match sub_match = pieces_match[i];
+                    const std::string piece = sub_match.str();
+                    Replace(replacement, PutNumberInAngleBracket(i), piece);
+                }
+                filename = replacement;
+                renamed = true;
+            }
+        }
+
+        if (m_prefix) {
+            filename = *m_prefix + filename;
+            renamed = true;
+        }
+        if (m_suffix) {
+            filename = filename + *m_suffix;
+            renamed = true;
+        }
+
+        if (renamed) {
+            if (Contains(filename, "<counter>")) {
+                Replace(filename, "<counter>", std::to_string(m_counter++));
+            }
+            if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
+                Contains(filename, "<detected-note>")) {
+                if (const auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
+                    const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+
+                    Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
+                    Replace(filename, "<detected-midi-note>", std::to_string(closest_musical_note.midi_note));
+                    Replace(filename, "<detected-note>", closest_musical_note.name);
+                } else {
+                    WarningWithNewLine(
+                        "Renamer: One of the detected pitch variables was used in the file name, but we "
+                        "could not find any pitch in the audio. All detected pitch variables will be "
+                        "replaced "
+                        "substituted with nothing.");
+                    Replace(filename, "<detected-pitch>", "");
+                    Replace(filename, "<detected-midi-note>", "");
+                    Replace(filename, "<detected-note>", "");
                 }
             }
-            if (!replaced) {
-                WarningWithNewLine("Renamer: The file does not have a parent path, but the variable "
-                                   "<parent-folder> was used. This will just be replaced by nothing.");
-                Replace(filename, "<parent-folder>", "");
+            if (Contains(filename, "<parent-folder>") || Contains(filename, "<parent-folder-snake>") ||
+                Contains(filename, "<parent-folder-camel>")) {
+                bool replaced = false;
+                if (f.GetPath().has_parent_path()) {
+                    const auto parent_folder = f.GetPath().parent_path().filename();
+                    if (parent_folder != ".") {
+                        const auto folder = parent_folder.generic_string();
+                        Replace(filename, "<parent-folder>", folder);
+                        Replace(filename, "<parent-folder-snake>", ToSnakeCase(folder));
+                        Replace(filename, "<parent-folder-camel>", ToCamelCase(folder));
+                        replaced = true;
+                    }
+                }
+                if (!replaced) {
+                    WarningWithNewLine("Renamer: The file does not have a parent path, but the variable "
+                                       "<parent-folder> was used. This will just be replaced by nothing.");
+                    Replace(filename, "<parent-folder>", "");
+                }
             }
         }
-    }
 
-    if (renamed) {
-        const auto ext = path.extension();
-        path.replace_filename(filename);
-        path.replace_extension(ext);
+        if (renamed) {
+            auto path = f.GetPath();
+            const auto ext = path.extension();
+            path.replace_filename(filename);
+            path.replace_extension(ext);
+            f.SetPath(path);
+        }
     }
-    return renamed;
 }
 
 TEST_CASE("Renamer") {

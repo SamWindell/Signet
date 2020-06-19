@@ -34,26 +34,25 @@ CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
     return folderiser;
 }
 
-bool Folderiser::ProcessFilename(fs::path &path, const AudioFile &input) {
-    std::string filename = GetJustFilenameWithNoExtension(path);
+void Folderiser::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    for (auto &f : files) {
+        const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
 
-    const std::regex r {m_filename_pattern};
-    std::smatch pieces_match;
-    if (std::regex_match(filename, pieces_match, r)) {
-        std::string output_folder = m_out_folder;
-        for (size_t i = 0; i < pieces_match.size(); ++i) {
-            const std::ssub_match sub_match = pieces_match[i];
-            const std::string piece = sub_match.str();
-            Replace(output_folder, PutNumberInAngleBracket(i), piece);
+        const std::regex r {m_filename_pattern};
+        std::smatch pieces_match;
+        if (std::regex_match(filename, pieces_match, r)) {
+            std::string output_folder = m_out_folder;
+            for (size_t i = 0; i < pieces_match.size(); ++i) {
+                const std::ssub_match sub_match = pieces_match[i];
+                const std::string piece = sub_match.str();
+                Replace(output_folder, PutNumberInAngleBracket(i), piece);
+            }
+
+            fs::path new_path = output_folder;
+            new_path /= f.GetPath().filename();
+            f.SetPath(new_path);
         }
-
-        fs::path new_path = output_folder;
-        new_path /= path.filename();
-        path = new_path;
-        return true;
     }
-
-    return false;
 }
 
 TEST_CASE("Folderiser") {

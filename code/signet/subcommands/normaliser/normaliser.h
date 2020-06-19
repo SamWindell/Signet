@@ -8,18 +8,12 @@
 class Normaliser final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool ProcessAudio(AudioFile &input, const std::string_view filename) override;
-    void Run(SubcommandHost &processor) override;
+    void ProcessFiles(const tcb::span<InputAudioFile> files) override;
 
   private:
     bool PerformNormalisation(AudioFile &input_audio) const;
     bool ReadFileForCommonGain(const AudioFile &audio);
 
-    enum class ProcessingStage {
-        FindingCommonGain,
-        ApplyingGain,
-    };
-    ProcessingStage m_current_stage {};
     bool m_successfully_found_common_gain {};
 
     std::unique_ptr<NormalisationGainCalculator> m_processor {};

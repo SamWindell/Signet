@@ -8,16 +8,7 @@
 class Renamer final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    bool ProcessFilename(fs::path &path, const AudioFile &input) override;
-    void Run(SubcommandHost &processor) override {
-        if (m_automap_pattern) {
-            m_mode = Mode::BuildingFolderMap;
-            processor.ProcessAllFiles(*this);
-            ConstructAllAutomappings();
-        }
-        m_mode = Mode::Processing;
-        processor.ProcessAllFiles(*this);
-    }
+    void ProcessFiles(const tcb::span<InputAudioFile> files) override;
 
   private:
     void AddToFolderMap(const fs::path &path);
@@ -75,12 +66,6 @@ class Renamer final : public Subcommand {
 
         std::vector<AutomapFile> m_files;
     };
-
-    enum Mode {
-        BuildingFolderMap,
-        Processing,
-    };
-    Mode m_mode {};
 
     std::unordered_map<std::string, AutomapFolder> m_folder_map;
     std::optional<std::string> m_automap_pattern;

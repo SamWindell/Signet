@@ -25,45 +25,49 @@ CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
     return trimmer;
 }
 
-bool Trimmer::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    if (input.interleaved_samples.size() == 0) return false;
+void Trimmer::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    for (auto &f : files) {
+        auto &audio = f.GetAudio();
+        if (audio.IsEmpty()) continue;
 
-    usize remaining_region_start = 0, remaining_region_end = input.NumFrames();
-    if (m_start_duration) {
-        const auto start_size = m_start_duration->GetDurationAsFrames(input.sample_rate, input.NumFrames());
-        remaining_region_start = start_size;
-    }
-    if (m_end_duration) {
-        const auto end_size = m_end_duration->GetDurationAsFrames(input.sample_rate, input.NumFrames());
-        remaining_region_end = input.NumFrames() - end_size;
-    }
+        usize remaining_region_start = 0, remaining_region_end = audio.NumFrames();
+        if (m_start_duration) {
+            const auto start_size =
+                m_start_duration->GetDurationAsFrames(audio.sample_rate, audio.NumFrames());
+            remaining_region_start = start_size;
+        }
+        if (m_end_duration) {
+            const auto end_size = m_end_duration->GetDurationAsFrames(audio.sample_rate, audio.NumFrames());
+            remaining_region_end = audio.NumFrames() - end_size;
+        }
 
-    if (remaining_region_start >= remaining_region_end) {
-        WarningWithNewLine(
-            "The trim region would result in the whole sample being removed - no change will be made");
-        return false;
-    }
+        if (remaining_region_start >= remaining_region_end) {
+            WarningWithNewLine(
+                "The trim region would result in the whole sample being removed - no change will be made");
+            continue;
+        }
 
-    if (m_start_duration && m_end_duration) {
-        MessageWithNewLine("Trimmer", "Trimming ", remaining_region_start, " frames from the start and ",
-                           input.NumFrames() - remaining_region_end, " frames from the end");
-    } else if (m_start_duration) {
-        MessageWithNewLine("Trimmer", "Trimming ", remaining_region_start, " frames from the start");
-    } else {
-        MessageWithNewLine("Trimmer", "Trimming ", input.NumFrames() - remaining_region_end,
-                           " frames from the end");
-    }
+        if (m_start_duration && m_end_duration) {
+            MessageWithNewLine("Trimmer", "Trimming ", remaining_region_start, " frames from the start and ",
+                               audio.NumFrames() - remaining_region_end, " frames from the end");
+        } else if (m_start_duration) {
+            MessageWithNewLine("Trimmer", "Trimming ", remaining_region_start, " frames from the start");
+        } else {
+            MessageWithNewLine("Trimmer", "Trimming ", audio.NumFrames() - remaining_region_end,
+                               " frames from the end");
+        }
 
-    if (m_end_duration) {
-        input.interleaved_samples.resize(remaining_region_end * input.num_channels);
+        if (m_end_duration && remaining_region_end != audio.NumFrames()) {
+            auto &out_audio = f.GetWritableAudio();
+            out_audio.interleaved_samples.resize(remaining_region_end * out_audio.num_channels);
+        }
+        if (m_start_duration && remaining_region_start != 0) {
+            auto &out_audio = f.GetWritableAudio();
+            out_audio.interleaved_samples.erase(out_audio.interleaved_samples.begin(),
+                                                out_audio.interleaved_samples.begin() +
+                                                    remaining_region_start * out_audio.num_channels);
+        }
     }
-    if (m_start_duration) {
-        input.interleaved_samples.erase(input.interleaved_samples.begin(),
-                                        input.interleaved_samples.begin() +
-                                            remaining_region_start * input.num_channels);
-    }
-
-    return true;
 }
 
 TEST_CASE("[Trimmer]") {

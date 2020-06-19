@@ -31,84 +31,91 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     return silence_remover;
 }
 
-bool SilenceRemover::ProcessAudio(AudioFile &input, const std::string_view filename) {
-    if (input.interleaved_samples.size() == 0) return false;
+void SilenceRemover::ProcessFiles(const tcb::span<InputAudioFile> files) {
+    for (auto &f : files) {
+        auto &audio = f.GetAudio();
+        usize loud_region_start = 0;
+        usize loud_region_end = audio.NumFrames();
+        const auto amp_threshold = DBToAmp(m_silence_threshold_db);
 
-    usize loud_region_start = 0;
-    usize loud_region_end = input.NumFrames();
-    const auto amp_threshold = DBToAmp(m_silence_threshold_db);
+        if (m_region == Region::Start || m_region == Region::Both) {
+            for (usize frame = 0; frame < audio.NumFrames(); ++frame) {
+                bool is_silent = true;
+                for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
+                    if (std::abs(audio.GetSample(channel, frame)) > amp_threshold) {
+                        is_silent = false;
+                        break;
+                    }
+                }
 
-    if (m_region == Region::Start || m_region == Region::Both) {
-        for (usize frame = 0; frame < input.NumFrames(); ++frame) {
-            bool is_silent = true;
-            for (unsigned channel = 0; channel < input.num_channels; ++channel) {
-                if (std::abs(input.GetSample(channel, frame)) > amp_threshold) {
-                    is_silent = false;
+                if (!is_silent) {
+                    loud_region_start = frame;
                     break;
                 }
             }
-
-            if (!is_silent) {
-                loud_region_start = frame;
-                break;
-            }
         }
-    }
 
-    if (m_region == Region::End || m_region == Region::Both) {
-        for (usize frame = input.NumFrames(); frame-- > 0;) {
-            bool is_silent = true;
-            for (unsigned channel = 0; channel < input.num_channels; ++channel) {
-                if (std::abs(input.GetSample(channel, frame)) > amp_threshold) {
-                    is_silent = false;
+        if (m_region == Region::End || m_region == Region::Both) {
+            for (usize frame = audio.NumFrames(); frame-- > 0;) {
+                bool is_silent = true;
+                for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
+                    if (std::abs(audio.GetSample(channel, frame)) > amp_threshold) {
+                        is_silent = false;
+                        break;
+                    }
+                }
+
+                if (!is_silent) {
+                    loud_region_end = frame + 1;
                     break;
                 }
             }
+        }
 
-            if (!is_silent) {
-                loud_region_end = frame + 1;
-                break;
+        // Allow there to be a few silent samples before we start chopping. Particularly at the start of a
+        // sample it is often important to have some silent samples in order avoid pops at the start of
+        // playback.
+        if (loud_region_start < silence_allowence)
+            loud_region_start = 0;
+        else
+            loud_region_start -= silence_allowence;
+        loud_region_end = std::min(audio.NumFrames(), loud_region_end + 4);
+
+        if (loud_region_start >= loud_region_end) {
+            MessageWithNewLine("SilenceRemover", "The whole sample is silence - no change will be made");
+            continue;
+        }
+        if (loud_region_start == 0 && loud_region_end == audio.NumFrames()) {
+            MessageWithNewLine("SilenceRemover", "No silence to trim at start or end");
+            continue;
+        }
+
+        if (loud_region_start != 0 && loud_region_end != audio.NumFrames()) {
+            MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start,
+                               " frames from the start and ", audio.NumFrames() - loud_region_end,
+                               " frames from the end");
+        } else if (loud_region_start) {
+            MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start");
+        } else {
+            MessageWithNewLine("SilenceRemover", "Removing ", audio.NumFrames() - loud_region_end,
+                               " frames from the end");
+        }
+
+        if (m_region == Region::End || m_region == Region::Both) {
+            const auto new_size = loud_region_end * audio.num_channels;
+            if (!audio.interleaved_samples.size() != new_size) {
+                f.GetWritableAudio().interleaved_samples.resize(new_size);
+            }
+        }
+        if (m_region == Region::Start || m_region == Region::Both) {
+            const auto num_samples = loud_region_start * audio.num_channels;
+            if (num_samples) {
+                auto &out_audio = f.GetWritableAudio();
+                out_audio.interleaved_samples.erase(out_audio.interleaved_samples.begin(),
+                                                    out_audio.interleaved_samples.begin() + num_samples);
             }
         }
     }
-
-    // Allow there to be a few silent samples before we start chopping. Particularly at the start of a sample
-    // it is often important to have some silent samples in order avoid pops at the start of playback.
-    if (loud_region_start < silence_allowence)
-        loud_region_start = 0;
-    else
-        loud_region_start -= silence_allowence;
-    loud_region_end = std::min(input.NumFrames(), loud_region_end + 4);
-
-    if (loud_region_start >= loud_region_end) {
-        MessageWithNewLine("SilenceRemover", "The whole sample is silence - no change will be made");
-        return false;
-    }
-    if (loud_region_start == 0 && loud_region_end == input.NumFrames()) {
-        MessageWithNewLine("SilenceRemover", "No silence to trim at start or end");
-        return false;
-    }
-
-    if (loud_region_start != 0 && loud_region_end != input.NumFrames()) {
-        MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start and ",
-                           input.NumFrames() - loud_region_end, " frames from the end");
-    } else if (loud_region_start) {
-        MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start");
-    } else {
-        MessageWithNewLine("SilenceRemover", "Removing ", input.NumFrames() - loud_region_end,
-                           " frames from the end");
-    }
-
-    if (m_region == Region::End || m_region == Region::Both) {
-        input.interleaved_samples.resize(loud_region_end * input.num_channels);
-    }
-    if (m_region == Region::Start || m_region == Region::Both) {
-        input.interleaved_samples.erase(input.interleaved_samples.begin(),
-                                        input.interleaved_samples.begin() +
-                                            loud_region_start * input.num_channels);
-    }
-
-    return true;
 }
 
 TEST_CASE("[SilenceRemover]") {

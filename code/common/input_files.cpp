@@ -23,9 +23,7 @@ InputAudioFiles::InputAudioFiles(const std::string &pathnames_comma_delimed,
 void InputAudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
     for (const auto &path : paths) {
         if (!IsAudioFileReadable(path)) continue;
-        if (auto file = ReadAudioFile(path)) {
-            m_all_files.push_back({*file, path});
-        }
+        m_all_files.push_back({path});
     }
 }
 
@@ -33,7 +31,7 @@ bool InputAudioFiles::WouldWritingAllFilesCreateConflicts() {
     std::unordered_set<std::string> files_set;
     bool file_conflicts = false;
     for (const auto &f : GetAllFiles()) {
-        const auto generic = f.path.generic_string();
+        const auto generic = f.GetPath().generic_string();
         if (files_set.find(generic) != files_set.end()) {
             ErrorWithNewLine("filepath ", generic, " would have the same filename as another file");
             file_conflicts = true;
@@ -58,34 +56,36 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
         return false;
     }
 
-    for (const auto &file : GetAllFiles()) {
-        const bool file_data_changed = file.file_edited;
-        const bool file_renamed = file.renamed;
-        const bool file_format_changed = file.file.format != file.original_file_format;
+    for (auto &file : GetAllFiles()) {
+        const bool file_data_changed = file.AudioChanged();
+        const bool file_renamed = file.FilepathChanged();
+        const bool file_format_changed = file.FormatChanged();
 
         if (file_renamed) {
             if (!file_data_changed && !file_format_changed) {
                 // only renamed
-                backup.MoveFile(file.original_path, file.path);
+                backup.MoveFile(file.original_path, file.GetPath());
             } else if ((!file_data_changed && file_format_changed) ||
                        (file_data_changed && file_format_changed)) {
                 // renamed and new format
-                backup.CreateFile(PathWithNewExtension(file.path, file.file.format), file.file);
+                backup.CreateFile(PathWithNewExtension(file.GetPath(), file.GetAudio().format),
+                                  file.GetAudio());
                 backup.DeleteFile(file.original_path);
             } else if (file_data_changed && !file_format_changed) {
                 // renamed and new data
-                backup.CreateFile(file.path, file.file);
+                backup.CreateFile(file.GetPath(), file.GetAudio());
                 backup.DeleteFile(file.original_path);
             }
         } else {
-            REQUIRE(file.path == file.original_path);
+            REQUIRE(file.GetPath() == file.original_path);
             if ((file_format_changed && !file_data_changed) || (file_format_changed && file_data_changed)) {
                 // only new format
-                backup.CreateFile(PathWithNewExtension(file.original_path, file.file.format), file.file);
+                backup.CreateFile(PathWithNewExtension(file.original_path, file.GetAudio().format),
+                                  file.GetAudio());
                 backup.DeleteFile(file.original_path);
             } else if (!file_format_changed && file_data_changed) {
                 // only new data
-                backup.OverwriteFile(file.original_path, file.file);
+                backup.OverwriteFile(file.original_path, file.GetAudio());
             }
         }
     }

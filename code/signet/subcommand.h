@@ -15,6 +15,6 @@ class Subcommand {
     virtual ~Subcommand() {}
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
 
-    virtual void GenerateFiles(const tcb::span<InputAudioFile> files, SignetBackup &backup) {}
+    virtual void GenerateFiles(const tcb::span<const InputAudioFile> files, SignetBackup &backup) {}
     virtual void ProcessFiles(const tcb::span<InputAudioFile> files) {}
 };

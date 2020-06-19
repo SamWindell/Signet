@@ -42,10 +42,7 @@ struct InputAudioFile {
 
     bool AudioChanged() const { return m_file_edited && m_file_valid; }
     bool FilepathChanged() const { return m_path_edited; }
-    bool FormatChanged() const {
-        if (!m_file_loaded) return false;
-        return m_original_file_format != m_file.format;
-    }
+    bool FormatChanged() const { return m_original_file_format != m_file.format; }
 
     void LoadAudioData(const AudioFile &file) {
         m_file = file;
@@ -55,11 +52,12 @@ struct InputAudioFile {
 
   private:
     AudioFileFormat m_original_file_format {};
+    fs::path m_path {};
     AudioFile m_file {};
     bool m_file_loaded = false;
     bool m_file_valid = true;
+
     bool m_file_edited = false;
-    fs::path m_path {};
     bool m_path_edited = false;
 };
 
@@ -73,9 +71,9 @@ class InputAudioFiles {
     usize NumFiles() const { return m_all_files.size(); }
 
     bool WriteAllAudioFiles(SignetBackup &backup);
-    int GetNumFilesProcessed() {
+    int GetNumFilesProcessed() const {
         int n = 0;
-        for (const auto &f : GetAllFiles()) {
+        for (const auto &f : m_all_files) {
             if (f.AudioChanged() || f.FilepathChanged() || f.FormatChanged()) {
                 n++;
             }

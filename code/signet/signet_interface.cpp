@@ -99,16 +99,18 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError &e) {
+        PrintSignetHeading();
         if (e.get_exit_code() != 0) {
             std::cout << rang::fg::red;
             std::atexit([]() { std::cout << rang::fg::reset; });
+            std::cout << "ERROR:\n";
+            return app.exit(e);
+        } else {
+            std::stringstream ss;
+            const auto result = app.exit(e, ss);
+            PrintSignetCLI(ss.str());
+            return result;
         }
-
-        PrintSignetHeading();
-        std::stringstream ss;
-        const auto result = app.exit(e, ss);
-        PrintSignetCLI(ss.str());
-        return result;
     }
 
     m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo

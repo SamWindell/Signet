@@ -1,5 +1,6 @@
 #include "normaliser.h"
 
+#include "CLI11.hpp"
 #include "doctest.hpp"
 
 CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {

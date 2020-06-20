@@ -2,10 +2,11 @@
 #include <optional>
 #include <vector>
 
-#include "CLI11.hpp"
+#include "CLI11_Fwd.hpp"
 #include "filesystem.hpp"
-#include "input_files.h"
 #include "span.hpp"
+
+#include "input_files.h"
 
 struct AudioFile;
 class SignetBackup;

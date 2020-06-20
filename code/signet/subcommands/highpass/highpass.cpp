@@ -1,5 +1,7 @@
 #include "highpass.h"
 
+#include "CLI11.hpp"
+
 #include "audio_file.h"
 #include "common.h"
 #include "filter.h"

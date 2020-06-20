@@ -1,8 +1,10 @@
 #include "auto_tuner.h"
 
+#include "CLI11.hpp"
+#include "doctest.hpp"
+
 #include "audio_file.h"
 #include "common.h"
-#include "doctest.hpp"
 #include "input_files.h"
 #include "midi_pitches.h"
 #include "subcommands/pitch_detector/pitch_detector.h"

@@ -1,5 +1,8 @@
 #include "input_files.h"
 
+#include "CLI11.hpp"
+
+#include "backup.h"
 #include "common.h"
 
 InputAudioFiles::InputAudioFiles(const std::string &pathnames_comma_delimed,

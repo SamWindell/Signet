@@ -1,13 +1,12 @@
 #pragma once
 
-#include "CLI11.hpp"
-
 #include "audio_file.h"
-#include "backup.h"
 #include "common.h"
 #include "pathname_expansion.h"
 #include "string_utils.h"
 #include "types.h"
+
+class SignetBackup;
 
 struct InputAudioFile {
     InputAudioFile(const fs::path &path)

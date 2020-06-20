@@ -170,7 +170,7 @@ TEST_CASE("[SignetInterface]") {
 
         SUBCASE("multiple comma separated files") {
             const auto args =
-                TestHelpers::StringToArgs {"signet test-folder/test.wav,test-folder/test-out.wav norm -3"};
+                TestHelpers::StringToArgs {"signet test-folder/test.wav,test-folder/tf1.wav norm -3"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
     }

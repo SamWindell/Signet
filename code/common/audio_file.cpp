@@ -36,9 +36,7 @@ bool CanFileBeConvertedToBitDepth(AudioFileFormat file, const unsigned bit_depth
 
 std::string GetLowercaseExtension(AudioFileFormat format) {
     std::string result {magic_enum::enum_name(format)};
-    for (auto &c : result) {
-        c = (char)std::tolower(c);
-    }
+    Lowercase(result);
     return result;
 }
 

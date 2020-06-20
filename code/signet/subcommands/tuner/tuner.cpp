@@ -20,7 +20,7 @@ void Tuner::ChangePitch(AudioData &audio, const double cents) {
                                  new_sample_rate);
 }
 
-void Tuner::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Tuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         MessageWithNewLine("Tuner", "Tuning sample by ", m_tune_cents, " cents");
         ChangePitch(f.GetWritableAudio(), m_tune_cents);

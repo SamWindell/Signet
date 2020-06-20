@@ -86,13 +86,13 @@ class TestSubcommandProcessor {
         : m_file(path) {
         m_file.LoadAudioData(buf);
 
-        tcb::span<InputAudioFile> vec {&m_file, 1};
+        tcb::span<EditTrackedAudioFile> vec {&m_file, 1};
         subcommand.ProcessFiles(vec);
         SignetBackup backup;
         subcommand.GenerateFiles(vec, backup);
     }
 
-    InputAudioFile m_file;
+    EditTrackedAudioFile m_file;
 };
 
 template <typename SubcommandType>

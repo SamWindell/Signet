@@ -21,7 +21,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                                   const AudioDuration &search_size,
                                                   const bool append_skipped_frames_on_end);
 
-    void ProcessFiles(const tcb::span<InputAudioFile> files) override {
+    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override {
         for (auto &f : files) {
             auto &audio = f.GetAudio();
             if (audio.IsEmpty()) continue;

@@ -86,7 +86,8 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
     }
 }
 
-void SampleBlender::GenerateFiles(const tcb::span<const InputAudioFile> input_files, SignetBackup &backup) {
+void SampleBlender::GenerateFiles(const tcb::span<const EditTrackedAudioFile> input_files,
+                                  SignetBackup &backup) {
     std::vector<BaseBlendFiles> files;
     for (const auto &p : input_files) {
         const std::regex r {m_regex};

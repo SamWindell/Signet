@@ -16,7 +16,7 @@ CLI::App *Highpass::CreateSubcommandCLI(CLI::App &app) {
     return hp;
 }
 
-void Highpass::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Highpass::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
 

@@ -9,7 +9,7 @@
 class SampleBlender : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void GenerateFiles(const tcb::span<const InputAudioFile> files, SignetBackup &backup) override;
+    void GenerateFiles(const tcb::span<const EditTrackedAudioFile> files, SignetBackup &backup) override;
 
   private:
     struct BaseBlendFiles {

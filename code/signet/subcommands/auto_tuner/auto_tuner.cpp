@@ -17,7 +17,7 @@ CLI::App *AutoTuner::CreateSubcommandCLI(CLI::App &app) {
     return auto_tuner;
 }
 
-void AutoTuner::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void AutoTuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         if (const auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
             const auto closest_musical_note = FindClosestMidiPitch(*pitch);

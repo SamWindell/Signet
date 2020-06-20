@@ -6,9 +6,8 @@
 #include "filesystem.hpp"
 #include "span.hpp"
 
-#include "input_files.h"
+#include "edit_tracked_audio_file.h"
 
-struct AudioData;
 class SignetBackup;
 
 class Subcommand {
@@ -16,6 +15,6 @@ class Subcommand {
     virtual ~Subcommand() {}
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
 
-    virtual void GenerateFiles(const tcb::span<const InputAudioFile> files, SignetBackup &backup) {}
-    virtual void ProcessFiles(const tcb::span<InputAudioFile> files) {}
+    virtual void GenerateFiles(const tcb::span<const EditTrackedAudioFile> files, SignetBackup &backup) {}
+    virtual void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {}
 };

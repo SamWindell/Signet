@@ -31,7 +31,7 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     return silence_remover;
 }
 
-void SilenceRemover::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void SilenceRemover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         auto &audio = f.GetAudio();
         usize loud_region_start = 0;

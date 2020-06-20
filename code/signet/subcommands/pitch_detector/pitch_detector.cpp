@@ -46,7 +46,7 @@ std::optional<double> PitchDetector::DetectPitch(const AudioData &audio) {
     }
 }
 
-void PitchDetector::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void PitchDetector::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         const auto pitch = DetectPitch(f.GetAudio());
         if (pitch) {

@@ -96,7 +96,7 @@ PerformFade(AudioData &audio, const s64 silent_frame, const s64 fullvol_frame, c
     }
 }
 
-void Fader::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Fader::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (m_fade_in_duration) {

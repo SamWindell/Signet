@@ -25,7 +25,7 @@ CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
     return trimmer;
 }
 
-void Trimmer::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Trimmer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         auto &audio = f.GetAudio();
         if (audio.IsEmpty()) continue;

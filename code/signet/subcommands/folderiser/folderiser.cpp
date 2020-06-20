@@ -34,7 +34,7 @@ CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
     return folderiser;
 }
 
-void Folderiser::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Folderiser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
         const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
 

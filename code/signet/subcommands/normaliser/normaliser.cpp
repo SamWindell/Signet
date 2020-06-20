@@ -23,7 +23,7 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     return norm;
 }
 
-void Normaliser::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Normaliser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {

@@ -130,7 +130,7 @@ void Renamer::ConstructAllAutomappings() {
     }
 }
 
-void Renamer::ProcessFiles(const tcb::span<InputAudioFile> files) {
+void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     if (m_automap_pattern) {
         for (auto &f : files) {
             AddToFolderMap(f.GetPath());

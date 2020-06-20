@@ -64,12 +64,12 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
 
         constexpr double cents_in_semitone = 100;
 
-        AudioFile out = f1.file;
+        AudioData out = f1.data;
         const auto pitch_change1 = (root_note - f1.root_note) * cents_in_semitone;
         Tuner::ChangePitch(out, pitch_change1);
         out.MultiplyByScalar(distance_from_f1);
 
-        AudioFile other = f2.file;
+        AudioData other = f2.data;
         const auto pitch_change2 = (root_note - f2.root_note) * cents_in_semitone;
         Tuner::ChangePitch(other, pitch_change2);
         other.MultiplyByScalar(distance_from_f2);
@@ -81,7 +81,7 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
         Replace(filename, "<root-note>", g_midi_pitches[root_note].name);
 
         const auto directory = f1.path.parent_path();
-        const auto path = directory / (filename + "." + GetLowercaseExtension(f1.file.format));
+        const auto path = directory / (filename + "." + GetLowercaseExtension(f1.data.format));
         backup.CreateFile(path, out);
     }
 }
@@ -130,12 +130,12 @@ void SampleBlender::GenerateFiles(const tcb::span<const InputAudioFile> input_fi
     }
 
     for (auto &f : files) {
-        const auto file = ReadAudioFile(f.path);
-        if (!file) {
+        const auto data = ReadAudioFile(f.path);
+        if (!data) {
             ErrorWithNewLine("SampleBlender could not open file");
             return;
         }
-        f.file = std::move(*file);
+        f.data = std::move(*data);
     }
 
     for (usize i = 0; i < files.size() - 1; ++i) {

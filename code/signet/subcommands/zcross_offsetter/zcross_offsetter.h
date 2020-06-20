@@ -17,7 +17,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                                  const size_t num_frames,
                                                  const unsigned num_channels);
 
-    static bool CreateSampleOffsetToNearestZCross(AudioFile &audio,
+    static bool CreateSampleOffsetToNearestZCross(AudioData &audio,
                                                   const AudioDuration &search_size,
                                                   const bool append_skipped_frames_on_end);
 

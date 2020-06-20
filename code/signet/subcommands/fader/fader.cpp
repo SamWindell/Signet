@@ -83,7 +83,7 @@ static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 siz
 }
 
 static void
-PerformFade(AudioFile &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
+PerformFade(AudioData &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
     const auto size = std::abs(fullvol_frame - silent_frame);
 
@@ -122,7 +122,7 @@ void Fader::ProcessFiles(const tcb::span<InputAudioFile> files) {
 }
 
 TEST_CASE("[Fader]") {
-    AudioFile buf {};
+    AudioData buf {};
     buf.sample_rate = 44100;
     buf.num_channels = 1;
     buf.interleaved_samples.resize(100, 1.0);

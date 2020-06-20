@@ -14,7 +14,7 @@ CLI::App *PitchDetector::CreateSubcommandCLI(CLI::App &app) {
     return pitch_detector;
 }
 
-std::optional<double> PitchDetector::DetectPitch(const AudioFile &audio) {
+std::optional<double> PitchDetector::DetectPitch(const AudioData &audio) {
     std::vector<double> channel_pitches;
     ForEachDeinterleavedChannel(
         audio.interleaved_samples, audio.num_channels, [&](const auto &channel_buffer, auto channel) {

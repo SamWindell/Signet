@@ -15,7 +15,7 @@ class SampleBlender : public Subcommand {
     struct BaseBlendFiles {
         fs::path path;
         int root_note;
-        AudioFile file;
+        AudioData data;
     };
 
     void GenerateSamplesByBlending(SignetBackup &backup, const BaseBlendFiles &f1, const BaseBlendFiles &f2);

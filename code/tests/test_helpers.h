@@ -11,14 +11,14 @@
 
 namespace TestHelpers {
 
-AudioFile CreateSingleOscillationSineWave(const unsigned num_channels,
+AudioData CreateSingleOscillationSineWave(const unsigned num_channels,
                                           const unsigned sample_rate,
                                           const size_t num_frames);
-AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
+AudioData CreateSineWaveAtFrequency(const unsigned num_channels,
                                     const unsigned sample_rate,
                                     const double length_seconds,
                                     const double frequency_hz);
-AudioFile CreateSquareWaveAtFrequency(const unsigned num_channels,
+AudioData CreateSquareWaveAtFrequency(const unsigned num_channels,
                                       const unsigned sample_rate,
                                       const double length_seconds,
                                       const double frequency_hz);
@@ -50,7 +50,7 @@ class TestSubcommandProcessor {
   public:
     template <typename SubcommandType>
     static TestSubcommandProcessor
-    Run(const std::string_view subcommand_and_args_string, const AudioFile &buf, const fs::path path) {
+    Run(const std::string_view subcommand_and_args_string, const AudioData &buf, const fs::path path) {
         std::string whole_args = "signet-edit " + std::string(subcommand_and_args_string);
         CAPTURE(whole_args);
         const auto args = TestHelpers::StringToArgs {whole_args};
@@ -64,7 +64,7 @@ class TestSubcommandProcessor {
         return processor;
     }
 
-    std::optional<AudioFile> GetBuf() {
+    std::optional<AudioData> GetBuf() {
         if (m_file.AudioChanged()) return m_file.GetAudio();
         return {};
     }
@@ -82,7 +82,7 @@ class TestSubcommandProcessor {
     }
 
   private:
-    TestSubcommandProcessor(Subcommand &subcommand, const AudioFile &buf, const fs::path &path)
+    TestSubcommandProcessor(Subcommand &subcommand, const AudioData &buf, const fs::path &path)
         : m_file(path) {
         m_file.LoadAudioData(buf);
 
@@ -96,21 +96,21 @@ class TestSubcommandProcessor {
 };
 
 template <typename SubcommandType>
-std::optional<AudioFile> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioFile &buf) {
+std::optional<AudioData> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
+                                                     const AudioData &buf) {
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, "test.wav").GetBuf();
 }
 
 template <typename SubcommandType>
 std::optional<std::string> ProcessFilenameWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                         const AudioFile &buf,
+                                                         const AudioData &buf,
                                                          const fs::path path) {
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, path).GetFilename();
 }
 
 template <typename SubcommandType>
 std::optional<std::string> ProcessPathWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioFile &buf,
+                                                     const AudioData &buf,
                                                      const fs::path path) {
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, buf, path).GetPath();
 }

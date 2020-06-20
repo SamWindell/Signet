@@ -132,7 +132,7 @@ TEST_CASE("[Converter]") {
     }
     SUBCASE("conversion") {
         SUBCASE("generated") {
-            AudioFile buf;
+            AudioData buf;
             buf.interleaved_samples = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
             buf.num_channels = 1;
             buf.sample_rate = 48000;

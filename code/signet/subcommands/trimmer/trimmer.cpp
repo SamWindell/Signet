@@ -72,7 +72,7 @@ void Trimmer::ProcessFiles(const tcb::span<InputAudioFile> files) {
 
 TEST_CASE("[Trimmer]") {
     SUBCASE("single channel") {
-        AudioFile buf;
+        AudioData buf;
         buf.num_channels = 1;
         buf.sample_rate = 44100;
         buf.interleaved_samples = {1, 2, 3, 4, 5, 6};
@@ -109,7 +109,7 @@ TEST_CASE("[Trimmer]") {
     }
 
     SUBCASE("multiple channels") {
-        AudioFile buf;
+        AudioData buf;
         buf.num_channels = 2;
         buf.sample_rate = 44100;
         buf.interleaved_samples = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6};

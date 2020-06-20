@@ -11,8 +11,8 @@ class Normaliser final : public Subcommand {
     void ProcessFiles(const tcb::span<InputAudioFile> files) override;
 
   private:
-    bool PerformNormalisation(AudioFile &input_audio) const;
-    bool ReadFileForCommonGain(const AudioFile &audio);
+    bool PerformNormalisation(AudioData &input_audio) const;
+    bool ReadFileForCommonGain(const AudioData &audio);
 
     bool m_successfully_found_common_gain {};
 

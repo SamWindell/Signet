@@ -183,22 +183,22 @@ bool SignetBackup::MoveFile(const fs::path &from, const fs::path &to) {
     return false;
 }
 
-static bool WriteFile(const fs::path &path, const AudioFile &file) {
-    if (!WriteAudioFile(path, file)) {
+static bool WriteFile(const fs::path &path, const AudioData &data) {
+    if (!WriteAudioFile(path, data)) {
         ErrorWithNewLine("could not write the wave file ", path);
         return false;
     }
     return true;
 }
 
-bool SignetBackup::CreateFile(const fs::path &path, const AudioFile &file) {
+bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data) {
     AddNewlyCreatedFileToBackup(path);
-    return WriteFile(path, file);
+    return WriteFile(path, data);
 }
 
-bool SignetBackup::OverwriteFile(const fs::path &path, const AudioFile &file) {
+bool SignetBackup::OverwriteFile(const fs::path &path, const AudioData &data) {
     AddFileToBackup(path);
-    return WriteFile(path, file);
+    return WriteFile(path, data);
 }
 
 TEST_CASE("[SignetBackup]") {

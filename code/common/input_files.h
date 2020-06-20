@@ -12,21 +12,21 @@ struct InputAudioFile {
     InputAudioFile(const fs::path &path)
         : filename(GetJustFilenameWithNoExtension(path)), original_path(path), m_path(path) {}
 
-    AudioFile &GetWritableAudio() {
+    AudioData &GetWritableAudio() {
         m_file_edited = true;
-        return const_cast<AudioFile &>(GetAudio());
+        return const_cast<AudioData &>(GetAudio());
     }
 
-    const AudioFile &GetAudio() {
+    const AudioData &GetAudio() {
         if (!m_file_loaded && m_file_valid) {
-            if (const auto file = ReadAudioFile(original_path)) {
-                LoadAudioData(*file);
+            if (const auto data = ReadAudioFile(original_path)) {
+                LoadAudioData(*data);
             } else {
                 ErrorWithNewLine("could not load audio file ", original_path);
                 m_file_valid = false;
             }
         }
-        return m_file;
+        return m_data;
     }
 
     const fs::path &GetPath() const { return m_path; }
@@ -41,18 +41,18 @@ struct InputAudioFile {
 
     bool AudioChanged() const { return m_file_edited && m_file_valid; }
     bool FilepathChanged() const { return m_path_edited; }
-    bool FormatChanged() const { return m_file_loaded && m_original_file_format != m_file.format; }
+    bool FormatChanged() const { return m_file_loaded && m_original_file_format != m_data.format; }
 
-    void LoadAudioData(const AudioFile &file) {
-        m_file = file;
-        m_original_file_format = m_file.format;
+    void LoadAudioData(const AudioData &data) {
+        m_data = data;
+        m_original_file_format = m_data.format;
         m_file_loaded = true;
     }
 
   private:
     AudioFileFormat m_original_file_format {};
     fs::path m_path {};
-    AudioFile m_file {};
+    AudioData m_data {};
     bool m_file_loaded = false;
     bool m_file_valid = true;
 

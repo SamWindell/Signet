@@ -12,7 +12,7 @@ enum class AudioFileFormat {
     Flac,
 };
 
-struct AudioFile {
+struct AudioData {
     bool IsEmpty() const { return interleaved_samples.empty(); }
     size_t NumFrames() const {
         REQUIRE(num_channels != 0);
@@ -29,7 +29,7 @@ struct AudioFile {
             s *= amount;
         }
     }
-    void AddOther(const AudioFile &other) {
+    void AddOther(const AudioData &other) {
         if (other.interleaved_samples.size() > interleaved_samples.size()) {
             interleaved_samples.resize(other.interleaved_samples.size());
         }
@@ -45,9 +45,9 @@ struct AudioFile {
     AudioFileFormat format {AudioFileFormat::Wav};
 };
 
-std::optional<AudioFile> ReadAudioFile(const fs::path &filename);
+std::optional<AudioData> ReadAudioFile(const fs::path &filename);
 bool WriteAudioFile(const fs::path &filename,
-                    const AudioFile &audio_file,
+                    const AudioData &audio_data,
                     const std::optional<unsigned> new_bits_per_sample = {});
 
 bool CanFileBeConvertedToBitDepth(AudioFileFormat file, unsigned bit_depth);

@@ -12,7 +12,7 @@ CLI::App *Tuner::CreateSubcommandCLI(CLI::App &app) {
     return tuner;
 }
 
-void Tuner::ChangePitch(AudioFile &audio, const double cents) {
+void Tuner::ChangePitch(AudioData &audio, const double cents) {
     constexpr auto cents_in_octave = 100.0 * 12.0;
     const auto multiplier = std::pow(2, -cents / cents_in_octave);
     const auto new_sample_rate = (double)audio.sample_rate * multiplier;

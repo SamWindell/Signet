@@ -4,10 +4,10 @@
 
 namespace TestHelpers {
 
-AudioFile CreateSingleOscillationSineWave(const unsigned num_channels,
+AudioData CreateSingleOscillationSineWave(const unsigned num_channels,
                                           const unsigned sample_rate,
                                           const size_t num_frames) {
-    AudioFile buf;
+    AudioData buf;
     buf.num_channels = num_channels;
     buf.sample_rate = sample_rate;
     buf.interleaved_samples.resize(num_frames * num_channels);
@@ -20,7 +20,7 @@ AudioFile CreateSingleOscillationSineWave(const unsigned num_channels,
     return buf;
 }
 
-AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
+AudioData CreateSineWaveAtFrequency(const unsigned num_channels,
                                     const unsigned sample_rate,
                                     const double length_seconds,
                                     const double frequency_hz) {
@@ -30,7 +30,7 @@ AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
     const auto taus_in_whole = oscillations_in_whole * 2 * pi;
     const auto taus_per_sample = taus_in_whole / num_frames;
 
-    AudioFile buf;
+    AudioData buf;
     buf.num_channels = num_channels;
     buf.sample_rate = sample_rate;
     buf.interleaved_samples.resize(num_frames * num_channels);
@@ -45,7 +45,7 @@ AudioFile CreateSineWaveAtFrequency(const unsigned num_channels,
     return buf;
 }
 
-AudioFile CreateSquareWaveAtFrequency(const unsigned num_channels,
+AudioData CreateSquareWaveAtFrequency(const unsigned num_channels,
                                       const unsigned sample_rate,
                                       const double length_seconds,
                                       const double frequency_hz) {

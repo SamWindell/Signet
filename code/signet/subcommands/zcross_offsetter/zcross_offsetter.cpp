@@ -23,7 +23,7 @@ size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<con
     return index_of_min;
 }
 
-bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioFile &audio,
+bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioData &audio,
                                                               const AudioDuration &search_size,
                                                               const bool append_skipped_frames_on_end) {
     const auto search_frames = search_size.GetDurationAsFrames(audio.sample_rate, audio.NumFrames());
@@ -87,7 +87,7 @@ TEST_CASE("[ZCross Offset]") {
     }
 
     SUBCASE("correctly appends to end") {
-        AudioFile buf;
+        AudioData buf;
         buf.interleaved_samples = {1, 1, 1, 0, -1, -1, -1};
         buf.num_channels = 1;
 
@@ -101,7 +101,7 @@ TEST_CASE("[ZCross Offset]") {
         REQUIRE(result->interleaved_samples[6] == 1);
     }
     SUBCASE("search size larger than file will just be clamped") {
-        AudioFile buf;
+        AudioData buf;
         buf.interleaved_samples.resize(10, 1.0);
         buf.num_channels = 1;
 

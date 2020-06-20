@@ -9,7 +9,7 @@
 class NormalisationGainCalculator {
   public:
     virtual ~NormalisationGainCalculator() {}
-    virtual bool RegisterBufferMagnitudes(const AudioFile &audio) = 0;
+    virtual bool RegisterBufferMagnitudes(const AudioData &audio) = 0;
     virtual double GetGain(double target_amp) const = 0;
     virtual const char *GetName() const = 0;
     virtual double GetLargestRegisteredMagnitude() const = 0;
@@ -18,7 +18,7 @@ class NormalisationGainCalculator {
 
 class RMSGainCalculator : public NormalisationGainCalculator {
   public:
-    bool RegisterBufferMagnitudes(const AudioFile &audio) override {
+    bool RegisterBufferMagnitudes(const AudioData &audio) override {
         if (!m_sum_of_squares_channels.size()) {
             m_sum_of_squares_channels.resize(audio.num_channels);
         }
@@ -75,7 +75,7 @@ class RMSGainCalculator : public NormalisationGainCalculator {
 
 class PeakGainCalculator : public NormalisationGainCalculator {
   public:
-    bool RegisterBufferMagnitudes(const AudioFile &audio) override {
+    bool RegisterBufferMagnitudes(const AudioData &audio) override {
         double max_magnitude = 0;
         for (const auto s : audio.interleaved_samples) {
             const auto magnitude = std::abs(s);

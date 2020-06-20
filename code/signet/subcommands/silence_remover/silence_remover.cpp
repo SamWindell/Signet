@@ -119,7 +119,7 @@ void SilenceRemover::ProcessFiles(const tcb::span<InputAudioFile> files) {
 }
 
 TEST_CASE("[SilenceRemover]") {
-    AudioFile buf;
+    AudioData buf;
     buf.num_channels = 1;
     buf.interleaved_samples.resize(silence_allowence * 2);
     buf.interleaved_samples.insert(buf.interleaved_samples.begin() + silence_allowence, {0.0, 0.0, 1.0, 0.0});

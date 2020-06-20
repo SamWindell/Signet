@@ -50,7 +50,7 @@ void Normaliser::ProcessFiles(const tcb::span<InputAudioFile> files) {
     }
 }
 
-bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
+bool Normaliser::PerformNormalisation(AudioData &input_audio) const {
     if (m_normalise_independently) {
         m_processor->Reset();
         m_processor->RegisterBufferMagnitudes(input_audio);
@@ -66,6 +66,6 @@ bool Normaliser::PerformNormalisation(AudioFile &input_audio) const {
     return true;
 }
 
-bool Normaliser::ReadFileForCommonGain(const AudioFile &audio) {
+bool Normaliser::ReadFileForCommonGain(const AudioData &audio) {
     return m_processor->RegisterBufferMagnitudes(audio);
 }

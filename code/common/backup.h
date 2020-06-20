@@ -3,7 +3,7 @@
 #include "filesystem.hpp"
 #include "json.hpp"
 
-struct AudioFile;
+struct AudioData;
 
 class SignetBackup {
   public:
@@ -16,8 +16,8 @@ class SignetBackup {
 
     bool DeleteFile(const fs::path &path);
     bool MoveFile(const fs::path &from, const fs::path &to);
-    bool CreateFile(const fs::path &path, const AudioFile &file);
-    bool OverwriteFile(const fs::path &path, const AudioFile &file);
+    bool CreateFile(const fs::path &path, const AudioData &data);
+    bool OverwriteFile(const fs::path &path, const AudioData &data);
 
   private:
     void WriteDatabaseFile();

@@ -69,12 +69,12 @@ static u64 OnWaveChunk(void *pChunkUserData,
     return 0;
 }
 
-std::optional<AudioFile> ReadAudioFile(const fs::path &path) {
+std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", path);
     const auto file = OpenFile(path, "rb");
     if (!file) return {};
 
-    AudioFile result {};
+    AudioData result {};
     const auto ext = path.extension();
     std::vector<float> f32_buf {};
     if (ext == ".wav") {
@@ -235,7 +235,7 @@ static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f
     }
 }
 
-static bool WriteWaveFile(const fs::path &path, const AudioFile &audio_file, const unsigned bits_per_sample) {
+static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
         WarningWithNewLine("could not write wave file - the given bit depth is invalid");
@@ -245,8 +245,8 @@ static bool WriteWaveFile(const fs::path &path, const AudioFile &audio_file, con
     drwav_data_format format {};
     format.container = drwav_container_riff;
     format.format = DR_WAVE_FORMAT_PCM;
-    format.channels = audio_file.num_channels;
-    format.sampleRate = audio_file.sample_rate;
+    format.channels = audio_data.num_channels;
+    format.sampleRate = audio_data.sample_rate;
     format.bitsPerSample = bits_per_sample;
     std::unique_ptr<drwav, decltype(&drwav_close)> wav {
         drwav_open_file_write(path.generic_string().data(), &format), &drwav_close};
@@ -257,10 +257,10 @@ static bool WriteWaveFile(const fs::path &path, const AudioFile &audio_file, con
 
     u64 num_written = 0;
     GetAudioDataConvertedAndScaledToBitDepth(
-        audio_file.interleaved_samples, format.format, bits_per_sample, [&](const void *raw_data) {
-            num_written = drwav_write_pcm_frames(wav.get(), audio_file.NumFrames(), raw_data);
+        audio_data.interleaved_samples, format.format, bits_per_sample, [&](const void *raw_data) {
+            num_written = drwav_write_pcm_frames(wav.get(), audio_data.NumFrames(), raw_data);
         });
-    if (num_written != audio_file.NumFrames()) {
+    if (num_written != audio_data.NumFrames()) {
         WarningWithNewLine("could not write wave file - could not write all samples");
         return false;
     }
@@ -354,7 +354,7 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
 }
 
 static bool
-WriteFlacFile(const fs::path &filename, const AudioFile &audio_file, const unsigned bits_per_sample) {
+WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_flac_bit_depths), std::end(valid_flac_bit_depths), bits_per_sample) ==
         std::end(valid_flac_bit_depths)) {
         WarningWithNewLine("could not write flac file - the given bit depth is invalid");
@@ -368,10 +368,10 @@ WriteFlacFile(const fs::path &filename, const AudioFile &audio_file, const unsig
         return false;
     }
 
-    FLAC__stream_encoder_set_channels(encoder.get(), audio_file.num_channels);
+    FLAC__stream_encoder_set_channels(encoder.get(), audio_data.num_channels);
     FLAC__stream_encoder_set_bits_per_sample(encoder.get(), bits_per_sample);
-    FLAC__stream_encoder_set_sample_rate(encoder.get(), audio_file.sample_rate);
-    FLAC__stream_encoder_set_total_samples_estimate(encoder.get(), audio_file.interleaved_samples.size());
+    FLAC__stream_encoder_set_sample_rate(encoder.get(), audio_data.sample_rate);
+    FLAC__stream_encoder_set_total_samples_estimate(encoder.get(), audio_data.interleaved_samples.size());
 
     auto f = OpenFile(filename, "w+b");
     if (!f) {
@@ -387,9 +387,9 @@ WriteFlacFile(const fs::path &filename, const AudioFile &audio_file, const unsig
     }
 
     const auto int32_buffer =
-        CreateSignedIntSamplesFromFloat<s32>(audio_file.interleaved_samples, bits_per_sample);
+        CreateSignedIntSamplesFromFloat<s32>(audio_data.interleaved_samples, bits_per_sample);
     if (!FLAC__stream_encoder_process_interleaved(encoder.get(), int32_buffer.data(),
-                                                  (unsigned)audio_file.NumFrames())) {
+                                                  (unsigned)audio_data.NumFrames())) {
         WarningWithNewLine("could not write flac file - failed encoding samples");
         return false;
     }
@@ -402,17 +402,17 @@ WriteFlacFile(const fs::path &filename, const AudioFile &audio_file, const unsig
 }
 
 bool WriteAudioFile(const fs::path &filename,
-                    const AudioFile &audio_file,
+                    const AudioData &audio_data,
                     std::optional<unsigned> new_bits_per_sample) {
-    auto bits_per_sample = audio_file.bits_per_sample;
+    auto bits_per_sample = audio_data.bits_per_sample;
     if (new_bits_per_sample) bits_per_sample = *new_bits_per_sample;
 
     bool result = false;
     const auto ext = filename.extension();
     if (ext == ".flac") {
-        result = WriteFlacFile(filename, audio_file, bits_per_sample);
+        result = WriteFlacFile(filename, audio_data, bits_per_sample);
     } else if (ext == ".wav") {
-        result = WriteWaveFile(filename, audio_file, bits_per_sample);
+        result = WriteWaveFile(filename, audio_data, bits_per_sample);
     }
 
     if (result) MessageWithNewLine("Signet", "Successfully wrote file ", filename);
@@ -436,20 +436,20 @@ struct BufferConversionTest {
     };
 };
 
-TEST_CASE("[AudioFile]") {
-    SUBCASE("AudioFile object") {
+TEST_CASE("[AudioData]") {
+    SUBCASE("AudioData object") {
         SUBCASE("MultiplyByScalar") {
-            AudioFile file;
+            AudioData file;
             file.interleaved_samples = {1, 1};
             file.MultiplyByScalar(0.5);
             REQUIRE(file.interleaved_samples[0] == doctest::Approx(0.5));
             REQUIRE(file.interleaved_samples[1] == doctest::Approx(0.5));
         }
         SUBCASE("AddOther") {
-            AudioFile file;
+            AudioData file;
             file.interleaved_samples = {1, 1};
             SUBCASE("larger") {
-                AudioFile file2;
+                AudioData file2;
                 file2.interleaved_samples = {1, 1, 1};
                 file.AddOther(file2);
                 REQUIRE(file.interleaved_samples[0] == 2);
@@ -457,14 +457,14 @@ TEST_CASE("[AudioFile]") {
                 REQUIRE(file.interleaved_samples[2] == 1);
             }
             SUBCASE("smaller") {
-                AudioFile file2;
+                AudioData file2;
                 file2.interleaved_samples = {1};
                 file.AddOther(file2);
                 REQUIRE(file.interleaved_samples[0] == 2);
                 REQUIRE(file.interleaved_samples[1] == 1);
             }
             SUBCASE("equal") {
-                AudioFile file2;
+                AudioData file2;
                 file2.interleaved_samples = {1, 1};
                 file.AddOther(file2);
                 REQUIRE(file.interleaved_samples[0] == 2);

@@ -8,7 +8,7 @@
 
 #include "input_files.h"
 
-struct AudioFile;
+struct AudioData;
 class SignetBackup;
 
 class Subcommand {

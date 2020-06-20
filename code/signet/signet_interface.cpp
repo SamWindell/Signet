@@ -6,6 +6,7 @@
 #include "rang.hpp"
 
 #include "audio_file.h"
+#include "cli_formatter.h"
 #include "subcommands/auto_tuner/auto_tuner.h"
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
@@ -39,12 +40,12 @@ SignetInterface::SignetInterface() {
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
-    CLI::App app {"Signet is a command-line program designed for bulk editing audio files. It features "
-                  "common editing functions such as normalisation and fade-out, but also organisation "
-                  "functions such as renaming files."};
+    CLI::App app {
+        R"^^(Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people make sample libraries, but its features can be useful for any bulk processing.)^^"};
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
+    app.formatter(std::make_shared<WrappedFormatter>());
 
     app.add_flag_callback(
         "--undo",
@@ -83,11 +84,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
            [&](const std::string &input) {
                m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
            },
-           "The audio files to process")
-        ->required()
-        ->type_name("STRING - a file, directory or glob pattern. To use multiple, separate each one with a "
-                    "comma. You can exclude a pattern too by beginning it with a -. e.g. \"-*.wav\" to "
-                    "exclude all .wav files.");
+           R"aa(The audio files to process. This is a file, directory or glob pattern. To use multiple, separate each one with a comma. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files from the current directory.)aa")
+        ->required();
 
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {
@@ -103,9 +101,14 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     } catch (const CLI::ParseError &e) {
         if (e.get_exit_code() != 0) {
             std::cout << rang::fg::red;
-            std::atexit([]() { std::cout << rang::style::reset; });
+            std::atexit([]() { std::cout << rang::fg::reset; });
         }
-        return app.exit(e);
+
+        PrintSignetHeading();
+        std::stringstream ss;
+        const auto result = app.exit(e, ss);
+        PrintSignetCLI(ss.str());
+        return result;
     }
 
     m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo

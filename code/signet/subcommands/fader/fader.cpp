@@ -27,7 +27,7 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
 
     auto in = fade->add_subcommand("in", "Fade in the volume at the start of the file(s).");
     in->add_option("fade-in length", m_fade_in_duration,
-                   WrapText("The length of the fade in. " + AudioDuration::TypeDescription(), 80))
+                   "The length of the fade in. " + AudioDuration::TypeDescription())
         ->required();
 
     in->add_option("fade-in shape", m_fade_in_shape,
@@ -36,7 +36,7 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
 
     auto out = fade->add_subcommand("out", "Fade out the volume at the end of the file(s).");
     out->add_option("fade-out length", m_fade_out_duration,
-                    WrapText("The length of the fade out. " + AudioDuration::TypeDescription(), 80))
+                    "The length of the fade out. " + AudioDuration::TypeDescription())
         ->required();
 
     out->add_option("fade-out shape", m_fade_out_shape,

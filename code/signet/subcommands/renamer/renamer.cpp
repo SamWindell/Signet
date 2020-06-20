@@ -10,19 +10,38 @@
 #include "test_helpers.h"
 
 static const std::string replacement_variables_info = R"foo(
-<counter>              A unique number starting from zero. The ordering of these numbers is not specified.
-<detected-pitch>       The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
-<detected-midi-note>   The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
-<detected-note>        The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
-<parent-folder>        The name of the folder that contains the audio file.
-<parent-folder-snake>  The snake-case name of the folder that contains the audio file.
-<parent-folder-camel>  The camel-case name of the folder that contains the audio file.)foo";
+
+<counter>
+A unique number starting from zero. The ordering of these numbers is not specified.
+
+<detected-pitch>
+The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
+
+<detected-midi-note>
+The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+
+<detected-note>
+The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
+
+<parent-folder>
+The name of the folder that contains the audio file.
+
+<parent-folder-snake>
+The snake-case name of the folder that contains the audio file.
+
+<parent-folder-camel>
+The camel-case name of the folder that contains the audio file.)foo";
 
 CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
-    auto renamer = app.add_subcommand(
-        "rename",
-        R"aa(Renamer: Renames the file. Features an auto-mapper that has the ability to fill out the mapping of an audio file in a sampler (adding the low, high, and root MIDI note). All options for this subcommand relate to just the name of the file - not the folder or the file extension. Text added via this command can contain special substitution variables; these will be replaced by values specified in this list: )aa" +
-            replacement_variables_info);
+    auto renamer = app.add_subcommand("rename",
+                                      R"aa(File Renamer: various commands for renaming files.
+
+This command can be used to bulk rename a set of files. It also has the ability to insert special variables into the file name, such as the detected pitch. As well as this, there is a special auto-mapper command that is useful to sample library developers.
+
+All options for this subcommand relate to just the name of the file - not the folder or the file extension.
+
+Any text added via this command can contain special substitution variables; these will be replaced by values specified in this list: )aa" +
+                                          replacement_variables_info);
     renamer->require_subcommand();
 
     auto prefix = renamer->add_subcommand("prefix", "Add text to the start of the filename.");
@@ -34,8 +53,9 @@ CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
     suffix->add_option("suffix-text", m_suffix, "The text to add, may contain substitution variables.")
         ->required();
 
-    auto regex_replace =
-        renamer->add_subcommand("regex-replace", "Replace names that match the given regex pattern.");
+    auto regex_replace = renamer->add_subcommand(
+        "regex-replace", "Replace names that match the given regex pattern. The replacement can contain "
+                         "regex-groups from the matched filename.");
     regex_replace
         ->add_option("regex-pattern", m_regex_pattern,
                      "The ECMAScript-style regex pattern to match filenames against - folder names or file "
@@ -52,8 +72,11 @@ CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
 
     auto auto_map = renamer->add_subcommand(
         "auto-map",
-        "Renames the files so that all samples in each directory contain a low key and high key. This means "
-        "that they could be easily imported into a sampler and mapped across the keyboard range 0-127.");
+        R"^^(Samplers can often read the root, low and high MIDI note numbers from within a filename. This command makes inserting the low and high keys into the filename simple.
+
+First you specify a regex pattern that captures a number representing the MIDI root note from the input filenames. This tool collects all of the root notes found in each folder, and works out reasonable values for what the low and high MIDI notes should be.
+
+You control the format of the renaming by specifing a pattern containing substitution variables for <lo>, <root> and <high>. These variables are replaced by the MIDI note numbers in the range 0 to 127.)^^");
 
     auto_map
         ->add_option("auto-map-filename-root-note-pattern", m_automap_pattern,

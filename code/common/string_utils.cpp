@@ -119,20 +119,62 @@ std::string ToCamelCase(const std::string_view str) {
     return result;
 }
 
-std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces) {
+std::string WrapText(const std::string_view text, const unsigned width, const usize indent_spaces) {
     std::string result;
+    result.reserve(text.size() * 3 / 2);
     usize col = 0;
-    for (const auto c : text) {
-        if (col >= width && c == ' ') {
-            result += '\n';
-            for (usize i = 0; i < indent_spaces; ++i) {
-                result += ' ';
+    bool skip_next = false;
+    for (usize i = 0; i < text.size(); ++i) {
+        const auto c = text[i];
+        if (c == '\n' || c == '\r') {
+            if (i != (text.size() - 1) &&
+                ((c == '\n' && text[i + 1] == '\r') || (c == '\r' && text[i + 1] == '\n'))) {
+                i++;
             }
-            col = 0;
+            result += '\n';
+            result.append(indent_spaces, ' ');
+            col = indent_spaces;
+        } else if (col >= width) {
+            bool found_space = false;
+            int pos = (int)result.size() - 1;
+            while (pos >= 0) {
+                if (std::isspace(result[pos])) {
+                    result[pos] = '\n';
+                    result.insert(pos + 1, indent_spaces, ' ');
+                    found_space = true;
+                    break;
+                }
+                pos--;
+            }
+            if (found_space) {
+                col = (int)result.size() - pos;
+            } else {
+                result += '\n';
+                result.append(indent_spaces, ' ');
+                col = indent_spaces;
+            }
+            result += c;
         } else {
             result += c;
-            col++;
+            if (c >= ' ') {
+                col++;
+            }
         }
+    }
+    return result;
+}
+
+std::vector<std::string_view> Split(std::string_view str, const std::string_view delim) {
+    std::vector<std::string_view> result;
+    size_t pos = 0;
+    while ((pos = str.find(delim)) != std::string_view::npos) {
+        if (const auto section = str.substr(0, pos); section.size()) {
+            result.push_back(section);
+        }
+        str.remove_prefix(pos + delim.size());
+    }
+    if (str.size()) {
+        result.push_back(str);
     }
     return result;
 }
@@ -160,5 +202,31 @@ TEST_CASE("String Utils") {
         REQUIRE(ToSnakeCase("Two Words") == "two_words");
         REQUIRE(ToCamelCase("folder name") == "FolderName");
         REQUIRE(ToCamelCase("123 what who") == "123WhatWho");
+    }
+
+    {
+        const auto s = Split("hey,there,yo,", ",");
+        const auto expected = {"hey", "there", "yo"};
+        REQUIRE(s.size() == expected.size());
+        for (usize i = 0; i < s.size(); ++i) {
+            REQUIRE(s[i] == expected.begin()[i]);
+        }
+    }
+
+    {
+        const auto s = Split("hey\n||\nthere||yo||", "||");
+        const auto expected = {"hey\n", "\nthere", "yo"};
+        REQUIRE(s.size() == expected.size());
+        for (usize i = 0; i < s.size(); ++i) {
+            REQUIRE(s[i] == expected.begin()[i]);
+        }
+    }
+
+    {
+        //         const std::string_view t = R"aa(one two three four five six
+        // seven eight
+        // )aa";
+
+        //         WrapText(t, )
     }
 }

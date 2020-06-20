@@ -42,9 +42,8 @@ class ZeroCrossingOffsetter final : public Subcommand {
 
         zcross
             ->add_option("search_size", m_search_size,
-                         WrapText("The maximum length that it is allowed to offset to. " +
-                                      AudioDuration::TypeDescription(),
-                                  80))
+                         "The maximum length that it is allowed to offset to. " +
+                             AudioDuration::TypeDescription())
             ->required();
         return zcross;
     }

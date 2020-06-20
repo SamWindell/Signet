@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include "filesystem.hpp"
 #include "types.h"
@@ -21,6 +22,7 @@ std::string ToSnakeCase(std::string_view str);
 std::string ToCamelCase(std::string_view str);
 
 std::string PutNumberInAngleBracket(usize num);
-std::string WrapText(const std::string &text, const unsigned width, const usize indent_spaces = 0);
+std::string WrapText(const std::string_view text, const unsigned width, const usize indent_spaces = 0);
 
 std::string GetJustFilenameWithNoExtension(fs::path path);
+std::vector<std::string_view> Split(std::string_view str, std::string_view delim);

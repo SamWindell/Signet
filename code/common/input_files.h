@@ -41,7 +41,7 @@ struct InputAudioFile {
 
     bool AudioChanged() const { return m_file_edited && m_file_valid; }
     bool FilepathChanged() const { return m_path_edited; }
-    bool FormatChanged() const { return m_original_file_format != m_file.format; }
+    bool FormatChanged() const { return m_file_loaded && m_original_file_format != m_file.format; }
 
     void LoadAudioData(const AudioFile &file) {
         m_file = file;

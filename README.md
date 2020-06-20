@@ -24,8 +24,6 @@ Care has been taken to ensure the help text is comprehensive and understandable.
 
 `signet --help`
 `signet --help-all`
-`signet --help`
-`signet gen --help`
 `signet file.wav fade --help`
 `signet file.wav fade in --help`
 

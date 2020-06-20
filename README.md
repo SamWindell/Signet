@@ -19,20 +19,6 @@ To get Signet, you currently have to build it from the source code. However, thi
 A C++17 compiler is required. Tested with MSVC 16.5.1 and Apple Clang 11.0.0.
 
 ## Usage Overview
-### Edit or generate
-Signet has 2 modes:
-- Edit: Editing already existing audio files.
-- Generate: Generating audio files based off of others.
-
-To use the commands for editing audio files, you must specify `edit` as the first argument. And to the commands for generating you specify `gen` instead.
-
-Synopsis:
-```
-signet in-files subcommand subcommand-options
-or
-signet gen subcommand subcommand-options
-```
-
 ### Display help text
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
 
@@ -42,9 +28,6 @@ Care has been taken to ensure the help text is comprehensive and understandable.
 `signet gen --help`
 `signet file.wav fade --help`
 `signet file.wav fade in --help`
-
-## Usage: Edit
-This sections covers how to use Signet for editing audio files. To do this you must first specify edit as the first argument. `signet`.
 
 ### Input files
 You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. Each comma separated section can be one of 3 types:
@@ -65,81 +48,170 @@ However, Signet can help with safety too. It features a simple undo system. You 
 
 Files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
-## Editing Subcommands (effects)
+## Subcommands (effects)
 Next, you must specify what subcommand to run. A subcommand is the effect that should be applied to the file(s).
 
 Each subcommand has its own set of arguments; these are shown by adding `--help` after the subcommand.
 
 You can use multiple subcommands in the same call by simply specifying them one after the other. The effects of each subcommand will be applied to the file(s) in the order that they appear.
 
-### Fader
-`fade`
+```
+Signet
+============================================================================
 
-Fader: adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify first the fade length. You can then optionally specify the shape of the fade curve.
+Description:
+  Signet is a command-line program designed for bulk editing audio files. It
+  has commands for converting, editing, renaming and moving WAV and FLAC
+  files. It also features commands that generate audio files. Signet was
+  primarily designed for people make sample libraries, but its features
+  can be useful for any bulk processing.
 
-### Normaliser
-`norm`
+Usage:
+  signet [OPTIONS] input-files SUBCOMMAND
 
-Normaliser: sets the peak amplitude to a certain level. When this is used on multiple files, each file is attenuated by the same amount. You can disable this by specifying the flag --independently.
+Positionals:
+  input-files TEXT REQUIRED
+    The audio files to process. This is a file, directory or glob pattern.
+    To use multiple, separate each one with a comma. You can exclude a
+    pattern by beginning it with a dash. e.g. "-*.wav" would exclude all
+    .wav files from the current directory.
 
-### Zero-crossing offsetter
-`zcross-offset`
 
-Zero-crossing Offsetter: offsets the start of an audio file to the nearest zero-crossing (or the closest thing to a zero crossing). You can use the option --append to cause the samples that were offsetted to be appended to the end of the file. This is useful for when the file is a seamless loop.
+Options:
+  -h,--help
+    Print this help message and exit
 
-### Convert sample rate, bit depth and file format
-`convert`
+  --help-all
+    Print help message for all subcommands
 
-Converter: converts the file format, bit-depth or sample rate. Features a high quality resampling algorithm. This subcommand has subcommands, it requires at least one of sample-rate, bit-depth or file-format to be specified.
+  --undo
+    Undoes any changes made by the last run of Signet; files that were
+    overwritten are restored, new files that were created are destroyed,
+    and files that were renamed are un-renamed. You can only undo once -
+    you cannot keep going back in history.
 
-### Silence remover
-`silence-remove`
+  --clear-backup
+    Deletes all temporary files created by Signet. These files are needed
+    for the undo system and are saved to your OS's temporary folder. These
+    files are cleared and new ones created every time you run Signet. This
+    option is only really useful if you have just processed lots of files
+    and you won't be using Signet for a long time afterwards. You cannot
+    use --undo directly after clearing the backup.
 
-Silence-remover: removes silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
+  --silent
+    Disable all messages
 
-### Start/end Trimmer
-`trim`
+  --recursive
+    When the input is a directory, scan for files in it recursively
 
-Trimmer: removes the start or end of the file(s). This subcommand has itself 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
 
-### Pitch detector
-`detect-pitch`
+Subcommands:
+  auto-tune
+    Auto-tune: tunes the file(s) to their nearest detected musical pitch.
+    For example, a file with a detected pitch of 450Hz will be tuned to
+    440Hz (A4).
 
-Pitch-detector: prints out the detected pitch of the file(s).
+  convert
+    Converter: converts the file format, bit-depth or sample rate.
+    Features a high quality resampling algorithm. This subcommand has
+    subcommands, it requires at least one of sample-rate, bit-depth or
+    file-format to be specified.
 
-### Tuner
-`tune`
+  fade
+    Fader: adds a fade-in to the start and/or a fade-out to the end of the
+    file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one
+    of which must be specified. For each, you must specify first the fade
+    length. You can then optionally specify the shape of the fade curve.
 
-Tuner: changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
+  folderise
+    Folderiser: moves files into folders based on their names. This is
+    done by specifying a regex pattern to match the name against. The
+    folder in which the matched file should be moved to can be based off
+    of the name. These folders are created if they do not already exist.
 
-### Auto-tuner
-`auto-tune`
+  highpass
+    Highpass: removes frequencies below the given cutoff.
 
-Auto-tune: tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4).
+  norm
+    Normaliser: sets the peak amplitude to a certain level. When this is
+    used on multiple files, each file is attenuated by the same amount.
+    You can disable this by specifying the flag --independently.
 
-### File renamer
-`rename`
+  detect-pitch
+    Pitch-detector: prints out the detected pitch of the file(s).
 
-Renamer: Renames the file. All options for this subcommand relate to just the name of the file - not the folder or the file extension. Text added via this command can contain special substitution variables; these will be replaced by values specified in this list:
-- `<counter>`: A unique number starting from zero. The ordering of these numbers is not specified.
-- `<detected-pitch>`: The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
-- `<detected-midi-note>`: The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
-- `<detected-note>`: The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
-- `<parent-folder>`: The name of the folder that contains the audio file.
-- `<parent-folder-snake>`: The snake-case name of the folder that contains the audio file.
-- `<parent-folder-camel>`: The camel-case name of the folder that contains the audio file.
+  rename
+    File Renamer: various commands for renaming files.
 
-### File organiser
-`folderise`
+    This command can be used to bulk rename a set of files. It also has
+    the ability to insert special variables into the file name, such as
+    the detected pitch. As well as this, there is a special auto-mapper
+    command that is useful to sample library developers.
 
-Folderiser: moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
+    All options for this subcommand relate to just the name of the file -
+    not the folder or the file extension.
 
-## Usage: Generate
-This section covers how to use the audio file generating features of Signet. To use these features you specify `gen` as the first argument: `signet gen`.
+    Any text added via this command can contain special substitution
+    variables; these will be replaced by values specified in this list:
 
-## Generating Subcommands
-### Multi-sample Sample Blender (WIP)
-Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multisampled instrument, but it was sampled only at large intervals; such as every octave. This tool will generate samples to create an instrument that sounds like it was sampled with close intervals.
+    <counter>
+    A unique number starting from zero. The ordering of these numbers is
+    not specified.
+
+    <detected-pitch>
+    The detected pitch of audio file in Hz. If no pitch is found this
+    variable will be empty.
+
+    <detected-midi-note>
+    The MIDI note number that is closest to the detected pitch of the
+    audio file. If no pitch is found this variable will be empty.
+
+    <detected-note>
+    The musical note-name that is closest to the detected pitch of the
+    audio file. The note is capitalised, and the octave number is
+    specified. For example 'C3'. If no pitch is found this variable will
+    be empty.
+
+    <parent-folder>
+    The name of the folder that contains the audio file.
+
+    <parent-folder-snake>
+    The snake-case name of the folder that contains the audio file.
+
+    <parent-folder-camel>
+    The camel-case name of the folder that contains the audio file.
+
+  sample-blender
+    Multi-sample Sample Blender: creates samples in between other samples
+    that are different pitches. It takes 2 samples and generates a set of
+    samples in between them at a given semitone interval. Each generated
+    sample is a different blend of the 2 base samples, tuned to match each
+    other. This tool is useful when you have a multi-sampled instrument
+    that was sampled only at large intervals; such as every octave. This
+    tool can be used to create an instrument that sounds like it was
+    sampled at smaller intervals.
+
+  silence-remove
+    Silence-remover: removes silence from the start or end of the file(s).
+    Silence is considered anything under -90dB, however this threshold can
+    be changed with the --threshold option.
+
+  trim
+    Trimmer: removes the start or end of the file(s). This subcommand has
+    itself 2 subcommands, 'start' and 'end'; one of which must be
+    specified. For each, the amount to remove must be specified.
+
+  tune
+    Tuner: changes the tune the file(s) by stretching or shrinking them.
+    Uses a high quality resampling algorithm.
+
+  zcross-offset
+    Zero-crossing Offsetter: offsets the start of an audio file to the
+    nearest zero-crossing (or the closest thing to a zero crossing). You
+    can use the option --append to cause the samples that were offsetted
+    to be appended to the end of the file. This is useful for when the
+    file is a seamless loop.
+```
 
 ## Examples
 Adds a fade-in of 1 second to filename.wav

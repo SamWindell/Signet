@@ -14,7 +14,7 @@ class Normaliser final : public Subcommand {
     bool PerformNormalisation(AudioData &input_audio) const;
     bool ReadFileForCommonGain(const AudioData &audio);
 
-    bool m_successfully_found_common_gain {};
+    bool m_using_common_gain {};
 
     std::unique_ptr<NormalisationGainCalculator> m_processor {};
 

@@ -9,39 +9,6 @@ static constexpr char fmt_yellow[] = {fmt_divider, '\002', '\0'};
 static constexpr char fmt_cyan[] = {fmt_divider, '\003', '\0'};
 static constexpr char fmt_green[] = {fmt_divider, '\004', '\0'};
 
-static void PrintSignetHeading() {
-    std::cout << rang::style::bold << "Signet\n" << rang::style::reset;
-    std::cout << rang::fg::gray
-              << "============================================================================\n\n"
-              << rang::fg::reset;
-}
-
-static void PrintSignetCLI(const std::string &str) {
-    auto sections = Split(str, "\033");
-    for (auto s : sections) {
-        char c = s[0];
-        bool keep_char = false;
-        switch (c) {
-            case fmt_bold[1]: std::cout << rang::style::bold; break;
-            case fmt_yellow[1]: std::cout << rang::style::bold << rang::fg::yellow; break;
-            case fmt_cyan[1]: std::cout << rang::style::bold << rang::fg::cyan; break;
-            case fmt_green[1]: std::cout << rang::style::bold << rang::fg::green; break;
-            default: keep_char = true; break;
-        }
-        if (!keep_char) s.remove_prefix(1);
-
-        std::cout << s;
-
-        switch (c) {
-            case fmt_bold[1]: std::cout << rang::style::reset; break;
-            case fmt_yellow[1]: std::cout << rang::style::reset << rang::fg::reset; break;
-            case fmt_cyan[1]: std::cout << rang::style::reset << rang::fg::reset; break;
-            case fmt_green[1]: std::cout << rang::style::reset << rang::fg::reset; break;
-            default: break;
-        }
-    }
-}
-
 class WrappedFormatter : public CLI::Formatter {
   public:
     static constexpr int wrap_size = 75;
@@ -210,7 +177,7 @@ class WrappedFormatter : public CLI::Formatter {
             desc += " \n[At least " + std::to_string(min_options) + " of the following options are required]";
         }
         std::string result = fmt_bold + std::string("Description:\n  ") + fmt_divider;
-        auto body = (!desc.empty()) ? WrapText(desc, wrap_size, 2) + "\n\n" : std::string {};
+        auto body = (!desc.empty()) ? WrapText(desc, wrap_size - 2, 2) + "\n\n" : std::string {};
         return result + body;
     }
 
@@ -236,3 +203,36 @@ class WrappedFormatter : public CLI::Formatter {
         return CLI::detail::find_and_replace(tmp, "\n", "\n  ") + "\n";
     }
 };
+
+static void PrintSignetHeading() {
+    std::cout << rang::style::bold << "Signet\n" << rang::style::reset;
+    std::array<char, WrappedFormatter::wrap_size> divider {};
+    std::memset(divider.data(), '=', divider.size() - 1);
+    std::cout << rang::fg::gray << divider.data() << "\n\n" << rang::fg::reset;
+}
+
+static void PrintSignetCLI(const std::string &str) {
+    auto sections = Split(str, "\033");
+    for (auto s : sections) {
+        char c = s[0];
+        bool keep_char = false;
+        switch (c) {
+            case fmt_bold[1]: std::cout << rang::style::bold; break;
+            case fmt_yellow[1]: std::cout << rang::style::bold << rang::fg::yellow; break;
+            case fmt_cyan[1]: std::cout << rang::style::bold << rang::fg::cyan; break;
+            case fmt_green[1]: std::cout << rang::style::bold << rang::fg::green; break;
+            default: keep_char = true; break;
+        }
+        if (!keep_char) s.remove_prefix(1);
+
+        std::cout << s;
+
+        switch (c) {
+            case fmt_bold[1]: std::cout << rang::style::reset; break;
+            case fmt_yellow[1]: std::cout << rang::style::reset << rang::fg::reset; break;
+            case fmt_cyan[1]: std::cout << rang::style::reset << rang::fg::reset; break;
+            case fmt_green[1]: std::cout << rang::style::reset << rang::fg::reset; break;
+            default: break;
+        }
+    }
+}

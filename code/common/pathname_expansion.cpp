@@ -312,6 +312,15 @@ TEST_CASE("Pathname Expansion") {
                                                 "sandbox/unprocessed-piano/copies/session1/file.wav",
                                             });
     }
+
+    SUBCASE("canonical two recursive in the middle") {
+        CheckMatches(fs::canonical("sandbox").generic_string() + "/**/**/*.wav",
+                     {
+                         "sandbox/unprocessed-keys/copies/session1/file.wav",
+                         "sandbox/unprocessed-piano/copies/session1/file.wav",
+                     });
+    }
+
     SUBCASE("all wavs in a folder rescursively with absolute path") {
         CheckMatches(BUILD_DIRECTORY "/sandbox/**.wav",
                      {

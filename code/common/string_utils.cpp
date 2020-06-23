@@ -221,12 +221,4 @@ TEST_CASE("String Utils") {
             REQUIRE(s[i] == expected.begin()[i]);
         }
     }
-
-    {
-        //         const std::string_view t = R"aa(one two three four five six
-        // seven eight
-        // )aa";
-
-        //         WrapText(t, )
-    }
 }

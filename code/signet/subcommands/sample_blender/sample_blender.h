@@ -9,16 +9,16 @@
 class SampleBlender : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void GenerateFiles(const tcb::span<const EditTrackedAudioFile> files, SignetBackup &backup) override;
+    void GenerateFiles(const tcb::span<EditTrackedAudioFile> files, SignetBackup &backup) override;
 
   private:
-    struct BaseBlendFiles {
-        fs::path path;
+    struct BaseBlendFile {
+        BaseBlendFile(EditTrackedAudioFile *file, const int root_note) : root_note(root_note), file(file) {}
         int root_note;
-        AudioData data;
+        EditTrackedAudioFile *file;
     };
 
-    void GenerateSamplesByBlending(SignetBackup &backup, const BaseBlendFiles &f1, const BaseBlendFiles &f2);
+    void GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFile &f1, BaseBlendFile &f2);
 
     std::string m_regex;
     int m_semitone_interval;

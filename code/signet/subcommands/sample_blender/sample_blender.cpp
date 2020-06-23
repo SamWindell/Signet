@@ -44,14 +44,12 @@ CLI::App *SampleBlender::CreateSubcommandCLI(CLI::App &app) {
     return cli;
 }
 
-void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
-                                              const BaseBlendFiles &f1,
-                                              const BaseBlendFiles &f2) {
+void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFile &f1, BaseBlendFile &f2) {
     if (f1.root_note + m_semitone_interval >= f2.root_note) {
         MessageWithNewLine("SampleBlender", "Samples are close enough together already");
         return;
     }
-    MessageWithNewLine("SampleBlender", "Blending between ", f1.path, " and ", f2.path);
+    MessageWithNewLine("SampleBlender", "Blending between ", f1.file->GetPath(), " and ", f2.file->GetPath());
 
     const auto max_semitone_distance = f2.root_note - f1.root_note;
     for (int root_note = f1.root_note + m_semitone_interval; root_note < f2.root_note;
@@ -64,12 +62,12 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
 
         constexpr double cents_in_semitone = 100;
 
-        AudioData out = f1.data;
+        AudioData out = f1.file->GetAudio();
         const auto pitch_change1 = (root_note - f1.root_note) * cents_in_semitone;
         Tuner::ChangePitch(out, pitch_change1);
         out.MultiplyByScalar(distance_from_f1);
 
-        AudioData other = f2.data;
+        AudioData other = f2.file->GetAudio();
         const auto pitch_change2 = (root_note - f2.root_note) * cents_in_semitone;
         Tuner::ChangePitch(other, pitch_change2);
         other.MultiplyByScalar(distance_from_f2);
@@ -80,16 +78,15 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup,
         Replace(filename, "<root-num>", std::to_string(root_note));
         Replace(filename, "<root-note>", g_midi_pitches[root_note].name);
 
-        const auto directory = f1.path.parent_path();
-        const auto path = directory / (filename + "." + GetLowercaseExtension(f1.data.format));
+        const auto directory = f1.file->GetPath().parent_path();
+        const auto path = directory / (filename + "." + GetLowercaseExtension(f1.file->GetAudio().format));
         backup.CreateFile(path, out);
     }
 }
 
-void SampleBlender::GenerateFiles(const tcb::span<const EditTrackedAudioFile> input_files,
-                                  SignetBackup &backup) {
-    std::vector<BaseBlendFiles> files;
-    for (const auto &p : input_files) {
+void SampleBlender::GenerateFiles(const tcb::span<EditTrackedAudioFile> input_files, SignetBackup &backup) {
+    std::unordered_map<std::string, std::vector<BaseBlendFile>> base_file_folders;
+    for (auto &p : input_files) {
         const std::regex r {m_regex};
         std::smatch pieces_match;
         const auto name = GetJustFilenameWithNoExtension(p.GetPath());
@@ -105,42 +102,35 @@ void SampleBlender::GenerateFiles(const tcb::span<const EditTrackedAudioFile> in
                 WarningWithNewLine("SampleBlender: root note of file ", name,
                                    " is not in the range 0-127 so cannot be processed");
             } else {
-                files.push_back({p.GetPath(), root_note});
-                MessageWithNewLine("SampleBlender", "found file ", files.back().path, " with root note ",
-                                   files.back().root_note);
+                auto &vec = base_file_folders[p.GetPath().parent_path().generic_string()];
+                vec.emplace_back(&p, root_note);
+                MessageWithNewLine("SampleBlender", "found file ", p.GetPath(), " with root note ",
+                                   root_note);
             }
         }
     }
 
-    if (files.size() < 2) {
-        ErrorWithNewLine("SampleBlender: regex pattern ", m_regex, " does not match any filenames");
-        return;
-    }
-
-    REQUIRE(files.size() >= 2);
-
-    std::sort(files.begin(), files.end(),
-              [](const auto &a, const auto &b) { return a.root_note < b.root_note; });
-
-    for (usize i = 0; i < files.size() - 1; ++i) {
-        if (files[i].root_note == files[i + 1].root_note) {
-            ErrorWithNewLine("2 files have the same root note, unable to perform blend: ", files[i].path,
-                             " and ", files[i + 1].path);
-            return;
+    for (auto &[folder, files] : base_file_folders) {
+        if (files.size() < 2) {
+            WarningWithNewLine("SampleBlender: regex pattern ", m_regex,
+                               " does not match at least 2 filenames in folder ", folder);
+            continue;
         }
-    }
+        std::sort(files.begin(), files.end(),
+                  [](const auto &a, const auto &b) { return a.root_note < b.root_note; });
 
-    for (auto &f : files) {
-        const auto data = ReadAudioFile(f.path);
-        if (!data) {
-            ErrorWithNewLine("SampleBlender could not open file");
-            return;
+        for (usize i = 0; i < files.size() - 1; ++i) {
+            if (files[i].root_note == files[i + 1].root_note) {
+                WarningWithNewLine(
+                    "2 files have the same root note, unable to perform blend: ", files[i].file->GetPath(),
+                    " and ", files[i + 1].file->GetPath(), " in folder ", folder);
+                continue;
+            }
         }
-        f.data = std::move(*data);
-    }
 
-    for (usize i = 0; i < files.size() - 1; ++i) {
-        GenerateSamplesByBlending(backup, files[i], files[i + 1]);
+        for (usize i = 0; i < files.size() - 1; ++i) {
+            GenerateSamplesByBlending(backup, files[i], files[i + 1]);
+        }
     }
 }
 

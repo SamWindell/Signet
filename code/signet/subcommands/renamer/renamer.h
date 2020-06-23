@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <unordered_map>
 
 #include "subcommand.h"
 #include "types.h"

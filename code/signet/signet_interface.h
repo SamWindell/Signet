@@ -21,7 +21,6 @@ class SignetInterface final {
   private:
     std::vector<std::unique_ptr<Subcommand>> m_subcommands {};
     SignetBackup m_backup {};
-    int m_num_files_processed = 0;
 
     InputAudioFiles m_input_audio_files {};
     bool m_recursive_directory_search {};

@@ -39,6 +39,10 @@ const bool IsPathExcluded(const fs::path &path, const std::vector<std::string_vi
 static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view pattern) {
     namespace fs = fs;
 
+    std::string generic_pattern {pattern};
+    Replace(generic_pattern, '\\', '/');
+    pattern = generic_pattern;
+
     std::string added_slash;
     if (pattern.find('/') == std::string_view::npos) {
         added_slash = "./" + std::string(pattern);

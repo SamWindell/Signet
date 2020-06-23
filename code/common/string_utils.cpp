@@ -147,7 +147,7 @@ std::string WrapText(const std::string_view text, const unsigned width, const us
                 pos--;
             }
             if (found_space) {
-                col = (int)result.size() - pos;
+                col = (int)result.size() - (pos + indent_spaces);
             } else {
                 result += '\n';
                 result.append(indent_spaces, ' ');

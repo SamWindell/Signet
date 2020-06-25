@@ -20,7 +20,7 @@ void CalculateBiquad(const Params &b, Coeffs &c) {
     const auto cs = std::cos(omega);
     const auto sn = std::sin(omega);
     const auto alpha = sn * std::sinh(_LN2 / 2 * Q * omega / sn);
-    switch (b.type) {
+    switch ((BiquadType)b.type) {
         case BiquadType::LowPass: {
             const auto cs_a = 1 - cs;
             const auto cs_b = cs_a / 2;
@@ -148,7 +148,7 @@ void CalculateRBJ(const Params &p, Coeffs &c) {
 
         const double beta = std::sqrt(A) / q;
 
-        switch (type) {
+        switch ((RBJType)type) {
             case RBJType::Peaking: {
                 b0 = 1.0 + alpha * A;
                 b1 = -2.0 * tcos;
@@ -176,6 +176,7 @@ void CalculateRBJ(const Params &p, Coeffs &c) {
                 a2 = (A + 1.0) - (A - 1.0) * tcos - beta * tsin;
                 break;
             }
+            default: break;
         }
     } else {
         const double omega = 2.0 * _PI * frequency / sample_rate;
@@ -243,6 +244,7 @@ void CalculateRBJ(const Params &p, Coeffs &c) {
                 a2 = 1.0 - alpha;
                 break;
             }
+            default: break;
         }
     }
 

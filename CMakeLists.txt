@@ -61,7 +61,7 @@ add_library(
     code/signet/subcommands/silence_remover/silence_remover.cpp
     code/signet/subcommands/trimmer/trimmer.cpp
     code/signet/subcommands/tuner/tuner.cpp
-    code/signet/subcommands/highpass/highpass.cpp
+    code/signet/subcommands/filters/filters.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
     code/tests/test_helpers.cpp)
 

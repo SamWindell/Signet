@@ -123,7 +123,6 @@ std::string WrapText(const std::string_view text, const unsigned width, const us
     std::string result;
     result.reserve(text.size() * 3 / 2);
     usize col = 0;
-    bool skip_next = false;
     for (usize i = 0; i < text.size(); ++i) {
         const auto c = text[i];
         if (c == '\n' || c == '\r') {

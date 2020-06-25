@@ -127,8 +127,14 @@ Subcommands:
     folder in which the matched file should be moved to can be based off
     of the name. These folders are created if they do not already exist.
 
+  gain
+    Gainer: changes the volume of the file(s).
+
   highpass
     Highpass: removes frequencies below the given cutoff.
+
+  lowpass
+    Lowpass: removes frequencies above the given cutoff.
 
   norm
     Normaliser: sets the peak amplitude to a certain level. When this is

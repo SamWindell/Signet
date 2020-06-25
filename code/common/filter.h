@@ -12,11 +12,13 @@ struct Coeffs {
     double b0 = 0, b1 = 0, b2 = 0, a1 = 0, a2 = 0;
 };
 
+static constexpr double default_q_factor = 0.70710678118; // sqrt(2)/2
+
 struct Params {
     int type = 0;
     double sample_rate = 44100;
     double cutoff_freq = 10000;
-    double Q = 0.707;
+    double Q = default_q_factor;
     double peak_gain = 0;
     bool q_is_bandwidth = false;
 };

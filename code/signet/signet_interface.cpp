@@ -11,6 +11,7 @@
 #include "subcommands/converter/converter.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/folderiser/folderiser.h"
+#include "subcommands/gainer/gainer.h"
 #include "subcommands/highpass/highpass.h"
 #include "subcommands/normaliser/normaliser.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
@@ -28,6 +29,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Converter>());
     m_subcommands.push_back(std::make_unique<Fader>());
     m_subcommands.push_back(std::make_unique<Folderiser>());
+    m_subcommands.push_back(std::make_unique<Gainer>());
     m_subcommands.push_back(std::make_unique<Highpass>());
     m_subcommands.push_back(std::make_unique<Normaliser>());
     m_subcommands.push_back(std::make_unique<PitchDetector>());

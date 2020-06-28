@@ -40,7 +40,7 @@ CLI::App *Highpass::CreateSubcommandCLI(CLI::App &app) {
 }
 
 void Highpass::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
-    FilterProcessFiles(files, Filter::RBJType::HighPass, m_cutoff, 1, 0);
+    FilterProcessFiles(files, Filter::RBJType::HighPass, m_cutoff, Filter::default_q_factor, 0);
 }
 
 CLI::App *Lowpass::CreateSubcommandCLI(CLI::App &app) {
@@ -54,5 +54,5 @@ CLI::App *Lowpass::CreateSubcommandCLI(CLI::App &app) {
 }
 
 void Lowpass::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
-    FilterProcessFiles(files, Filter::RBJType::LowPass, m_cutoff, 1, 0);
+    FilterProcessFiles(files, Filter::RBJType::LowPass, m_cutoff, Filter::default_q_factor, 0);
 }

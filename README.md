@@ -127,6 +127,9 @@ Subcommands:
     folder in which the matched file should be moved to can be based off
     of the name. These folders are created if they do not already exist.
 
+  gain
+    Gainer: changes the volume of the file(s).
+
   highpass
     Highpass: removes frequencies below the given cutoff.
 

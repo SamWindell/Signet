@@ -35,6 +35,7 @@ double GainAmount::GetMultiplier() const {
         }
         default: REQUIRE(0);
     }
+    return 1;
 }
 
 CLI::App *Gainer::CreateSubcommandCLI(CLI::App &app) {
@@ -43,7 +44,8 @@ CLI::App *Gainer::CreateSubcommandCLI(CLI::App &app) {
     gainer
         ->add_option("gain", m_gain,
                      "The gain amount. This is a number followed by a unit. The unit can be % or db. For "
-                     "example 10% or -3.5db")
+                     "example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% "
+                     "makes it twice as loud.")
         ->required();
 
     return gainer;
@@ -55,6 +57,7 @@ void Gainer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
         if (audio.IsEmpty()) continue;
 
         const auto amp = m_gain.GetMultiplier();
+        MessageWithNewLine("Gainer", "Applying a gain of ", amp);
         for (auto &s : audio.interleaved_samples) {
             s *= amp;
         }

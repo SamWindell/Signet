@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <optional>
 
 #include "common.h"
 #include "gain_calculators.h"
@@ -18,6 +19,7 @@ class Normaliser final : public Subcommand {
 
     std::unique_ptr<NormalisationGainCalculator> m_processor {};
 
+    std::optional<double> m_norm_mix {};
     bool m_normalise_independently = false;
     double m_target_decibels = 0.0;
     bool m_use_rms = false;

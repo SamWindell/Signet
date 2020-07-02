@@ -22,6 +22,10 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
         "When there are multiple files, normalise each one individually rather than by a common gain.");
     norm->add_flag("--rms", m_use_rms,
                    "Use RMS (root mean squared) calculations to work out the required gain amount.");
+    norm->add_option("--mix", m_norm_mix,
+                     "The mix of the normalised signal, where 100% means normalised exactly to the target, "
+                     "and 0% means no change.")
+        ->check(CLI::Range(0, 100));
     return norm;
 }
 
@@ -58,7 +62,15 @@ bool Normaliser::PerformNormalisation(AudioData &input_audio) const {
         m_processor->Reset();
         m_processor->RegisterBufferMagnitudes(input_audio);
     }
-    const double gain = m_processor->GetGain(DBToAmp(m_target_decibels));
+    double gain = m_processor->GetGain(DBToAmp(m_target_decibels));
+    if (m_norm_mix) {
+        const auto mix_01 = *m_norm_mix / 100.0;
+        if (gain >= 1) {
+            gain = 1 + (gain - 1) * mix_01;
+        } else {
+            gain = gain + (1 - gain) * mix_01;
+        }
+    }
 
     MessageWithNewLine("Normaliser", "Applying a gain of ", gain);
 
@@ -91,6 +103,18 @@ TEST_CASE("Normaliser") {
         const auto out = TestHelpers::ProcessBufferWithSubcommand<Normaliser>("norm 0", sine);
         REQUIRE(out);
         REQUIRE(FindMaxSample(*out) == doctest::Approx(1.0));
+    }
+
+    SUBCASE("single file mix 50% to 0db") {
+        const auto out = TestHelpers::ProcessBufferWithSubcommand<Normaliser>("norm 0 --mix=50", sine);
+        REQUIRE(out);
+        REQUIRE(FindMaxSample(*out) == doctest::Approx(0.75));
+    }
+
+    SUBCASE("single file mix 75% to 0db") {
+        const auto out = TestHelpers::ProcessBufferWithSubcommand<Normaliser>("norm 0 --mix=75", sine);
+        REQUIRE(out);
+        REQUIRE(FindMaxSample(*out) == doctest::Approx(0.875));
     }
 
     SUBCASE("multiple files common gain") {

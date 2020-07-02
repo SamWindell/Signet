@@ -55,14 +55,14 @@ You can use multiple subcommands in the same call by simply specifying them one 
 
 ```
 Signet
-============================================================================
+==========================================================================
 
 Description:
-  Signet is a command-line program designed for bulk editing audio files. It
-  has commands for converting, editing, renaming and moving WAV and FLAC
-  files. It also features commands that generate audio files. Signet was
-  primarily designed for people make sample libraries, but its features
-  can be useful for any bulk processing.
+  Signet is a command-line program designed for bulk editing audio files.
+  It has commands for converting, editing, renaming and moving WAV and
+  FLAC files. It also features commands that generate audio files. Signet
+  was primarily designed for people make sample libraries, but its
+  features can be useful for any bulk processing.
 
 Usage:
   signet [OPTIONS] input-files SUBCOMMAND

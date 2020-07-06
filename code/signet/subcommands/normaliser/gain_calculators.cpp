@@ -4,6 +4,21 @@
 #include "test_helpers.h"
 #include <type_traits>
 
+void NormaliseToTarget(AudioData &audio, const double target_amp) {
+    PeakGainCalculator calc;
+    calc.RegisterBufferMagnitudes(audio);
+    const auto gain = calc.GetGain(target_amp);
+    audio.MultiplyByScalar(gain);
+}
+
+void NormaliseToTarget(std::vector<double> &samples, const double target_amp) {
+    AudioData audio;
+    audio.interleaved_samples = std::move(samples);
+    audio.num_channels = 1;
+    NormaliseToTarget(audio, target_amp);
+    samples = std::move(audio.interleaved_samples);
+}
+
 TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {
     T calc;
     INFO(calc.GetName());

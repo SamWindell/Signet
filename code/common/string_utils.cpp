@@ -178,6 +178,19 @@ std::vector<std::string_view> Split(std::string_view str, const std::string_view
     return result;
 }
 
+std::optional<std::string> Get3CharAlphaIdentifier(unsigned counter) {
+    if (counter >= 26 * 26 * 26) {
+        return {};
+    }
+    std::string result;
+    result += (char)('a' + ((counter / (26 * 26))));
+    counter -= (counter / (26 * 26)) * (26 * 26);
+    result += (char)('a' + (counter / 26));
+    counter -= (counter / 26) * 26;
+    result += (char)('a' + (counter % 26));
+    return result;
+}
+
 TEST_CASE("String Utils") {
     {
         std::string s {"th<>sef<> < seofi>"};
@@ -199,6 +212,18 @@ TEST_CASE("String Utils") {
         std::string s {"HI"};
         Lowercase(s);
         REQUIRE(s == "hi");
+    }
+
+    {
+        REQUIRE(*Get3CharAlphaIdentifier(0) == "aaa");
+        REQUIRE(*Get3CharAlphaIdentifier(1) == "aab");
+        REQUIRE(*Get3CharAlphaIdentifier(26) == "aba");
+        REQUIRE(*Get3CharAlphaIdentifier(26 * 26) == "baa");
+        REQUIRE(*Get3CharAlphaIdentifier(26 * 26 * 2) == "caa");
+        REQUIRE(*Get3CharAlphaIdentifier(26 * 26 * 25) == "zaa");
+        REQUIRE(*Get3CharAlphaIdentifier(26 * 26 * 25 + 26 * 25) == "zza");
+        REQUIRE(*Get3CharAlphaIdentifier(26 * 26 * 25 + 26 * 25 + 25) == "zzz");
+        REQUIRE(!Get3CharAlphaIdentifier(26 * 26 * 25 + 26 * 25 + 26));
     }
 
     {

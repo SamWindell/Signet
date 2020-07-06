@@ -1,4 +1,5 @@
 #pragma once
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -26,3 +27,5 @@ std::string WrapText(const std::string_view text, const unsigned width, const us
 
 std::string GetJustFilenameWithNoExtension(fs::path path);
 std::vector<std::string_view> Split(std::string_view str, std::string_view delim);
+
+std::optional<std::string> Get3CharAlphaIdentifier(unsigned counter);

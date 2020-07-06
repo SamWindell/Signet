@@ -14,6 +14,9 @@ static const std::string replacement_variables_info = R"foo(
 <counter>
 A unique number starting from zero. The ordering of these numbers is not specified.
 
+<alpha-counter>
+A unique 3 character counter starting from aaa and ending with zzz. Beyond zzz, <alpha-counter> will be replaced with a number instead. The ordering of these numbers is not specified.
+
 <detected-pitch>
 The detected pitch of audio file in Hz. If no pitch is found this variable will be empty.
 
@@ -283,8 +286,14 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
         }
 
         if (renamed) {
-            if (Contains(filename, "<counter>")) {
-                Replace(filename, "<counter>", std::to_string(m_counter++));
+            if (Contains(filename, "<counter>") || Contains(filename, "<alpha-counter>")) {
+                Replace(filename, "<counter>", std::to_string(m_counter));
+                if (const auto alpha_counter = Get3CharAlphaIdentifier(m_counter)) {
+                    Replace(filename, "<alpha-counter>", *alpha_counter);
+                } else {
+                    Replace(filename, "<alpha-counter>", std::to_string(m_counter));
+                }
+                m_counter++;
             }
             if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
                 Contains(filename, "<detected-note>") ||

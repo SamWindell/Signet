@@ -19,6 +19,15 @@ void NormaliseToTarget(std::vector<double> &samples, const double target_amp) {
     samples = std::move(audio.interleaved_samples);
 }
 
+double GetRMS(const tcb::span<double> samples) {
+    double result = 0;
+    for (const auto s : samples) {
+        result += s * s;
+    }
+    result /= samples.size();
+    return std::sqrt(result);
+}
+
 TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {
     T calc;
     INFO(calc.GetName());

@@ -25,5 +25,6 @@ TEST_CASE("Midi pitches") {
     REQUIRE(FindClosestMidiPitch(440).midi_note == 69);
     REQUIRE(FindClosestMidiPitch(439).midi_note == 69);
     REQUIRE(FindClosestMidiPitch(441).midi_note == 69);
+    REQUIRE(FindClosestMidiPitch(1566.55).midi_note == 91);
     REQUIRE(FindClosestMidiPitch(999999999).midi_note == 127);
 }

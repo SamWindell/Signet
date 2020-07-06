@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cfloat>
 
+#include "span.hpp"
+
 #include "audio_file.h"
 #include "common.h"
 
@@ -101,3 +103,4 @@ class PeakGainCalculator : public NormalisationGainCalculator {
 
 void NormaliseToTarget(AudioData &audio, const double target_amp);
 void NormaliseToTarget(std::vector<double> &samples, const double target_amp);
+double GetRMS(const tcb::span<double> samples);

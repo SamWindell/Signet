@@ -47,8 +47,8 @@ constexpr auto MakeArray(T &&... t) -> std::array<V, sizeof...(T)> {
     return {{std::forward<T>(t)...}};
 }
 
-static constexpr auto half_pi = 1.57079632679f;
-static constexpr auto pi = 3.14159265359f;
+static constexpr auto half_pi = 1.57079632679;
+static constexpr auto pi = 3.14159265359;
 
 inline double DBToAmp(const double d) { return std::pow(10.0, d / 20.0); }
 inline double AmpToDB(const double a) { return 20.0 * std::log10(a); }
@@ -58,5 +58,6 @@ void ForEachDeinterleavedChannel(const std::vector<double> &interleaved_samples,
                                  std::function<void(const std::vector<double> &, unsigned channel)> callback);
 
 double GetCentsDifference(double pitch1_hz, double pitch2_hz);
+double GetFreqWithCentDifference(double starting_hz, double cents);
 
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode);

@@ -50,6 +50,12 @@ double GetCentsDifference(const double pitch1_hz, const double pitch2_hz) {
     return cents;
 }
 
+double GetFreqWithCentDifference(const double starting_hz, const double cents) {
+    constexpr auto cents_in_octave = 100.0 * 12.0;
+    const auto multiplier = std::pow(2, cents / cents_in_octave);
+    return starting_hz * multiplier;
+}
+
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode) {
     static const auto SafeFClose = [](FILE *f) {
         if (f) fclose(f);
@@ -78,4 +84,11 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     std::error_code std_ec {ec, std::generic_category()};
     WarningWithNewLine("could not open file ", path, " for reason: ", std_ec.message());
     return {nullptr, SafeFClose};
+}
+
+TEST_CASE("Common") {
+    {
+        REQUIRE(GetFreqWithCentDifference(100, 1200) == 200);
+        REQUIRE(GetFreqWithCentDifference(100, -1200) == 50);
+    }
 }

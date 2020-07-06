@@ -77,5 +77,8 @@ class Renamer final : public Subcommand {
     std::optional<std::string> m_regex_pattern;
     std::string m_regex_replacement;
 
+    bool m_note_to_midi {false};
+    std::string m_midi_0_note {"C-1"};
+
     int m_counter {};
 };

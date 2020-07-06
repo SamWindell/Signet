@@ -20,6 +20,18 @@ The detected pitch of audio file in Hz. If no pitch is found this variable will 
 <detected-midi-note>
 The MIDI note number that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
 
+<detected-midi-note-octave-plus-1>
+The MIDI note number (+12 semitones) that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+
+<detected-midi-note-octave-plus-2>
+The MIDI note number (+24 semitones) that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+
+<detected-midi-note-octave-minus-1>
+The MIDI note number (-12 semitones) that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+
+<detected-midi-note-octave-minus-2>
+The MIDI note number (-24 semitones) that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
+
 <detected-note>
 The musical note-name that is closest to the detected pitch of the audio file. The note is capitalised, and the octave number is specified. For example 'C3'. If no pitch is found this variable will be empty.
 
@@ -275,12 +287,24 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                 Replace(filename, "<counter>", std::to_string(m_counter++));
             }
             if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
-                Contains(filename, "<detected-note>")) {
+                Contains(filename, "<detected-note>") ||
+                Contains(filename, "<detected-midi-note-octave-plus-1>") ||
+                Contains(filename, "<detected-midi-note-octave-plus-2>") ||
+                Contains(filename, "<detected-midi-note-octave-minus-1>") ||
+                Contains(filename, "<detected-midi-note-octave-minus-2>")) {
                 if (const auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
                     const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
                     Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
                     Replace(filename, "<detected-midi-note>", std::to_string(closest_musical_note.midi_note));
+                    Replace(filename, "<detected-midi-note-octave-plus-1>",
+                            std::to_string(closest_musical_note.midi_note + 12));
+                    Replace(filename, "<detected-midi-note-octave-minus-1>",
+                            std::to_string(closest_musical_note.midi_note - 12));
+                    Replace(filename, "<detected-midi-note-octave-plus-2>",
+                            std::to_string(closest_musical_note.midi_note + 24));
+                    Replace(filename, "<detected-midi-note-octave-minus-2>",
+                            std::to_string(closest_musical_note.midi_note - 24));
                     Replace(filename, "<detected-note>", closest_musical_note.name);
                 } else {
                     WarningWithNewLine(
@@ -290,6 +314,10 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                         "substituted with nothing.");
                     Replace(filename, "<detected-pitch>", "");
                     Replace(filename, "<detected-midi-note>", "");
+                    Replace(filename, "<detected-midi-note-octave-plus-1>", "");
+                    Replace(filename, "<detected-midi-note-octave-minus-1>", "");
+                    Replace(filename, "<detected-midi-note-octave-plus-2>", "");
+                    Replace(filename, "<detected-midi-note-octave-minus-2>", "");
                     Replace(filename, "<detected-note>", "");
                 }
             }

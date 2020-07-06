@@ -30,7 +30,7 @@ bool Replace(std::string &str, const char a, const char b) {
     return changed;
 }
 
-bool Replace(std::string &str, std::string_view a, std::string_view b) {
+bool Replace(std::string &str, const std::string &a, const std::string &b) {
     bool replaced = false;
     usize pos;
     while ((pos = str.find(a.data(), 0, a.size())) != std::string::npos) {
@@ -189,6 +189,10 @@ TEST_CASE("String Utils") {
         REQUIRE(s == "only two");
 
         REQUIRE(!Replace(s, "foo", ""));
+
+        s = "file_c-1_C4.wav";
+        REQUIRE(Replace(s, "c-1", "0"));
+        REQUIRE(s == "file_0_C4.wav");
     }
 
     {

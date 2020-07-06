@@ -70,7 +70,7 @@ static u64 OnWaveChunk(void *pChunkUserData,
 }
 
 std::optional<AudioData> ReadAudioFile(const fs::path &path) {
-    MessageWithNewLine("Signet", "Reading file ", path);
+    MessageWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
     const auto file = OpenFile(path, "rb");
     if (!file) return {};
 

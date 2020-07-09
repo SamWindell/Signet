@@ -87,19 +87,38 @@ TEST_CASE("[ZCross Offset]") {
     }
 
     SUBCASE("correctly appends to end") {
-        AudioData buf;
-        buf.interleaved_samples = {1, 1, 1, 0, -1, -1, -1};
-        buf.num_channels = 1;
+        SUBCASE("1 channel") {
+            AudioData buf;
+            buf.interleaved_samples = {1, 1, 1, 0, -1, -1, -1};
+            buf.num_channels = 1;
 
-        auto result = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>(
-            "zcross-offset 4smp --append", buf);
-        REQUIRE(result);
-        REQUIRE(result->interleaved_samples.size() == buf.interleaved_samples.size());
-        REQUIRE(result->interleaved_samples[0] == 0);
-        REQUIRE(result->interleaved_samples[4] == 1);
-        REQUIRE(result->interleaved_samples[5] == 1);
-        REQUIRE(result->interleaved_samples[6] == 1);
+            auto result = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>(
+                "zcross-offset 4smp --append", buf);
+            REQUIRE(result);
+            REQUIRE(result->interleaved_samples.size() == buf.interleaved_samples.size());
+            REQUIRE(result->interleaved_samples[0] == 0);
+            REQUIRE(result->interleaved_samples[4] == 1);
+            REQUIRE(result->interleaved_samples[5] == 1);
+            REQUIRE(result->interleaved_samples[6] == 1);
+        }
+
+        SUBCASE("2 channel") {
+            AudioData buf;
+            buf.interleaved_samples = {0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0.9, 0.8, 0.7, 0.6};
+            buf.num_channels = 2;
+
+            auto result = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>(
+                "zcross-offset 4smp --append", buf);
+            REQUIRE(result);
+            REQUIRE(result->interleaved_samples.size() == buf.interleaved_samples.size());
+
+            const std::vector<double> expected {0.1, 0.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2};
+            for (usize i = 0; i < result->interleaved_samples.size(); ++i) {
+                REQUIRE(expected[i] == result->interleaved_samples[i]);
+            }
+        }
     }
+
     SUBCASE("search size larger than file will just be clamped") {
         AudioData buf;
         buf.interleaved_samples.resize(10, 1.0);

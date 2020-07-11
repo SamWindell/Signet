@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <regex>
 #include <vector>
 
 #include "CLI11.hpp"
@@ -16,10 +17,17 @@ class AutomapFolder {
         int root;
         int low;
         int high;
+        std::vector<std::string> regex_groups;
     };
 
-    void AddFile(const fs::path &path, int root_note) {
-        m_files.push_back({path.generic_string(), root_note});
+    void AddFile(const fs::path &path, int root_note, const std::smatch &match) {
+        AutomapFile file {};
+        file.path = path.generic_string();
+        file.root = root_note;
+        for (usize i = 0; i < match.size(); ++i) {
+            file.regex_groups.push_back(match[i].str());
+        }
+        m_files.push_back(file);
     }
 
     void Automap() {
@@ -75,4 +83,5 @@ class AutoMapper {
     std::unordered_map<std::string, AutomapFolder> m_folder_map;
     std::optional<std::string> m_automap_pattern;
     std::optional<std::string> m_automap_out;
+    int m_root_note_regex_group {};
 };

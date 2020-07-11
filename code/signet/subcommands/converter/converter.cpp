@@ -153,6 +153,18 @@ TEST_CASE("[Converter]") {
             REQUIRE(out->NumFrames() == 12);
         }
 
+        SUBCASE("change file-format to a file format that does not support the bit depth") {
+            AudioData buf;
+            buf.interleaved_samples = {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
+            buf.num_channels = 1;
+            buf.sample_rate = 48000;
+            buf.bits_per_sample = 32;
+
+            auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>(
+                "convert file-format flac", buf);
+            REQUIRE(!out);
+        }
+
         SUBCASE("sine") {
             const std::string folder = "resampling-tests";
             if (!fs::is_directory(folder)) {

@@ -86,6 +86,15 @@ void Converter::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                                    " cannot be converted to bit depths ", *m_bit_depth);
             }
         }
+    } else if (m_file_format) {
+        for (auto &f : files) {
+            auto &audio = f.GetAudio();
+            if (!CanFileBeConvertedToBitDepth(*m_file_format, audio.bits_per_sample)) {
+                WarningWithNewLine("files of type ", magic_enum::enum_name(*m_file_format),
+                                   " cannot be converted to a bit depth of ", audio.bits_per_sample);
+                m_files_can_be_converted = false;
+            }
+        }
     }
 
     if (m_files_can_be_converted) {

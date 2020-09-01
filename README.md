@@ -61,11 +61,11 @@ Description:
   Signet is a command-line program designed for bulk editing audio files.
   It has commands for converting, editing, renaming and moving WAV and
   FLAC files. It also features commands that generate audio files. Signet
-  was primarily designed for people make sample libraries, but its
-  features can be useful for any bulk processing.
+  was primarily designed for people who make sample libraries, but its
+  features can be useful for any type of bulk audio processing.
 
 Usage:
-  signet.exe [OPTIONS] input-files SUBCOMMAND
+  signet [OPTIONS] input-files SUBCOMMAND
 
 Positionals:
   input-files TEXT REQUIRED

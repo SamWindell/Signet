@@ -65,7 +65,7 @@ Description:
   features can be useful for any bulk processing.
 
 Usage:
-  signet [OPTIONS] input-files SUBCOMMAND
+  signet.exe [OPTIONS] input-files SUBCOMMAND
 
 Positionals:
   input-files TEXT REQUIRED
@@ -112,7 +112,7 @@ Subcommands:
   convert
     Converter: converts the file format, bit-depth or sample rate.
     Features a high quality resampling algorithm. This subcommand has
-    subcommands, it requires at least one of sample-rate, bit-depth or
+    subcommands; it requires at least one of sample-rate, bit-depth or
     file-format to be specified.
 
   fade
@@ -162,6 +162,11 @@ Subcommands:
     A unique number starting from zero. The ordering of these numbers is
     not specified.
 
+    <alpha-counter>
+    A unique 3 character counter starting from aaa and ending with zzz.
+    Beyond zzz, <alpha-counter> will be replaced with a number instead.
+    The ordering of these numbers is not specified.
+
     <detected-pitch>
     The detected pitch of audio file in Hz. If no pitch is found this
     variable will be empty.
@@ -169,6 +174,26 @@ Subcommands:
     <detected-midi-note>
     The MIDI note number that is closest to the detected pitch of the
     audio file. If no pitch is found this variable will be empty.
+
+    <detected-midi-note-octave-plus-1>
+    The MIDI note number (+12 semitones) that is closest to the detected
+    pitch of the audio file. If no pitch is found this variable will be
+    empty.
+
+    <detected-midi-note-octave-plus-2>
+    The MIDI note number (+24 semitones) that is closest to the detected
+    pitch of the audio file. If no pitch is found this variable will be
+    empty.
+
+    <detected-midi-note-octave-minus-1>
+    The MIDI note number (-12 semitones) that is closest to the detected
+    pitch of the audio file. If no pitch is found this variable will be
+    empty.
+
+    <detected-midi-note-octave-minus-2>
+    The MIDI note number (-24 semitones) that is closest to the detected
+    pitch of the audio file. If no pitch is found this variable will be
+    empty.
 
     <detected-note>
     The musical note-name that is closest to the detected pitch of the

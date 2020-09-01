@@ -44,7 +44,7 @@ SignetInterface::SignetInterface() {
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
     CLI::App app {
-        R"^^(Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people make sample libraries, but its features can be useful for any bulk processing.)^^"};
+        R"^^(Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.)^^"};
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");

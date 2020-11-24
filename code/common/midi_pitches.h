@@ -58,3 +58,4 @@ static constexpr MIDIPitch g_midi_pitches[] = {
 };
 
 MIDIPitch FindClosestMidiPitch(const double freq);
+int ScaleByOctavesToBeNearestToMiddleC(int midi_note);

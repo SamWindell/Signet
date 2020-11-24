@@ -104,7 +104,8 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                 Contains(filename, "<detected-midi-note-octave-plus-1>") ||
                 Contains(filename, "<detected-midi-note-octave-plus-2>") ||
                 Contains(filename, "<detected-midi-note-octave-minus-1>") ||
-                Contains(filename, "<detected-midi-note-octave-minus-2>")) {
+                Contains(filename, "<detected-midi-note-octave-minus-2>") ||
+                Contains(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>")) {
                 if (const auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
                     const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
@@ -119,6 +120,9 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                     Replace(filename, "<detected-midi-note-octave-minus-2>",
                             std::to_string(closest_musical_note.midi_note - 24));
                     Replace(filename, "<detected-note>", closest_musical_note.name);
+                    Replace(
+                        filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>",
+                        std::to_string(ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note)));
                 } else {
                     WarningWithNewLine(
                         "Renamer: One of the detected pitch variables was used in the file name, but we "

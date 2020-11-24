@@ -94,8 +94,29 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     for (auto &subcommand : m_subcommands) {
         auto s = subcommand->CreateSubcommandCLI(app);
         s->final_callback([&] {
+            struct FileEditState {
+                int num_audio_edits, num_path_edits;
+            };
+            std::vector<FileEditState> initial_file_edit_state;
+            initial_file_edit_state.reserve(m_input_audio_files.NumFiles());
+            for (const auto &f : m_input_audio_files.GetAllFiles()) {
+                initial_file_edit_state.push_back({f.NumTimesAudioChanged(), f.NumTimesPathChanged()});
+            }
+
+            MessageWithNewLine(subcommand->GetName(), "Starting processing");
             subcommand->ProcessFiles(m_input_audio_files.GetAllFiles());
             subcommand->GenerateFiles(m_input_audio_files.GetAllFiles(), m_backup);
+
+            int num_audio_edits = 0;
+            int num_path_edits = 0;
+            assert(initial_file_edit_state.size() == m_input_audio_files.NumFiles());
+            for (usize i = 0; i < initial_file_edit_state.size(); ++i) {
+                const auto &f = m_input_audio_files.GetAllFiles()[i];
+                if (initial_file_edit_state[i].num_audio_edits != f.NumTimesAudioChanged()) ++num_audio_edits;
+                if (initial_file_edit_state[i].num_path_edits != f.NumTimesPathChanged()) ++num_path_edits;
+            }
+            MessageWithNewLine(subcommand->GetName(), "Total audio files edited: ", num_audio_edits);
+            MessageWithNewLine(subcommand->GetName(), "Total audio file paths edited: ", num_path_edits);
         });
     }
 

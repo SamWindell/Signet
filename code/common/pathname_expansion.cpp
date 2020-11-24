@@ -201,6 +201,7 @@ std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_vie
             return {};
         }
     }
+    MessageWithNewLine("Signet", "Found ", set.Size(), " matching audio files");
 
     return set;
 }

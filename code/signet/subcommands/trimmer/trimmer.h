@@ -9,6 +9,7 @@ class Trimmer final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
+    std::string GetName() override { return "Trimmer"; }
 
   private:
     std::optional<AudioDuration> m_start_duration;

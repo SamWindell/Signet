@@ -9,7 +9,7 @@ struct EditTrackedAudioFile {
         : filename(GetJustFilenameWithNoExtension(path)), original_path(path), m_path(path) {}
 
     AudioData &GetWritableAudio() {
-        m_file_edited = true;
+        ++m_file_edited;
         return const_cast<AudioData &>(GetAudio());
     }
 
@@ -28,7 +28,7 @@ struct EditTrackedAudioFile {
     const fs::path &GetPath() const { return m_path; }
 
     void SetPath(const fs::path &path) {
-        m_path_edited = true;
+        ++m_path_edited;
         m_path = path;
     }
 
@@ -45,6 +45,9 @@ struct EditTrackedAudioFile {
         m_file_loaded = true;
     }
 
+    int NumTimesAudioChanged() const { return m_file_edited; }
+    int NumTimesPathChanged() const { return m_path_edited; }
+
   private:
     AudioFileFormat m_original_file_format {};
     fs::path m_path {};
@@ -52,6 +55,6 @@ struct EditTrackedAudioFile {
     bool m_file_loaded = false;
     bool m_file_valid = true;
 
-    bool m_file_edited = false;
-    bool m_path_edited = false;
+    int m_file_edited = 0;
+    int m_path_edited = 0;
 };

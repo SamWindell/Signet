@@ -23,18 +23,28 @@ CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
         ->required();
 
     folderiser
-        ->add_option("out-folder", m_out_folder,
-                     "The output folder that the matching files should be put into. This will be created if "
-                     "it does not exist. It can contain numbers in angle brackets to signify where groups "
-                     "from the matching regex should be inserted. These means files can end up in multiple "
-                     "folders. For example, 'folderise file(\\d+).wav folder<1>' would create folders "
-                     "'folder1' and 'folder2' if there were files 'file1.wav' and 'file2.wav'.")
+        ->add_option_function<std::string>(
+            "out-folder",
+            [&](const std::string &input) {
+                if (fs::path(input).is_relative()) {
+                    WarningWithNewLine("Folderise: input folder ", input, " is not absolute");
+                    WarningWithNewLine("The resulting folder will be (ignoring <> expansion)",
+                                       fs::absolute(input));
+                }
+                m_out_folder = input;
+            },
+            "The output folder that the matching files should be put into. This will be created if "
+            "it does not exist. It can contain numbers in angle brackets to signify where groups "
+            "from the matching regex should be inserted. These means files can end up in multiple "
+            "folders. For example, 'folderise file(\\d+).wav folder<1>' would create folders "
+            "'folder1' and 'folder2' if there were files 'file1.wav' and 'file2.wav'.")
         ->required();
 
     return folderiser;
 }
 
 void Folderiser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+    int num_matches = 0;
     for (auto &f : files) {
         const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
 
@@ -51,7 +61,15 @@ void Folderiser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             fs::path new_path = output_folder;
             new_path /= f.GetPath().filename();
             f.SetPath(new_path);
+            ++num_matches;
         }
+    }
+
+    if (num_matches == 0) {
+        ErrorWithNewLine("No files matched the given filename regex.");
+        MessageWithNewLine("Folderiser", "    The given filename regex: ", m_filename_pattern);
+        MessageWithNewLine("Folderiser", "    An example of a filename that was attempted to match to: ",
+                           GetJustFilenameWithNoExtension(files[0].GetPath()));
     }
 }
 

@@ -2,9 +2,9 @@
 
 #include <functional>
 #include <optional>
+#include <set>
 #include <string>
 #include <string_view>
-#include <unordered_set>
 #include <vector>
 
 #include "filesystem.hpp"
@@ -34,7 +34,7 @@ class FilePathSet {
     FilePathSet() {}
     void AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                              const std::vector<std::string_view> &exclude_patterns);
-    void Add(const fs::path &path) { m_paths.insert(fs::canonical(path).generic_string()); }
+    void Add(const fs::path &path) { m_paths.insert(fs::canonical(path)); }
     void Add(const std::vector<fs::path> &paths) {
         for (const auto &p : paths) {
             Add(p);
@@ -44,7 +44,7 @@ class FilePathSet {
     int m_num_file_parts {};
     int m_num_wildcard_parts {};
     int m_num_directory_parts {};
-    std::unordered_set<std::string> m_paths {};
+    std::set<fs::path> m_paths {};
 };
 
 void ForEachFileInDirectory(const std::string_view directory,

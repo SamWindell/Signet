@@ -58,7 +58,7 @@ void Folderiser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                 Replace(output_folder, PutNumberInAngleBracket(i), piece);
             }
 
-            fs::path new_path = output_folder;
+            fs::path new_path {output_folder};
             new_path /= f.GetPath().filename();
             f.SetPath(new_path);
             ++num_matches;

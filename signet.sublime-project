@@ -37,7 +37,7 @@
                 },
                 {
                     "name": "CMake",
-                    "shell_cmd": "cmake ../ -G Ninja"
+                    "shell_cmd": "cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Debug"
                 }
             ]
         }

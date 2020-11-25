@@ -10,9 +10,9 @@ class SignetBackup {
     SignetBackup();
     bool LoadBackup();
     void ClearBackup();
-    void AddFileToBackup(const fs::path &path);
-    void AddMovedFileToBackup(const fs::path &from, const fs::path &to);
-    void AddNewlyCreatedFileToBackup(const fs::path &path);
+    bool AddFileToBackup(const fs::path &path);
+    bool AddMovedFileToBackup(const fs::path &from, const fs::path &to);
+    bool AddNewlyCreatedFileToBackup(const fs::path &path);
 
     bool DeleteFile(const fs::path &path);
     bool MoveFile(const fs::path &from, const fs::path &to);
@@ -20,7 +20,8 @@ class SignetBackup {
     bool OverwriteFile(const fs::path &path, const AudioData &data);
 
   private:
-    void WriteDatabaseFile();
+    bool WriteDatabaseFile();
+    bool CreateBackupFilesDirIfNeeded();
 
     fs::path m_database_file {};
     fs::path m_backup_dir {};

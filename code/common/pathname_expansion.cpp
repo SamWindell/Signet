@@ -202,6 +202,11 @@ std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_vie
         }
     }
     MessageWithNewLine("Signet", "Found ", set.Size(), " matching audio files");
+    if (!recursive_directory_search && include_parts.size() == 1 &&
+        fs::is_directory(std::string(include_parts[0]))) {
+        MessageWithNewLine(
+            "Signet", "Use the option --recursive to search in all subdirecties of the given one as well.");
+    }
 
     return set;
 }

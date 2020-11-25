@@ -103,6 +103,13 @@ configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
 # Signet
 add_executable(signet code/signet/signet_main.cpp)
 target_link_libraries(signet PRIVATE common)
+if (WIN32)
+    target_sources(signet PRIVATE signet_win32.manifest)
+    set_property(
+        TARGET signet
+        APPEND_STRING
+        PROPERTY LINK_FLAGS " /MANIFESTUAC:NO")
+endif()
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)

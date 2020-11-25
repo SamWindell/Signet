@@ -28,16 +28,16 @@ CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
             [&](const std::string &input) {
                 if (fs::path(input).is_relative()) {
                     WarningWithNewLine("Folderise: input folder ", input, " is not absolute");
-                    WarningWithNewLine("The resulting folder will be (ignoring <> expansion)",
-                                       fs::absolute(input));
+                    WarningWithNewLine("The resulting folder will be ", fs::absolute(input),
+                                       " (ignoring any <n> expansion)");
                 }
                 m_out_folder = input;
             },
             "The output folder that the matching files should be put into. This will be created if "
             "it does not exist. It can contain numbers in angle brackets to signify where groups "
             "from the matching regex should be inserted. These means files can end up in multiple "
-            "folders. For example, 'folderise file(\\d+).wav folder<1>' would create folders "
-            "'folder1' and 'folder2' if there were files 'file1.wav' and 'file2.wav'.")
+            "folders. For example, 'folderise file(\\d+).wav C:/folder<1>' would create folders "
+            "'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.")
         ->required();
 
     return folderiser;

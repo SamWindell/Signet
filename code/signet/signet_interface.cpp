@@ -141,11 +141,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     if (m_input_audio_files.GetNumFilesProcessed()) {
         if (!m_input_audio_files.WriteAllAudioFiles(m_backup)) {
-            return 1;
+            return SignetResult::FailedToWriteFiles;
         }
     }
 
-    return (m_input_audio_files.GetNumFilesProcessed() != 0) ? 0 : 1;
+    if (m_input_audio_files.NumFiles() == 0) {
+        return SignetResult::NoFilesMatchingInput;
+    } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
+        return SignetResult::NoFilesWereProcessed;
+    }
+    return SignetResult::Success;
 }
 
 TEST_CASE("[SignetInterface]") {
@@ -164,7 +169,6 @@ TEST_CASE("[SignetInterface]") {
                           fs::copy_options::overwrite_existing));
 
     SUBCASE("args") {
-
         SUBCASE("single file absolute filename") {
             const auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav fade in 50smp"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);

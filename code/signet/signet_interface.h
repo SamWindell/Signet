@@ -12,6 +12,15 @@
 #include "input_files.h"
 #include "subcommand.h"
 
+namespace SignetResult {
+enum SignetResultEnum {
+    Success = 0,
+    NoFilesMatchingInput,
+    NoFilesWereProcessed,
+    FailedToWriteFiles,
+};
+}
+
 class SignetInterface final {
   public:
     SignetInterface();

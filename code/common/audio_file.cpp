@@ -136,20 +136,28 @@ SignedIntType ScaleSampleToSignedInt(const double s, const unsigned bits_per_sam
     return static_cast<SignedIntType>(std::round(s < 0 ? s * negative_max : s * positive_max));
 }
 
+double GetScaleToAvoidClipping(const std::vector<double> &buf) {
+    double max = 0;
+    for (const auto s : buf) {
+        max = std::max(max, std::abs(s));
+    }
+    if (max <= 1) return 1;
+    return 1.0 / max;
+}
+
 template <typename SignedIntType>
 std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<double> &buf,
                                                            const unsigned bits_per_sample) {
     std::vector<SignedIntType> result;
     result.reserve(buf.size());
-    bool buffer_clips = false;
+    const auto multiplier = GetScaleToAvoidClipping(buf);
     for (const auto s : buf) {
-        if (s < -1 || s > 1) buffer_clips = true;
-        result.push_back(ScaleSampleToSignedInt<SignedIntType>(s, bits_per_sample));
+        result.push_back(ScaleSampleToSignedInt<SignedIntType>(s * multiplier, bits_per_sample));
     }
 
-    if (buffer_clips) {
-        WarningWithNewLine(
-            "this audio file contains samples outside of the valid range and therefore might be distorted");
+    if (multiplier != 1.0) {
+        WarningWithNewLine("this audio file contained samples outside of the valid range, to avoid "
+                           "distortion, the whole file was scaled down in volume");
     }
 
     return result;
@@ -160,16 +168,16 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
                                                                const unsigned bits_per_sample) {
     std::vector<UnsignedIntType> result;
     result.reserve(buf.size());
-    bool buffer_clips = false;
-    for (const auto s : buf) {
-        if (s < -1 || s > 1) buffer_clips = true;
+    const auto multiplier = GetScaleToAvoidClipping(buf);
+    for (auto s : buf) {
+        s *= multiplier;
         const auto scaled_val = ((s + 1.0) / 2.0f) * ((1 << bits_per_sample) - 1);
         result.push_back(static_cast<UnsignedIntType>(scaled_val));
     }
 
-    if (buffer_clips) {
-        WarningWithNewLine(
-            "this audio file contains samples outside of the valid range and therefore might be distorted");
+    if (multiplier != 1.0) {
+        WarningWithNewLine("this audio file contained samples outside of the valid range, to avoid "
+                           "distortion, the whole file was scaled down in volume");
     }
 
     return result;

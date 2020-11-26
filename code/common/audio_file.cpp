@@ -4,15 +4,14 @@
 #include <iostream>
 
 #define DR_WAV_IMPLEMENTATION
-#define DR_FLAC_IMPLEMENTATION
 #include "FLAC/all.h"
 #include "FLAC/stream_encoder.h"
 #include "doctest.hpp"
-#include "dr_flac.h"
 #include "dr_wav.h"
 #include "magic_enum.hpp"
 
 #include "common.h"
+#include "flac_decoder.h"
 #include "test_helpers.h"
 #include "types.h"
 
@@ -52,7 +51,6 @@ static size_t OnReadFile(void *file, void *buffer_out, size_t bytes_to_read) {
 
 template <typename SeekOrigin>
 static drwav_bool32 OnSeekFile(void *file, int offset, SeekOrigin origin) {
-    static_assert((int)drwav_seek_origin_start == (int)drflac_seek_origin_start);
     constexpr int fseek_success = 0;
     if (std::fseek((FILE *)file, offset, (origin == (int)drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
         fseek_success) {
@@ -77,8 +75,8 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
 
     AudioData result {};
     const auto ext = path.extension();
-    std::vector<float> f32_buf {};
     if (ext == ".wav") {
+        std::vector<float> f32_buf {};
         drwav wav;
         if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0)) {
             WarningWithNewLine("could not init the WAV file ", path);
@@ -96,34 +94,21 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
             return {};
         }
         result.format = AudioFileFormat::Wav;
-    } else if (ext == ".flac") {
-        std::unique_ptr<drflac, decltype(&drflac_close)> flac(
-            drflac_open(OnReadFile, OnSeekFile, file.get(), nullptr), &drflac_close);
-        if (!flac) {
-            WarningWithNewLine("could not init the FLAC file ", path);
-            return {};
-        }
 
-        result.num_channels = flac->channels;
-        result.sample_rate = flac->sampleRate;
-        result.bits_per_sample = flac->bitsPerSample;
-        result.interleaved_samples.resize(flac->totalPCMFrameCount * flac->channels);
-        f32_buf.resize(result.interleaved_samples.size());
-        const auto frames_read =
-            drflac_read_pcm_frames_f32(flac.get(), flac->totalPCMFrameCount, f32_buf.data());
-        if (frames_read != flac->totalPCMFrameCount) {
-            WarningWithNewLine("failed to get all the frames from file ", path);
+        // TODO: would be nice to have a way to get double values direct rather than just casting floats...
+        for (usize sample = 0; sample < f32_buf.size(); ++sample) {
+            result.interleaved_samples[sample] = (double)f32_buf[sample];
+        }
+    } else if (ext == ".flac") {
+        const bool decoded = DecodeFlacFile(file.get(), result);
+        if (!decoded) {
+            WarningWithNewLine("failed to decode flac file ", path);
             return {};
         }
         result.format = AudioFileFormat::Flac;
     } else {
         WarningWithNewLine("file ", path, " is not a WAV or a FLAC");
         return {};
-    }
-
-    // TODO: would be nice to have a way to get double values direct rather than just casting floats...
-    for (usize sample = 0; sample < f32_buf.size(); ++sample) {
-        result.interleaved_samples[sample] = (double)f32_buf[sample];
     }
 
     return result;

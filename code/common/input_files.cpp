@@ -131,5 +131,5 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
                          "happened up to the point of this error");
     }
 
-    return error_occurred;
+    return !error_occurred;
 }

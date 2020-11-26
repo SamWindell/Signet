@@ -178,8 +178,8 @@ static bool CreateParentDirectories(const fs::path &path) {
 }
 
 bool SignetBackup::DeleteFile(const fs::path &path) {
-    MessageWithNewLine("Signet", "Deleting file ", path);
     if (!AddFileToBackup(path)) return false;
+    MessageWithNewLine("Signet", "Deleting file ", path);
     try {
         fs::remove(path);
     } catch (const fs::filesystem_error &e) {
@@ -218,8 +218,8 @@ bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data) {
 }
 
 bool SignetBackup::OverwriteFile(const fs::path &path, const AudioData &data) {
-    MessageWithNewLine("Signet", "Overwriting file ", path);
     if (!AddFileToBackup(path)) return false;
+    MessageWithNewLine("Signet", "Overwriting file ", path);
     return WriteFile(path, data);
 }
 

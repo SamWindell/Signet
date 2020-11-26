@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "subcommands/converter/converter.h"
+#include "subcommands/normaliser/gain_calculators.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "test_helpers.h"
 
@@ -29,11 +30,13 @@ void Tuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
 
 TEST_CASE("Tuner") {
     auto sine = TestHelpers::CreateSineWaveAtFrequency(1, 44100, 1, 220);
+    const auto starting_rms = GetRMS(sine.interleaved_samples);
 
     SUBCASE("220 is detected") {
         const auto detected = PitchDetector::DetectPitch(sine);
         REQUIRE(detected);
         REQUIRE(*detected == doctest::Approx(220).epsilon(1.0));
+        REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
 
     SUBCASE("tuned down 1 octave") {
@@ -41,6 +44,7 @@ TEST_CASE("Tuner") {
         const auto detected = PitchDetector::DetectPitch(sine);
         REQUIRE(detected);
         REQUIRE(*detected == doctest::Approx(110).epsilon(1.0));
+        REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
 
     SUBCASE("tuned down 2 octaves") {
@@ -48,6 +52,7 @@ TEST_CASE("Tuner") {
         const auto detected = PitchDetector::DetectPitch(sine);
         REQUIRE(detected);
         REQUIRE(*detected == doctest::Approx(55).epsilon(1.0));
+        REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
 
     SUBCASE("tuned up 1 octave") {
@@ -55,6 +60,7 @@ TEST_CASE("Tuner") {
         const auto detected = PitchDetector::DetectPitch(sine);
         REQUIRE(detected);
         REQUIRE(*detected == doctest::Approx(440).epsilon(1.0));
+        REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
 
     SUBCASE("tuned down 1 semitone") {
@@ -62,6 +68,7 @@ TEST_CASE("Tuner") {
         const auto detected = PitchDetector::DetectPitch(sine);
         REQUIRE(detected);
         REQUIRE(*detected == doctest::Approx(207.65).epsilon(1.0));
+        REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
 
     SUBCASE("tuned up 1 semitone") {
@@ -69,5 +76,6 @@ TEST_CASE("Tuner") {
         const auto detected = PitchDetector::DetectPitch(sine);
         REQUIRE(detected);
         REQUIRE(*detected == doctest::Approx(233.08).epsilon(1.0));
+        REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
 }

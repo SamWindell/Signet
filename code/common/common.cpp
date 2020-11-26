@@ -31,6 +31,12 @@ void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,
     const unsigned num_channels,
     std::function<void(const std::vector<double> &, unsigned channel)> callback) {
+
+    if (num_channels == 1) {
+        callback(interleaved_samples, 0);
+        return;
+    }
+
     const auto num_frames = interleaved_samples.size() / num_channels;
     std::vector<double> channel_buffer;
     channel_buffer.reserve(num_frames);

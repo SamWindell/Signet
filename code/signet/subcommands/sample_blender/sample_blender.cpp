@@ -80,7 +80,7 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFil
 
         const auto directory = f1.file->GetPath().parent_path();
         const auto path = directory / (filename + "." + GetLowercaseExtension(f1.file->GetAudio().format));
-        backup.CreateFile(path, out);
+        backup.CreateFile(path, out, false);
     }
 }
 

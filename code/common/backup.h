@@ -16,7 +16,7 @@ class SignetBackup {
 
     bool DeleteFile(const fs::path &path);
     bool MoveFile(const fs::path &from, const fs::path &to);
-    bool CreateFile(const fs::path &path, const AudioData &data);
+    bool CreateFile(const fs::path &path, const AudioData &data, bool create_directories);
     bool OverwriteFile(const fs::path &path, const AudioData &data);
 
   private:

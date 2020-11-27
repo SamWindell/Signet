@@ -83,7 +83,7 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
                        (file_data_changed && file_format_changed)) {
                 // renamed and new format
                 if (!backup.CreateFile(PathWithNewExtension(file.GetPath(), file.GetAudio().format),
-                                       file.GetAudio())) {
+                                       file.GetAudio(), true)) {
                     error_occurred = true;
                     break;
                 }
@@ -93,7 +93,7 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
                 }
             } else if (file_data_changed && !file_format_changed) {
                 // renamed and new data
-                if (!backup.CreateFile(file.GetPath(), file.GetAudio())) {
+                if (!backup.CreateFile(file.GetPath(), file.GetAudio(), true)) {
                     error_occurred = true;
                     break;
                 }
@@ -107,7 +107,7 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
             if ((file_format_changed && !file_data_changed) || (file_format_changed && file_data_changed)) {
                 // only new format
                 if (!backup.CreateFile(PathWithNewExtension(file.original_path, file.GetAudio().format),
-                                       file.GetAudio())) {
+                                       file.GetAudio(), false)) {
                     error_occurred = true;
                     break;
                 }

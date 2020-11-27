@@ -211,8 +211,11 @@ static bool WriteFile(const fs::path &path, const AudioData &data) {
     return true;
 }
 
-bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data) {
+bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool create_directories) {
     MessageWithNewLine("Signet", "Creating file ", path);
+    if (create_directories) {
+        if (!CreateParentDirectories(path)) return false;
+    }
     if (!WriteFile(path, data)) return false;
     return AddNewlyCreatedFileToBackup(path);
 }

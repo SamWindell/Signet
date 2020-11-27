@@ -13,7 +13,7 @@ enum class AudioFileFormat {
 };
 
 struct InstrumentData {
-    s8 unshifted_note; //  0 - 127
+    s8 midi_note; //  0 - 127
     s8 fine_tune_db; //  -50 - +50
     s8 gain; // -64 - +64
     s8 low_note; //  0 - 127
@@ -54,6 +54,8 @@ struct AudioData {
     unsigned bits_per_sample = 24;
     AudioFileFormat format {AudioFileFormat::Wav};
     std::optional<InstrumentData> instrument_data {};
+
+    std::vector<std::vector<u8>> metadata {};
 };
 
 std::optional<AudioData> ReadAudioFile(const fs::path &filename);

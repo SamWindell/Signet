@@ -18,6 +18,11 @@
 static constexpr unsigned valid_wave_bit_depths[] = {8, 16, 24, 32, 64};
 static constexpr unsigned valid_flac_bit_depths[] = {8, 16, 20, 24};
 
+constexpr bool IsThisMachineLittleEndian() {
+    int num = 1;
+    return *(char *)&num == 1;
+}
+
 bool CanFileBeConvertedToBitDepth(AudioFileFormat file, const unsigned bit_depth) {
     switch (file) {
         case AudioFileFormat::Wav: {
@@ -65,7 +70,7 @@ static u64 OnWaveChunk(void *chunk_user_data,
                        drwav_seek_proc on_seek,
                        void *read_seek_user_data,
                        const drwav_chunk_header *chunk_header) {
-    auto audio_data = (AudioData *)chunk_user_data;
+    auto &audio_data = *(AudioData *)chunk_user_data;
 
     if (drwav__fourcc_equal(chunk_header->id.fourcc, "ltxt")) {
         constexpr size_t num_bytes_in_inst_chunk = 7;
@@ -77,16 +82,47 @@ static u64 OnWaveChunk(void *chunk_user_data,
         const auto bytes_read = on_read(read_seek_user_data, bytes.data(), bytes.size());
         if (bytes_read == bytes.size()) {
             InstrumentData inst;
-            inst.unshifted_note = (s8)bytes[0];
+            inst.midi_note = (s8)bytes[0];
             inst.fine_tune_db = (s8)bytes[1];
             inst.gain = (s8)bytes[2];
             inst.low_note = (s8)bytes[3];
             inst.high_note = (s8)bytes[4];
             inst.low_velocity = (s8)bytes[5];
             inst.high_velocity = (s8)bytes[6];
-            audio_data->instrument_data = inst;
+            audio_data.instrument_data = inst;
         }
         return bytes_read;
+    } else if (drwav__fourcc_equal(chunk_header->id.fourcc, "smpl") ||
+               drwav__fourcc_equal(chunk_header->id.fourcc, "cue ") ||
+               drwav__fourcc_equal(chunk_header->id.fourcc, "plst") ||
+               drwav__fourcc_equal(chunk_header->id.fourcc, "list")) {
+        std::vector<u8> chunk;
+
+        const auto WriteU32 = [&](u32 val) {
+            // TODO this assumes this machine is little endian
+            chunk.resize(chunk.size() + sizeof(val));
+            std::memcpy(chunk.data(), &val, sizeof(val));
+        };
+
+        chunk.push_back(chunk_header->id.fourcc[0]);
+        chunk.push_back(chunk_header->id.fourcc[1]);
+        chunk.push_back(chunk_header->id.fourcc[2]);
+        chunk.push_back(chunk_header->id.fourcc[3]);
+        WriteU32((u32)chunk_header->sizeInBytes);
+
+        audio_data.metadata.push_back(chunk);
+    } else {
+        if (!drwav__fourcc_equal(chunk_header->id.fourcc, "data") &&
+            !drwav__fourcc_equal(chunk_header->id.fourcc, "fmt ")) {
+            char type[5];
+            type[0] = (char)chunk_header->id.fourcc[0];
+            type[1] = (char)chunk_header->id.fourcc[1];
+            type[2] = (char)chunk_header->id.fourcc[2];
+            type[3] = (char)chunk_header->id.fourcc[3];
+            type[4] = '\0';
+
+            WarningWithNewLine("Unsupported WAVE file chunk: '", type, "', this will be deleted");
+        }
     }
 
     return 0;
@@ -253,11 +289,6 @@ static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f
     }
 }
 
-constexpr bool IsThisMachineLittleEndian() {
-    int num = 1;
-    return *(char *)&num == 1;
-}
-
 static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
@@ -312,7 +343,7 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
         if (audio_data.instrument_data) {
             WriteChars("ltxt");
             WriteU32(7);
-            WriteU8(audio_data.instrument_data->unshifted_note);
+            WriteU8(audio_data.instrument_data->midi_note);
             WriteU8(audio_data.instrument_data->fine_tune_db);
             WriteU8(audio_data.instrument_data->gain);
             WriteU8(audio_data.instrument_data->low_note);
@@ -321,6 +352,16 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
             WriteU8(audio_data.instrument_data->high_velocity);
 
             WriteU8(0); // padding
+        }
+    }
+
+    // any other chunks that we saved
+    {
+        for (auto &chunk : audio_data.metadata) {
+            std::fwrite(chunk.data(), 1, chunk.size(), file.get());
+            if ((chunk.size() % 2) == 1) {
+                WriteU8(0); // padding
+            }
         }
     }
 

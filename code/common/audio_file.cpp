@@ -60,11 +60,35 @@ static drwav_bool32 OnSeekFile(void *file, int offset, SeekOrigin origin) {
     return 0;
 }
 
-static u64 OnWaveChunk(void *pChunkUserData,
-                       drwav_read_proc onRead,
-                       drwav_seek_proc onSeek,
-                       void *pReadSeekUserData,
-                       const drwav_chunk_header *pChunkHeader) {
+static u64 OnWaveChunk(void *chunk_user_data,
+                       drwav_read_proc on_read,
+                       drwav_seek_proc on_seek,
+                       void *read_seek_user_data,
+                       const drwav_chunk_header *chunk_header) {
+    auto audio_data = (AudioData *)chunk_user_data;
+
+    if (drwav__fourcc_equal(chunk_header->id.fourcc, "ltxt")) {
+        constexpr size_t num_bytes_in_inst_chunk = 7;
+        if (chunk_header->sizeInBytes != num_bytes_in_inst_chunk) {
+            WarningWithNewLine("WAVE file has an incorrectly formatted Inst chunk - ignoring it");
+            return 0;
+        }
+        std::array<u8, num_bytes_in_inst_chunk> bytes;
+        const auto bytes_read = on_read(read_seek_user_data, bytes.data(), bytes.size());
+        if (bytes_read == bytes.size()) {
+            InstrumentData inst;
+            inst.unshifted_note = (s8)bytes[0];
+            inst.fine_tune_db = (s8)bytes[1];
+            inst.gain = (s8)bytes[2];
+            inst.low_note = (s8)bytes[3];
+            inst.high_note = (s8)bytes[4];
+            inst.low_velocity = (s8)bytes[5];
+            inst.high_velocity = (s8)bytes[6];
+            audio_data->instrument_data = inst;
+        }
+        return bytes_read;
+    }
+
     return 0;
 }
 
@@ -78,7 +102,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     if (ext == ".wav") {
         std::vector<float> f32_buf {};
         drwav wav;
-        if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0)) {
+        if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), &result, 0)) {
             WarningWithNewLine("could not init the WAV file ", path);
             return {};
         }
@@ -229,6 +253,11 @@ static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f
     }
 }
 
+constexpr bool IsThisMachineLittleEndian() {
+    int num = 1;
+    return *(char *)&num == 1;
+}
+
 static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
@@ -236,27 +265,87 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
         return false;
     }
 
-    drwav_data_format format {};
-    format.container = drwav_container_riff;
-    format.format = DR_WAVE_FORMAT_PCM;
-    format.channels = audio_data.num_channels;
-    format.sampleRate = audio_data.sample_rate;
-    format.bitsPerSample = bits_per_sample;
-    std::unique_ptr<drwav, decltype(&drwav_close)> wav {
-        drwav_open_file_write(path.generic_string().data(), &format), &drwav_close};
-    if (!wav) {
-        WarningWithNewLine("could not write wave file - could not open file ", path);
-        return false;
+    assert(IsThisMachineLittleEndian()); // TODO: add ability to write a wave file from a big endian machine
+
+    const auto file = OpenFile(path, "wb");
+    if (!file) return false;
+
+    const auto WriteU32 = [&](u32 val) { std::fwrite(&val, sizeof(val), 1, file.get()); };
+    const auto WriteU16 = [&](u16 val) { std::fwrite(&val, sizeof(val), 1, file.get()); };
+    const auto WriteU8 = [&](u8 val) { std::fwrite(&val, sizeof(val), 1, file.get()); };
+    const auto WriteChars = [&](std::string_view str) { std::fwrite(str.data(), 1, str.size(), file.get()); };
+
+    WriteChars("RIFF");
+    WriteU32(0); // placeholder for the file size - 8, will be filled at end
+    WriteChars("WAVE");
+
+    // fmt chunk
+    {
+        WriteChars("fmt ");
+        WriteU32(16);
+
+        u16 compression_code = 0;
+        switch (bits_per_sample) {
+            case 8:
+            case 16:
+            case 24:
+                compression_code = 1; // pcm
+                break;
+            case 32:
+            case 64:
+                compression_code = 3; // float
+                break;
+            default: break;
+        }
+        WriteU16(compression_code);
+        WriteU16((u16)audio_data.num_channels);
+        WriteU32(audio_data.sample_rate);
+
+        const u32 block_align = bits_per_sample / 8 * audio_data.num_channels;
+        WriteU32(block_align * audio_data.sample_rate);
+        WriteU16((u16)block_align);
+        WriteU16((u16)bits_per_sample);
     }
 
-    u64 num_written = 0;
-    GetAudioDataConvertedAndScaledToBitDepth(
-        audio_data.interleaved_samples, format.format, bits_per_sample, [&](const void *raw_data) {
-            num_written = drwav_write_pcm_frames(wav.get(), audio_data.NumFrames(), raw_data);
-        });
-    if (num_written != audio_data.NumFrames()) {
-        WarningWithNewLine("could not write wave file - could not write all samples");
-        return false;
+    // inst chunk
+    {
+        if (audio_data.instrument_data) {
+            WriteChars("ltxt");
+            WriteU32(7);
+            WriteU8(audio_data.instrument_data->unshifted_note);
+            WriteU8(audio_data.instrument_data->fine_tune_db);
+            WriteU8(audio_data.instrument_data->gain);
+            WriteU8(audio_data.instrument_data->low_note);
+            WriteU8(audio_data.instrument_data->high_note);
+            WriteU8(audio_data.instrument_data->low_velocity);
+            WriteU8(audio_data.instrument_data->high_velocity);
+
+            WriteU8(0); // padding
+        }
+    }
+
+    // data chunk
+    {
+        const auto total_num_bytes = bits_per_sample / 8 * (u32)audio_data.interleaved_samples.size();
+
+        WriteChars("data");
+        WriteU32(total_num_bytes);
+
+        u32 format;
+        GetAudioDataConvertedAndScaledToBitDepth(
+            audio_data.interleaved_samples, format, bits_per_sample, [&](const void *raw_data) {
+                std::fwrite(raw_data, bits_per_sample / 8, audio_data.interleaved_samples.size(), file.get());
+                if ((total_num_bytes % 2) == 1) {
+                    WriteU8(0); // add padding because we must must be 2 byte aligned
+                }
+            });
+    }
+
+    // go back and fill in the file size
+    {
+        const auto file_size = std::ftell(file.get());
+        std::fseek(file.get(), 4, SEEK_SET);
+        WriteU32(file_size - 8);
     }
 
     return true;

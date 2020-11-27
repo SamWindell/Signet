@@ -12,6 +12,16 @@ enum class AudioFileFormat {
     Flac,
 };
 
+struct InstrumentData {
+    s8 unshifted_note; //  0 - 127
+    s8 fine_tune_db; //  -50 - +50
+    s8 gain; // -64 - +64
+    s8 low_note; //  0 - 127
+    s8 high_note; // 0 - 127
+    s8 low_velocity; //  1 - 127
+    s8 high_velocity; // 1 - 127
+};
+
 struct AudioData {
     bool IsEmpty() const { return interleaved_samples.empty(); }
     size_t NumFrames() const {
@@ -43,6 +53,7 @@ struct AudioData {
     unsigned sample_rate {};
     unsigned bits_per_sample = 24;
     AudioFileFormat format {AudioFileFormat::Wav};
+    std::optional<InstrumentData> instrument_data {};
 };
 
 std::optional<AudioData> ReadAudioFile(const fs::path &filename);

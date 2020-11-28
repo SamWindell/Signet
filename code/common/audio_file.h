@@ -2,6 +2,7 @@
 #include <optional>
 #include <vector>
 
+#include "FLAC/metadata.h"
 #include "doctest.hpp"
 #include "filesystem.hpp"
 
@@ -20,6 +21,20 @@ struct InstrumentData {
     s8 high_note; // 0 - 127
     s8 low_velocity; //  1 - 127
     s8 high_velocity; // 1 - 127
+};
+
+enum class LoopType { Forward, Backward, PingPong };
+
+struct SampleLoop {
+    std::string name;
+    LoopType type;
+    size_t start;
+    size_t end;
+    unsigned num_times_to_loop; // 0 for infinite
+};
+
+struct SampleLoops {
+    std::vector<SampleLoop> loops;
 };
 
 struct AudioData {
@@ -53,9 +68,12 @@ struct AudioData {
     unsigned sample_rate {};
     unsigned bits_per_sample = 24;
     AudioFileFormat format {AudioFileFormat::Wav};
-    std::optional<InstrumentData> instrument_data {};
 
-    std::vector<std::vector<u8>> metadata {};
+    std::optional<InstrumentData> instrument_data {};
+    std::optional<SampleLoops> loops {};
+
+    std::vector<std::vector<u8>> wave_metadata {};
+    std::vector<std::shared_ptr<FLAC__StreamMetadata>> flac_metadata {};
 };
 
 std::optional<AudioData> ReadAudioFile(const fs::path &filename);

@@ -13,6 +13,7 @@
 #include "common.h"
 #include "flac_decoder.h"
 #include "test_helpers.h"
+#include "tests_config.h"
 #include "types.h"
 
 static constexpr unsigned valid_wave_bit_depths[] = {8, 16, 24, 32, 64};
@@ -72,10 +73,10 @@ static u64 OnWaveChunk(void *chunk_user_data,
                        const drwav_chunk_header *chunk_header) {
     auto &audio_data = *(AudioData *)chunk_user_data;
 
-    if (drwav__fourcc_equal(chunk_header->id.fourcc, "ltxt")) {
+    if (drwav__fourcc_equal(chunk_header->id.fourcc, "inst")) {
         constexpr size_t num_bytes_in_inst_chunk = 7;
         if (chunk_header->sizeInBytes != num_bytes_in_inst_chunk) {
-            WarningWithNewLine("WAVE file has an incorrectly formatted Inst chunk - ignoring it");
+            WarningWithNewLine("WAVE file has an incorrectly formatted inst chunk - ignoring it");
             return 0;
         }
         std::array<u8, num_bytes_in_inst_chunk> bytes;
@@ -90,18 +91,34 @@ static u64 OnWaveChunk(void *chunk_user_data,
             inst.low_velocity = (s8)bytes[5];
             inst.high_velocity = (s8)bytes[6];
             audio_data.instrument_data = inst;
+
+            DebugWithNewLine("WAVE inst chunk found:");
+            DebugWithNewLine("    midi_note: ", (int)inst.midi_note);
+            DebugWithNewLine("    fine_tune_db: ", (int)inst.fine_tune_db);
+            DebugWithNewLine("    gain: ", (int)inst.gain);
+            DebugWithNewLine("    low_note: ", (int)inst.low_note);
+            DebugWithNewLine("    high_note: ", (int)inst.high_note);
+            DebugWithNewLine("    low_velocity: ", (int)inst.low_velocity);
+            DebugWithNewLine("    high_velocity: ", (int)inst.high_velocity);
         }
         return bytes_read;
-    } else if (drwav__fourcc_equal(chunk_header->id.fourcc, "smpl") ||
-               drwav__fourcc_equal(chunk_header->id.fourcc, "cue ") ||
-               drwav__fourcc_equal(chunk_header->id.fourcc, "plst") ||
-               drwav__fourcc_equal(chunk_header->id.fourcc, "list")) {
-        std::vector<u8> chunk;
+    } else if (!drwav__fourcc_equal(chunk_header->id.fourcc, "data") &&
+               !drwav__fourcc_equal(chunk_header->id.fourcc, "fact") &&
+               !drwav__fourcc_equal(chunk_header->id.fourcc, "fmt ")) {
+        char type[5];
+        type[0] = (char)chunk_header->id.fourcc[0];
+        type[1] = (char)chunk_header->id.fourcc[1];
+        type[2] = (char)chunk_header->id.fourcc[2];
+        type[3] = (char)chunk_header->id.fourcc[3];
+        type[4] = '\0';
+        DebugWithNewLine("Found WAVE chunk: '", type, "', bytes: ", chunk_header->sizeInBytes);
 
+        std::vector<u8> chunk {};
         const auto WriteU32 = [&](u32 val) {
             // TODO this assumes this machine is little endian
+            const auto write_index = chunk.size();
             chunk.resize(chunk.size() + sizeof(val));
-            std::memcpy(chunk.data(), &val, sizeof(val));
+            std::memcpy(&chunk.data()[write_index], &val, sizeof(val));
         };
 
         chunk.push_back(chunk_header->id.fourcc[0]);
@@ -110,19 +127,16 @@ static u64 OnWaveChunk(void *chunk_user_data,
         chunk.push_back(chunk_header->id.fourcc[3]);
         WriteU32((u32)chunk_header->sizeInBytes);
 
-        audio_data.metadata.push_back(chunk);
-    } else {
-        if (!drwav__fourcc_equal(chunk_header->id.fourcc, "data") &&
-            !drwav__fourcc_equal(chunk_header->id.fourcc, "fmt ")) {
-            char type[5];
-            type[0] = (char)chunk_header->id.fourcc[0];
-            type[1] = (char)chunk_header->id.fourcc[1];
-            type[2] = (char)chunk_header->id.fourcc[2];
-            type[3] = (char)chunk_header->id.fourcc[3];
-            type[4] = '\0';
+        const auto write_index = chunk.size();
+        chunk.resize(chunk.size() + chunk_header->sizeInBytes);
+        const auto bytes_read =
+            on_read(read_seek_user_data, &(chunk.data()[write_index]), chunk_header->sizeInBytes);
 
-            WarningWithNewLine("Unsupported WAVE file chunk: '", type, "', this will be deleted");
-        }
+        assert(std::memcmp(chunk.data(), type, 4) == 0);
+        assert(chunk.size() == (8 + chunk_header->sizeInBytes));
+
+        audio_data.wave_metadata.push_back(std::move(chunk));
+        return bytes_read;
     }
 
     return 0;
@@ -142,6 +156,20 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
             WarningWithNewLine("could not init the WAV file ", path);
             return {};
         }
+
+        // if (wav.smpl.samplePeriod) {
+        //     SampleLoops loops;
+        //     for (u32 i = 0; i < wav.smpl.numSampleLoops; ++i) {
+        //         auto &smpl_loop = wav.smpl.loops;
+
+        //         SampleLoop loop;
+        //         loop.type = LoopType::Forward;
+        //         if (smpl.type == 1) loop.type = LoopType::PingPong;
+        //         if (smpl.type == 2) loop.type = LoopType::Backward;
+        //         loop.start = smpl_loop.start / (wav.bitsPerSample / 8) / wav.channels;
+        //         loop.end = smpl_loop.end / (wav.bitsPerSample / 8) / wav.channels;
+        //     }
+        // }
 
         result.num_channels = wav.channels;
         result.sample_rate = wav.sampleRate;
@@ -341,7 +369,7 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
     // inst chunk
     {
         if (audio_data.instrument_data) {
-            WriteChars("ltxt");
+            WriteChars("inst");
             WriteU32(7);
             WriteU8(audio_data.instrument_data->midi_note);
             WriteU8(audio_data.instrument_data->fine_tune_db);
@@ -355,9 +383,18 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
         }
     }
 
+    // fact chunk seems necessary for IEEE float
+    if (bits_per_sample == 32 || bits_per_sample == 64) {
+        WriteChars("fact");
+        WriteU32(4);
+        WriteU32((u32)audio_data.NumFrames());
+    }
+
     // any other chunks that we saved
     {
-        for (auto &chunk : audio_data.metadata) {
+        for (auto &chunk : audio_data.wave_metadata) {
+            DebugWithNewLine("Writing WAVE chunk ", (char)chunk[0], (char)chunk[1], (char)chunk[2],
+                             (char)chunk[3]);
             std::fwrite(chunk.data(), 1, chunk.size(), file.get());
             if ((chunk.size() % 2) == 1) {
                 WriteU8(0); // padding
@@ -496,6 +533,51 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
     FLAC__stream_encoder_set_bits_per_sample(encoder.get(), bits_per_sample);
     FLAC__stream_encoder_set_sample_rate(encoder.get(), audio_data.sample_rate);
     FLAC__stream_encoder_set_total_samples_estimate(encoder.get(), audio_data.interleaved_samples.size());
+
+    std::vector<FLAC__StreamMetadata *> metadata;
+    std::shared_ptr<FLAC__StreamMetadata> vorbis_comment_meta {};
+    for (auto m : audio_data.flac_metadata) {
+        if (m->type == FLAC__METADATA_TYPE_VORBIS_COMMENT) {
+            vorbis_comment_meta = m;
+        } else {
+            metadata.push_back(m.get());
+        }
+    }
+
+    if (audio_data.instrument_data) {
+        if (!vorbis_comment_meta) {
+            vorbis_comment_meta = {FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT),
+                                   &FLAC__metadata_object_delete};
+        }
+
+        std::string buffer;
+        auto AddComment = [&](std::string_view key, u8 value) {
+            buffer = std::string(key);
+            buffer.append("=");
+            buffer.append(std::to_string((int)value));
+
+            FLAC__StreamMetadata_VorbisComment_Entry entry;
+            entry.length = (u32)buffer.size();
+            entry.entry = (FLAC__byte *)buffer.data();
+            FLAC__metadata_object_vorbiscomment_append_comment(vorbis_comment_meta.get(), entry, true);
+        };
+
+        AddComment("MIDI_NOTE", audio_data.instrument_data->midi_note);
+        AddComment("FINE_TUNE_DB", audio_data.instrument_data->fine_tune_db);
+        AddComment("GAIN", audio_data.instrument_data->gain);
+        AddComment("LOW_NOTE", audio_data.instrument_data->low_note);
+        AddComment("HIGH_NOTE", audio_data.instrument_data->high_note);
+        AddComment("LOW_VELOCITY", audio_data.instrument_data->low_velocity);
+        AddComment("HIGH_VELOCITY", audio_data.instrument_data->high_velocity);
+    }
+
+    if (vorbis_comment_meta) {
+        metadata.push_back(vorbis_comment_meta.get());
+    }
+
+    const bool set_metadata =
+        FLAC__stream_encoder_set_metadata(encoder.get(), metadata.data(), (unsigned)metadata.size());
+    assert(set_metadata);
 
     auto f = OpenFile(filename, "w+b");
     if (!f) {
@@ -689,5 +771,33 @@ TEST_CASE("[AudioData]") {
                 REQUIRE(ReadAudioFile(filename));
             }
         }
+    }
+
+    SUBCASE("wave with marker and loops") {
+        const fs::path in_filename = TEST_DATA_DIRECTORY "/wave_with_markers_and_loop.wav";
+        const fs::path out_filename = "out_wave_with_markers_and_loop.wav";
+        auto f = ReadAudioFile(in_filename);
+        REQUIRE(f);
+        REQUIRE(f->wave_metadata.size() >= 2);
+        DebugWithNewLine("f->wave_metadata ", f->wave_metadata.size());
+        REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
+        REQUIRE(fs::is_regular_file(out_filename));
+        auto out_f = ReadAudioFile(out_filename);
+        REQUIRE(out_f);
+        REQUIRE(out_f->wave_metadata.size() >= 2);
+        DebugWithNewLine("out_f->wave_metadata ", out_f->wave_metadata.size());
+    }
+
+    SUBCASE("flac with comments") {
+        const fs::path in_filename = TEST_DATA_DIRECTORY "/flac_with_comments.flac";
+        const fs::path out_filename = "out_flac_with_comments.flac";
+        auto f = ReadAudioFile(in_filename);
+        REQUIRE(f);
+        REQUIRE(f->flac_metadata.size() >= 1);
+        REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
+        REQUIRE(fs::is_regular_file(out_filename));
+        auto out_f = ReadAudioFile(out_filename);
+        REQUIRE(out_f);
+        REQUIRE(out_f->flac_metadata.size() >= 1);
     }
 }

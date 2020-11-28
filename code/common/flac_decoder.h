@@ -105,6 +105,37 @@ FLAC__StreamDecoderWriteStatus FlacDecoderWriteCallback(const FLAC__StreamDecode
     return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 
+void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
+                                 const FLAC__StreamMetadata *metadata,
+                                 void *client_data) {
+    auto &context = *((FlacFileDataContext *)client_data);
+
+    switch (metadata->type) {
+        case FLAC__METADATA_TYPE_STREAMINFO: {
+            context.data.num_channels = metadata->data.stream_info.channels;
+            context.data.bits_per_sample = metadata->data.stream_info.bits_per_sample;
+            context.data.sample_rate = metadata->data.stream_info.sample_rate;
+            context.data.interleaved_samples.reserve(metadata->data.stream_info.total_samples);
+            break;
+        }
+        case FLAC__METADATA_TYPE_CUESHEET:
+        case FLAC__METADATA_TYPE_SEEKTABLE: {
+            const char *type = metadata->type == FLAC__METADATA_TYPE_CUESHEET ? "cuesheet" : "seektable";
+            WarningWithNewLine("Unsupported FLAC file block '", type, "', this will be deleted");
+            // We're discarding these at the moment because this data contains references to particular points
+            // in the audio file. We might changing the length of the audio file so this would become
+            // invalidated.
+            break;
+        }
+        default: {
+            std::shared_ptr<FLAC__StreamMetadata> ptr {FLAC__metadata_object_clone(metadata),
+                                                       &FLAC__metadata_object_delete};
+            context.data.flac_metadata.push_back(ptr);
+            break;
+        }
+    }
+}
+
 void FlacStreamDecodeErrorCallback(const FLAC__StreamDecoder *decoder,
                                    FLAC__StreamDecoderErrorStatus status,
                                    void *client_data) {
@@ -122,10 +153,13 @@ bool DecodeFlacFile(FILE *file, AudioData &output) {
 
     FlacFileDataContext context(file, output);
 
+    const bool set_respond_all = FLAC__stream_decoder_set_metadata_respond_all(decoder.get());
+    assert(set_respond_all);
+
     const auto init_status = FLAC__stream_decoder_init_stream(
         decoder.get(), FlacDecodeReadCallback, FlacDecodeSeekCallback, FlacDecodeTellCallback,
-        FlacDecodeLengthCallback, FlacDecodeIsEndOfFile, FlacDecoderWriteCallback, nullptr,
-        FlacStreamDecodeErrorCallback, &context);
+        FlacDecodeLengthCallback, FlacDecodeIsEndOfFile, FlacDecoderWriteCallback,
+        FlacDecoderMetadataCallback, FlacStreamDecodeErrorCallback, &context);
     if (init_status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
         ErrorWithNewLine(__FUNCTION__ " failed to initialise the flac stream ",
                          FLAC__StreamDecoderInitStatusString[init_status]);

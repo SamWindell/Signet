@@ -22,6 +22,7 @@ add_library(
     code/third_party_libs/flac/src/stream_encoder.c
     code/third_party_libs/flac/src/stream_encoder_framing.c
     code/third_party_libs/flac/src/window.c
+    code/third_party_libs/flac/src/metadata_object.c
     code/third_party_libs/r8brain-resampler/r8bbase.cpp)
 
 if (WIN32)
@@ -69,7 +70,8 @@ add_library(
     code/tests/test_helpers.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
-target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS DRWAV_MAX_SMPL_LOOPS=16)
+
 if (NOT CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(common PUBLIC SIGNET_DEBUG)
 endif()

@@ -14,6 +14,7 @@ void SetMessagesEnabled(bool v);
 
 void PrintErrorPrefix();
 void PrintWarningPrefix();
+void PrintDebugPrefix();
 void PrintMessagePrefix(std::string_view heading);
 
 template <typename Arg, typename... Args>
@@ -40,6 +41,16 @@ void MessageWithNewLine(const std::string_view heading, Arg &&arg, Args &&... ar
         ((std::cout << std::forward<Args>(args)), ...);
         std::cout << "\n";
     }
+}
+
+template <typename Arg, typename... Args>
+void DebugWithNewLine(Arg &&arg, Args &&... args) {
+#if SIGNET_DEBUG
+    PrintDebugPrefix();
+    std::cout << std::forward<Arg>(arg);
+    ((std::cout << std::forward<Args>(args)), ...);
+    std::cout << "\n";
+#endif
 }
 
 template <typename V, typename... T>

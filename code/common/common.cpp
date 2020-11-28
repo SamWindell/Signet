@@ -27,6 +27,8 @@ void PrintMessagePrefix(const std::string_view heading) {
     std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
 }
 
+void PrintDebugPrefix() { std::cout << rang::style::bold << "DEBUG: " << rang::style::reset; }
+
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,
     const unsigned num_channels,

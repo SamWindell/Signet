@@ -86,13 +86,16 @@ FLAC__StreamDecoderWriteStatus FlacDecoderWriteCallback(const FLAC__StreamDecode
     context.data.bits_per_sample = flac_frame->header.bits_per_sample;
 
     double divisor;
-    if (flac_frame->header.bits_per_sample == 16) {
-        divisor = 32768.0; // 2^15
-    } else if (flac_frame->header.bits_per_sample == 24) {
-        divisor = 8388608.0; // 2^23
-    } else {
-        assert(false);
-        divisor = 999999999.0;
+    switch (flac_frame->header.bits_per_sample) {
+        case 8: divisor = std::pow(2, 7); break;
+        case 16:
+            divisor = 32768.0; // 2^15
+            break;
+        case 20: divisor = std::pow(2, 19); break;
+        case 24:
+            divisor = 8388608.0; // 2^23
+            break;
+        default: divisor = 9999999.0; assert(false);
     }
 
     for (unsigned int frame = 0; frame < flac_frame->header.blocksize; ++frame) {

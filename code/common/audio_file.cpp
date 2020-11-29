@@ -70,39 +70,12 @@ static u64 OnWaveChunk(void *chunk_user_data,
                        drwav_read_proc on_read,
                        drwav_seek_proc on_seek,
                        void *read_seek_user_data,
-                       const drwav_chunk_header *chunk_header) {
+                       const drwav_chunk_header *chunk_header,
+                       drwav_container container,
+                       const drwav_fmt *pFMT) {
     auto &audio_data = *(AudioData *)chunk_user_data;
 
-    if (drwav__fourcc_equal(chunk_header->id.fourcc, "inst")) {
-        constexpr size_t num_bytes_in_inst_chunk = 7;
-        if (chunk_header->sizeInBytes != num_bytes_in_inst_chunk) {
-            WarningWithNewLine("WAVE file has an incorrectly formatted inst chunk - ignoring it");
-            return 0;
-        }
-        std::array<u8, num_bytes_in_inst_chunk> bytes;
-        const auto bytes_read = on_read(read_seek_user_data, bytes.data(), bytes.size());
-        if (bytes_read == bytes.size()) {
-            InstrumentData inst;
-            inst.midi_note = (s8)bytes[0];
-            inst.fine_tune_db = (s8)bytes[1];
-            inst.gain = (s8)bytes[2];
-            inst.low_note = (s8)bytes[3];
-            inst.high_note = (s8)bytes[4];
-            inst.low_velocity = (s8)bytes[5];
-            inst.high_velocity = (s8)bytes[6];
-            audio_data.instrument_data = inst;
-
-            DebugWithNewLine("WAVE inst chunk found:");
-            DebugWithNewLine("    midi_note: ", (int)inst.midi_note);
-            DebugWithNewLine("    fine_tune_db: ", (int)inst.fine_tune_db);
-            DebugWithNewLine("    gain: ", (int)inst.gain);
-            DebugWithNewLine("    low_note: ", (int)inst.low_note);
-            DebugWithNewLine("    high_note: ", (int)inst.high_note);
-            DebugWithNewLine("    low_velocity: ", (int)inst.low_velocity);
-            DebugWithNewLine("    high_velocity: ", (int)inst.high_velocity);
-        }
-        return bytes_read;
-    } else if (!drwav__fourcc_equal(chunk_header->id.fourcc, "data") &&
+    if (!drwav__fourcc_equal(chunk_header->id.fourcc, "data") &&
                !drwav__fourcc_equal(chunk_header->id.fourcc, "fact") &&
                !drwav__fourcc_equal(chunk_header->id.fourcc, "fmt ")) {
         char type[5];
@@ -112,6 +85,87 @@ static u64 OnWaveChunk(void *chunk_user_data,
         type[3] = (char)chunk_header->id.fourcc[3];
         type[4] = '\0';
         DebugWithNewLine("Found WAVE chunk: '", type, "', bytes: ", chunk_header->sizeInBytes);
+
+        if (drwav__fourcc_equal(chunk_header->id.fourcc, "list") ||
+                   drwav__fourcc_equal(chunk_header->id.fourcc, "LIST")) {
+            // TODO we're assuming little endian
+            usize read = 0;
+            while (read < chunk_header->sizeInBytes) {
+                u8 chunk_id[4];
+                read += on_read(read_seek_user_data, chunk_id, sizeof(chunk_id));
+
+                if (drwav__fourcc_equal(chunk_id, "adtl") || drwav__fourcc_equal(chunk_id, "INFO")) {
+                    continue;
+                }
+
+                u32 subchunk_data_size;
+                read += on_read(read_seek_user_data, &subchunk_data_size, sizeof(subchunk_data_size));
+                if (drwav__fourcc_equal(chunk_id, "labl") || drwav__fourcc_equal(chunk_id, "note")) {
+                    u32 cue_point_id;
+                    read += on_read(read_seek_user_data, &cue_point_id, sizeof(cue_point_id));
+
+                    u32 string_size = subchunk_data_size - 4;
+                    std::string str {};
+                    if (string_size) {
+                        str.resize(string_size);
+                        read += on_read(read_seek_user_data, str.data(), str.size());
+                        str.resize(str.size() - 1); // remove null term
+                    }
+
+                    DebugWithNewLine("type: ", (char)chunk_id[0], (char)chunk_id[1], (char)chunk_id[2],
+                                     (char)chunk_id[3]);
+                    DebugWithNewLine("    cue_point_id: ", cue_point_id);
+                    DebugWithNewLine("    str: ", str);
+                } else if (drwav__fourcc_equal(chunk_id, "ltxt")) {
+                    struct LabeledText {
+                        u32 cue_point_id;
+                        u32 sample_length;
+                        u32 purpose_id;
+                        u16 country;
+                        u16 language;
+                        u16 dialect;
+                        u16 code_page;
+                    };
+                    LabeledText labeled_text;
+                    read += on_read(read_seek_user_data, &labeled_text, sizeof(labeled_text));
+
+                    u32 string_size = subchunk_data_size - sizeof(LabeledText);
+                    std::string str {};
+                    if (string_size) {
+                        str.resize(string_size);
+                        read += on_read(read_seek_user_data, str.data(), str.size());
+                        str.resize(str.size() - 1); // remove null term
+                    }
+
+                    DebugWithNewLine("type: ltxt");
+                    DebugWithNewLine("    cue_point_id: ", labeled_text.cue_point_id);
+                    DebugWithNewLine("    sample_length: ", labeled_text.sample_length);
+                    DebugWithNewLine("    purpose_id: ", labeled_text.purpose_id);
+                    DebugWithNewLine("    country: ", labeled_text.country);
+                    DebugWithNewLine("    language: ", labeled_text.language);
+                    DebugWithNewLine("    dialect: ", labeled_text.dialect);
+                    DebugWithNewLine("    code_page: ", labeled_text.code_page);
+                    DebugWithNewLine("    str: ", str);
+                } else {
+                    DebugWithNewLine("unknown LIST chunk: ", (char)chunk_id[0], (char)chunk_id[1],
+                                     (char)chunk_id[2], (char)chunk_id[3]);
+
+                    std::string str;
+                    str.resize(subchunk_data_size);
+                    read += on_read(read_seek_user_data, str.data(), str.size());
+                    str.resize(str.size() - 1); // remove null term
+
+                    DebugWithNewLine("Converted to string:");
+                    DebugWithNewLine(str);
+                }
+
+                if ((subchunk_data_size % 2) == 1) {
+                    on_seek(read_seek_user_data, 1, drwav_seek_origin_current);
+                    read += 1;
+                }
+            }
+            on_seek(read_seek_user_data, -((int)read), drwav_seek_origin_current);
+        }
 
         std::vector<u8> chunk {};
         const auto WriteU32 = [&](u32 val) {
@@ -142,6 +196,84 @@ static u64 OnWaveChunk(void *chunk_user_data,
     return 0;
 }
 
+std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
+    os << "{\n";
+    os << "  manufacturer: " << s.manufacturer << "\n";
+    os << "  product: " << s.product << "\n";
+    os << "  samplePeriod: " << s.samplePeriod << "\n";
+    os << "  midiUnityNotes: " << s.midiUnityNotes << "\n";
+    os << "  midiPitchFraction: " << s.midiPitchFraction << "\n";
+    os << "  smpteFormat: " << s.smpteFormat << "\n";
+    os << "  smpteOffset: " << s.smpteOffset << "\n";
+    os << "  numSampleLoops: " << s.numSampleLoops << "\n";
+    os << "  samplerData: " << s.samplerData << "\n";
+
+    os << "  loops: [\n";
+    for (u32 i = 0; i < s.numSampleLoops; ++i) {
+        auto &smpl_loop = s.loops[i];
+
+        os << "    {\n";
+        os << "      cuePointId: " << smpl_loop.cuePointId << "\n";
+        os << "      type: " << smpl_loop.type << "\n";
+        os << "      start: " << smpl_loop.start << "\n";
+        os << "      end: " << smpl_loop.end << "\n";
+        os << "      fraction: " << smpl_loop.fraction << "\n";
+        os << "      playCount: " << smpl_loop.playCount << "\n";
+        os << "    }\n";
+    }
+    os << "  ]\n";
+    os << "}\n";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const drwav_cue &c) {
+    os << "{\n";
+    os << "  numCuePoints: " << c.numCuePoints << "\n";
+
+    os << "  cuePoints: [\n";
+    for (u32 i = 0; i < c.numCuePoints; ++i) {
+        auto &cue = c.cuePoints[i];
+        os << "    {\n";
+        os << "      id: " << cue.id << "\n";
+        os << "      position: " << cue.position << "\n";
+        os << "      dataChunkId: " << (char)cue.dataChunkId[0] << (char)cue.dataChunkId[1] << (char)cue.dataChunkId[2] << (char)cue.dataChunkId[3] << "\n";
+        os << "      chunkStart: " << cue.chunkStart << "\n";
+        os << "      blockStart: " << cue.blockStart << "\n";
+        os << "      sampleOffset: " << cue.sampleOffset << "\n";
+        os << "    }\n";
+    }
+    os << "  ]\n";
+    os << "}\n";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const drwav_inst &i) {
+    os << "{\n";
+    os << "  midi_note: " << (int)i.midi_note << "\n";
+    os << "  fine_tune_db: " << (int)i.fine_tune_db << "\n";
+    os << "  gain: " << (int)i.gain << "\n";
+    os << "  low_note: " << (int)i.low_note << "\n";
+    os << "  high_note: " << (int)i.high_note << "\n";
+    os << "  low_velocity: " << (int)i.low_velocity << "\n";
+    os << "  high_velocity: " << (int)i.high_velocity << "\n";
+    os << "}\n";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const drwav_acid &a) {
+    os << "{\n";
+    os << "  flags: " << a.flags << "\n";
+    os << "  rootNote: " << a.rootNote << "\n";
+    os << "  unknown1: " << a.reserved1 << "\n";
+    os << "  unknown2: " << a.reserved2 << "\n";
+    os << "  numBeats: " << a.numBeats << "\n";
+    os << "  meterDenominator: " << a.meterDenominator << "\n";
+    os << "  meterNumerator: " << a.meterNumerator << "\n";
+    os << "  tempo: " << a.tempo << "\n";
+    os << "}\n";
+    return os;
+}
+
 std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
     const auto file = OpenFile(path, "rb");
@@ -152,24 +284,24 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     if (ext == ".wav") {
         std::vector<float> f32_buf {};
         drwav wav;
-        if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), &result, 0)) {
+        DebugWithNewLine("=================");
+        if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), &result, 0, nullptr)) {
             WarningWithNewLine("could not init the WAV file ", path);
             return {};
         }
 
-        // if (wav.smpl.samplePeriod) {
-        //     SampleLoops loops;
-        //     for (u32 i = 0; i < wav.smpl.numSampleLoops; ++i) {
-        //         auto &smpl_loop = wav.smpl.loops;
-
-        //         SampleLoop loop;
-        //         loop.type = LoopType::Forward;
-        //         if (smpl.type == 1) loop.type = LoopType::PingPong;
-        //         if (smpl.type == 2) loop.type = LoopType::Backward;
-        //         loop.start = smpl_loop.start / (wav.bitsPerSample / 8) / wav.channels;
-        //         loop.end = smpl_loop.end / (wav.bitsPerSample / 8) / wav.channels;
-        //     }
-        // }
+        if (wav.hasSmpl) {
+            DebugWithNewLine("Wav smpl chunk found: ", wav.smpl);
+        }
+        if (wav.hasCue) {
+            DebugWithNewLine("Wav cue chunk found: ", wav.cue);
+        }
+        if (wav.hasAcid) {
+            DebugWithNewLine("Wav acid chunk found: ", wav.acid);
+        }
+        if (wav.hasInst) {
+            DebugWithNewLine("Wav acid chunk found: ", wav.inst);
+        }
 
         result.num_channels = wav.channels;
         result.sample_rate = wav.sampleRate;

@@ -26,10 +26,9 @@ struct InstrumentData {
 enum class LoopType { Forward, Backward, PingPong };
 
 struct SampleLoop {
-    std::string name;
     LoopType type;
-    size_t start;
-    size_t end;
+    size_t start_frame;
+    size_t end_frame;
     unsigned num_times_to_loop; // 0 for infinite
 };
 

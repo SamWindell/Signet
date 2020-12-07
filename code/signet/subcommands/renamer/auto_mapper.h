@@ -13,7 +13,7 @@
 class AutomapFolder {
   public:
     struct AutomapFile {
-        std::string path;
+        fs::path path;
         int root;
         int low;
         int high;
@@ -22,7 +22,7 @@ class AutomapFolder {
 
     void AddFile(const fs::path &path, int root_note, const std::smatch &match) {
         AutomapFile file {};
-        file.path = path.generic_string();
+        file.path = path;
         file.root = root_note;
         for (usize i = 0; i < match.size(); ++i) {
             file.regex_groups.push_back(match[i].str());
@@ -52,9 +52,8 @@ class AutomapFolder {
     }
 
     const AutomapFile *GetFile(const fs::path &path) {
-        const auto p = path.generic_string();
         for (const auto &f : m_files) {
-            if (p == f.path) {
+            if (path == f.path) {
                 return &f;
             }
         }
@@ -80,7 +79,7 @@ class AutoMapper {
     void AddToFolderMap(const fs::path &path);
     void ConstructAllAutomappings();
 
-    std::unordered_map<std::string, AutomapFolder> m_folder_map;
+    std::map<fs::path, AutomapFolder> m_folder_map;
     std::optional<std::string> m_automap_pattern;
     std::optional<std::string> m_automap_out;
     int m_root_note_regex_group {};

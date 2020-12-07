@@ -33,13 +33,13 @@ void AutoMapper::CreateCLI(CLI::App &renamer) {
         ->required();
 }
 
+fs::path GetParent(const fs::path &path) {
+    if (path.has_parent_path()) return path.parent_path();
+    return ".";
+}
+
 void AutoMapper::AddToFolderMap(const fs::path &path) {
     REQUIRE(m_automap_pattern);
-    if (!path.has_parent_path()) {
-        REQUIRE(false); // expecting canonical paths
-        return;
-    }
-
     const std::string filename = GetJustFilenameWithNoExtension(path);
     std::smatch pieces_match;
     std::regex r {*m_automap_pattern};
@@ -64,7 +64,7 @@ void AutoMapper::AddToFolderMap(const fs::path &path) {
                                " is not in the range 0-127 so cannot be processed");
         } else {
             MessageWithNewLine("AutoMapper", "automap found root note ", root_note, " in filename ", path);
-            const auto parent = path.parent_path().generic_string();
+            const auto parent = GetParent(path);
             m_folder_map[parent].AddFile(path, root_note, pieces_match);
         }
     }
@@ -87,7 +87,7 @@ void AutoMapper::InitialiseProcessing(const tcb::span<EditTrackedAudioFile> file
 
 bool AutoMapper::Rename(const EditTrackedAudioFile &f, std::string &filename) {
     if (m_automap_pattern) {
-        auto &folder = m_folder_map[f.GetPath().parent_path().generic_string()];
+        auto &folder = m_folder_map[GetParent(f.GetPath())];
         if (const auto file = folder.GetFile(f.GetPath())) {
             auto new_name = *m_automap_out;
             Replace(new_name, "<lo>", std::to_string(file->low));

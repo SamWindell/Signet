@@ -77,15 +77,15 @@ static u64 OnWaveChunk(void *chunk_user_data,
 
 std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
     os << "{\n";
-    os << "  manufacturer: " << s.manufacturer << "\n";
-    os << "  product: " << s.product << "\n";
-    os << "  samplePeriod: " << s.samplePeriod << "\n";
+    os << "  manufacturer: " << s.manufacturerId << "\n";
+    os << "  product: " << s.productId << "\n";
+    os << "  samplePeriodNanoseconds: " << s.samplePeriodNanoseconds << "\n";
     os << "  midiUnityNotes: " << s.midiUnityNotes << "\n";
     os << "  midiPitchFraction: " << s.midiPitchFraction << "\n";
     os << "  smpteFormat: " << s.smpteFormat << "\n";
     os << "  smpteOffset: " << s.smpteOffset << "\n";
     os << "  numSampleLoops: " << s.numSampleLoops << "\n";
-    os << "  samplerData: " << s.samplerData << "\n";
+    os << "  numBytesOfSamplerSpecificData: " << s.numBytesOfSamplerSpecificData << "\n";
 
     os << "  loops: [\n";
     for (u32 i = 0; i < s.numSampleLoops; ++i) {
@@ -94,9 +94,9 @@ std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
         os << "    {\n";
         os << "      cuePointId: " << smpl_loop.cuePointId << "\n";
         os << "      type: " << smpl_loop.type << "\n";
-        os << "      start: " << smpl_loop.start << "\n";
-        os << "      end: " << smpl_loop.end << "\n";
-        os << "      fraction: " << smpl_loop.fraction << "\n";
+        os << "      firstSampleByteOffset: " << smpl_loop.firstSampleByteOffset << "\n";
+        os << "      lastSampleByteOffset: " << smpl_loop.lastSampleByteOffset << "\n";
+        os << "      sampleFraction: " << smpl_loop.sampleFraction << "\n";
         os << "      playCount: " << smpl_loop.playCount << "\n";
         os << "    }\n";
     }
@@ -114,12 +114,12 @@ std::ostream &operator<<(std::ostream &os, const drwav_cue &c) {
         auto &cue = c.cuePoints[i];
         os << "    {\n";
         os << "      id: " << cue.id << "\n";
-        os << "      position: " << cue.position << "\n";
+        os << "      position: " << cue.playOrderPosition << "\n";
         os << "      dataChunkId: " << (char)cue.dataChunkId[0] << (char)cue.dataChunkId[1]
            << (char)cue.dataChunkId[2] << (char)cue.dataChunkId[3] << "\n";
         os << "      chunkStart: " << cue.chunkStart << "\n";
         os << "      blockStart: " << cue.blockStart << "\n";
-        os << "      sampleOffset: " << cue.sampleOffset << "\n";
+        os << "      sampleByteOffset: " << cue.sampleByteOffset << "\n";
         os << "    }\n";
     }
     os << "  ]\n";
@@ -163,7 +163,7 @@ std::ostream &operator<<(std::ostream &os, const drwav_list_label_or_note &l) {
     return os;
 }
 
-std::ostream &operator<<(std::ostream &os, const drwav_list_labelled_text &l) {
+std::ostream &operator<<(std::ostream &os, const drwav_list_labelled_cue_region &l) {
     os << "{\n";
     os << "  cuePointId: " << l.cuePointId << "\n";
     os << "  sampleLength: " << l.sampleLength << "\n";
@@ -679,8 +679,6 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
         };
 
         AddComment("MIDI_NOTE", audio_data.instrument_data->midi_note);
-        AddComment("FINE_TUNE_DB", audio_data.instrument_data->fine_tune_db);
-        AddComment("GAIN", audio_data.instrument_data->gain);
         AddComment("LOW_NOTE", audio_data.instrument_data->low_note);
         AddComment("HIGH_NOTE", audio_data.instrument_data->high_note);
         AddComment("LOW_VELOCITY", audio_data.instrument_data->low_velocity);

@@ -14,10 +14,8 @@ enum class AudioFileFormat {
     Flac,
 };
 
-struct InstrumentData {
+struct SamplerData {
     s8 midi_note; //  0 - 127
-    s8 fine_tune_db; //  -50 - +50
-    s8 gain; // -64 - +64
     s8 low_note; //  0 - 127
     s8 high_note; // 0 - 127
     s8 low_velocity; //  1 - 127
@@ -69,7 +67,7 @@ struct AudioData {
     unsigned bits_per_sample = 24;
     AudioFileFormat format {AudioFileFormat::Wav};
 
-    std::optional<InstrumentData> instrument_data {};
+    std::optional<SamplerData> instrument_data {};
     std::optional<SampleLoops> loops {};
 
     std::shared_ptr<drwav_metadata> wave_metadata {};

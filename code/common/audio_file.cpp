@@ -55,8 +55,7 @@ static size_t OnReadFile(void *file, void *buffer_out, size_t bytes_to_read) {
     return std::fread(buffer_out, 1, bytes_to_read, (FILE *)file);
 }
 
-template <typename SeekOrigin>
-static drwav_bool32 OnSeekFile(void *file, int offset, SeekOrigin origin) {
+static drwav_bool32 OnSeekFile(void *file, int offset, drwav_seek_origin origin) {
     constexpr int fseek_success = 0;
     if (std::fseek((FILE *)file, offset, (origin == (int)drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
         fseek_success) {
@@ -73,126 +72,6 @@ static u64 OnWaveChunk(void *chunk_user_data,
                        const drwav_chunk_header *chunk_header,
                        drwav_container container,
                        const drwav_fmt *pFMT) {
-    auto &audio_data = *(AudioData *)chunk_user_data;
-
-    if (!drwav__fourcc_equal(chunk_header->id.fourcc, "data") &&
-               !drwav__fourcc_equal(chunk_header->id.fourcc, "fact") &&
-               !drwav__fourcc_equal(chunk_header->id.fourcc, "fmt ")) {
-        char type[5];
-        type[0] = (char)chunk_header->id.fourcc[0];
-        type[1] = (char)chunk_header->id.fourcc[1];
-        type[2] = (char)chunk_header->id.fourcc[2];
-        type[3] = (char)chunk_header->id.fourcc[3];
-        type[4] = '\0';
-        DebugWithNewLine("Found WAVE chunk: '", type, "', bytes: ", chunk_header->sizeInBytes);
-
-        if (drwav__fourcc_equal(chunk_header->id.fourcc, "list") ||
-                   drwav__fourcc_equal(chunk_header->id.fourcc, "LIST")) {
-            // TODO we're assuming little endian
-            usize read = 0;
-            while (read < chunk_header->sizeInBytes) {
-                u8 chunk_id[4];
-                read += on_read(read_seek_user_data, chunk_id, sizeof(chunk_id));
-
-                if (drwav__fourcc_equal(chunk_id, "adtl") || drwav__fourcc_equal(chunk_id, "INFO")) {
-                    continue;
-                }
-
-                u32 subchunk_data_size;
-                read += on_read(read_seek_user_data, &subchunk_data_size, sizeof(subchunk_data_size));
-                if (drwav__fourcc_equal(chunk_id, "labl") || drwav__fourcc_equal(chunk_id, "note")) {
-                    u32 cue_point_id;
-                    read += on_read(read_seek_user_data, &cue_point_id, sizeof(cue_point_id));
-
-                    u32 string_size = subchunk_data_size - 4;
-                    std::string str {};
-                    if (string_size) {
-                        str.resize(string_size);
-                        read += on_read(read_seek_user_data, str.data(), str.size());
-                        str.resize(str.size() - 1); // remove null term
-                    }
-
-                    DebugWithNewLine("type: ", (char)chunk_id[0], (char)chunk_id[1], (char)chunk_id[2],
-                                     (char)chunk_id[3]);
-                    DebugWithNewLine("    cue_point_id: ", cue_point_id);
-                    DebugWithNewLine("    str: ", str);
-                } else if (drwav__fourcc_equal(chunk_id, "ltxt")) {
-                    struct LabeledText {
-                        u32 cue_point_id;
-                        u32 sample_length;
-                        u32 purpose_id;
-                        u16 country;
-                        u16 language;
-                        u16 dialect;
-                        u16 code_page;
-                    };
-                    LabeledText labeled_text;
-                    read += on_read(read_seek_user_data, &labeled_text, sizeof(labeled_text));
-
-                    u32 string_size = subchunk_data_size - sizeof(LabeledText);
-                    std::string str {};
-                    if (string_size) {
-                        str.resize(string_size);
-                        read += on_read(read_seek_user_data, str.data(), str.size());
-                        str.resize(str.size() - 1); // remove null term
-                    }
-
-                    DebugWithNewLine("type: ltxt");
-                    DebugWithNewLine("    cue_point_id: ", labeled_text.cue_point_id);
-                    DebugWithNewLine("    sample_length: ", labeled_text.sample_length);
-                    DebugWithNewLine("    purpose_id: ", labeled_text.purpose_id);
-                    DebugWithNewLine("    country: ", labeled_text.country);
-                    DebugWithNewLine("    language: ", labeled_text.language);
-                    DebugWithNewLine("    dialect: ", labeled_text.dialect);
-                    DebugWithNewLine("    code_page: ", labeled_text.code_page);
-                    DebugWithNewLine("    str: ", str);
-                } else {
-                    DebugWithNewLine("unknown LIST chunk: ", (char)chunk_id[0], (char)chunk_id[1],
-                                     (char)chunk_id[2], (char)chunk_id[3]);
-
-                    std::string str;
-                    str.resize(subchunk_data_size);
-                    read += on_read(read_seek_user_data, str.data(), str.size());
-                    str.resize(str.size() - 1); // remove null term
-
-                    DebugWithNewLine("Converted to string:");
-                    DebugWithNewLine(str);
-                }
-
-                if ((subchunk_data_size % 2) == 1) {
-                    on_seek(read_seek_user_data, 1, drwav_seek_origin_current);
-                    read += 1;
-                }
-            }
-            on_seek(read_seek_user_data, -((int)read), drwav_seek_origin_current);
-        }
-
-        std::vector<u8> chunk {};
-        const auto WriteU32 = [&](u32 val) {
-            // TODO this assumes this machine is little endian
-            const auto write_index = chunk.size();
-            chunk.resize(chunk.size() + sizeof(val));
-            std::memcpy(&chunk.data()[write_index], &val, sizeof(val));
-        };
-
-        chunk.push_back(chunk_header->id.fourcc[0]);
-        chunk.push_back(chunk_header->id.fourcc[1]);
-        chunk.push_back(chunk_header->id.fourcc[2]);
-        chunk.push_back(chunk_header->id.fourcc[3]);
-        WriteU32((u32)chunk_header->sizeInBytes);
-
-        const auto write_index = chunk.size();
-        chunk.resize(chunk.size() + chunk_header->sizeInBytes);
-        const auto bytes_read =
-            on_read(read_seek_user_data, &(chunk.data()[write_index]), chunk_header->sizeInBytes);
-
-        assert(std::memcmp(chunk.data(), type, 4) == 0);
-        assert(chunk.size() == (8 + chunk_header->sizeInBytes));
-
-        audio_data.wave_metadata.push_back(std::move(chunk));
-        return bytes_read;
-    }
-
     return 0;
 }
 
@@ -236,7 +115,8 @@ std::ostream &operator<<(std::ostream &os, const drwav_cue &c) {
         os << "    {\n";
         os << "      id: " << cue.id << "\n";
         os << "      position: " << cue.position << "\n";
-        os << "      dataChunkId: " << (char)cue.dataChunkId[0] << (char)cue.dataChunkId[1] << (char)cue.dataChunkId[2] << (char)cue.dataChunkId[3] << "\n";
+        os << "      dataChunkId: " << (char)cue.dataChunkId[0] << (char)cue.dataChunkId[1]
+           << (char)cue.dataChunkId[2] << (char)cue.dataChunkId[3] << "\n";
         os << "      chunkStart: " << cue.chunkStart << "\n";
         os << "      blockStart: " << cue.blockStart << "\n";
         os << "      sampleOffset: " << cue.sampleOffset << "\n";
@@ -249,13 +129,13 @@ std::ostream &operator<<(std::ostream &os, const drwav_cue &c) {
 
 std::ostream &operator<<(std::ostream &os, const drwav_inst &i) {
     os << "{\n";
-    os << "  midi_note: " << (int)i.midi_note << "\n";
-    os << "  fine_tune_db: " << (int)i.fine_tune_db << "\n";
+    os << "  midi_note: " << (int)i.midiNote << "\n";
+    os << "  fine_tune_db: " << (int)i.fineTuneDb << "\n";
     os << "  gain: " << (int)i.gain << "\n";
-    os << "  low_note: " << (int)i.low_note << "\n";
-    os << "  high_note: " << (int)i.high_note << "\n";
-    os << "  low_velocity: " << (int)i.low_velocity << "\n";
-    os << "  high_velocity: " << (int)i.high_velocity << "\n";
+    os << "  low_note: " << (int)i.lowNote << "\n";
+    os << "  high_note: " << (int)i.highNote << "\n";
+    os << "  low_velocity: " << (int)i.lowVelocity << "\n";
+    os << "  high_velocity: " << (int)i.highVelocity << "\n";
     os << "}\n";
     return os;
 }
@@ -274,6 +154,56 @@ std::ostream &operator<<(std::ostream &os, const drwav_acid &a) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const drwav_list_label_or_note &l) {
+    os << "{\n";
+    os << "  cuePointId: " << l.cuePointId << "\n";
+    os << "  stringSize: " << l.stringSize << "\n";
+    os << "  string: " << l.string << "\n";
+    os << "}\n";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const drwav_list_labelled_text &l) {
+    os << "{\n";
+    os << "  cuePointId: " << l.cuePointId << "\n";
+    os << "  sampleLength: " << l.sampleLength << "\n";
+    os << "  purposeId: " << (char)l.purposeId[0] << (char)l.purposeId[1] << (char)l.purposeId[2]
+       << (char)l.purposeId[3] << "\n";
+    os << "  country: " << l.country << "\n";
+    os << "  language: " << l.language << "\n";
+    os << "  dialect: " << l.dialect << "\n";
+    os << "  codePage: " << l.codePage << "\n";
+    os << "  stringSize: " << l.stringSize << "\n";
+    os << "  string: ";
+    if (l.string) os << l.string;
+    os << "\n";
+    os << "}\n";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const drwav_list_info_text &l) {
+    os << "{\n";
+    os << "  stringSize: " << l.stringSize << "\n";
+    os << "  string: " << l.string << "\n";
+    os << "}\n";
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const drwav_unknown_metadata &u) {
+    os << "{\n";
+    os << "  id: " << (char)u.id[0] << (char)u.id[1] << (char)u.id[2] << (char)u.id[3] << "\n";
+    if (u.chunkLocation == drwav_metadata_location_invalid) {
+        os << "  chunkLocation: invalid\n";
+    } else if (u.chunkLocation == drwav_metadata_location_inside_info_list) {
+        os << "  chunkLocation: info list\n";
+    } else if (u.chunkLocation == drwav_metadata_location_inside_adtl_list) {
+        os << "  chunkLocation: adtl list\n";
+    }
+    os << "  dataSizeInBytes: " << u.dataSizeInBytes << "\n";
+    os << "}\n";
+    return os;
+}
+
 std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
     const auto file = OpenFile(path, "rb");
@@ -284,23 +214,79 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     if (ext == ".wav") {
         std::vector<float> f32_buf {};
         drwav wav;
+
         DebugWithNewLine("=================");
-        if (!drwav_init_ex(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), &result, 0, nullptr)) {
+        if (!drwav_init_ex_with_metadata(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0,
+                                         nullptr, (u64)drwav_metadata_type_all)) {
             WarningWithNewLine("could not init the WAV file ", path);
             return {};
         }
 
-        if (wav.hasSmpl) {
-            DebugWithNewLine("Wav smpl chunk found: ", wav.smpl);
-        }
-        if (wav.hasCue) {
-            DebugWithNewLine("Wav cue chunk found: ", wav.cue);
-        }
-        if (wav.hasAcid) {
-            DebugWithNewLine("Wav acid chunk found: ", wav.acid);
-        }
-        if (wav.hasInst) {
-            DebugWithNewLine("Wav acid chunk found: ", wav.inst);
+        if (wav.numMetadata) {
+            DebugWithNewLine("Wav num metadata: ", wav.numMetadata);
+
+            for (size_t i = 0; i < wav.numMetadata; ++i) {
+                auto &m = wav.metadata[i];
+                switch (m.type) {
+                    case drwav_metadata_type_smpl: {
+                        DebugWithNewLine("type: smpl");
+                        DebugWithNewLine(m.smpl);
+                        break;
+                    }
+                    case drwav_metadata_type_inst: {
+                        DebugWithNewLine("type: inst");
+                        DebugWithNewLine(m.inst);
+                        break;
+                    }
+                    case drwav_metadata_type_cue: {
+                        DebugWithNewLine("type: cue");
+                        DebugWithNewLine(m.cue);
+                        break;
+                    }
+                    case drwav_metadata_type_acid: {
+                        DebugWithNewLine("type: acid");
+                        DebugWithNewLine(m.acid);
+                        break;
+                    }
+                    case drwav_metadata_type_list_label: {
+                        DebugWithNewLine("type: labelOrNote");
+                        DebugWithNewLine(m.labelOrNote);
+                        break;
+                    }
+                    case drwav_metadata_type_list_note: {
+                        DebugWithNewLine("type: list_note");
+                        DebugWithNewLine(m.labelOrNote);
+                        break;
+                    }
+                    case drwav_metadata_type_list_labelled_text: {
+                        DebugWithNewLine("type: list_labelled_text");
+                        DebugWithNewLine(m.labelledText);
+                        break;
+                    }
+                    case drwav_metadata_type_list_info_software:
+                    case drwav_metadata_type_list_info_copyright:
+                    case drwav_metadata_type_list_info_title:
+                    case drwav_metadata_type_list_info_artist:
+                    case drwav_metadata_type_list_info_comment:
+                    case drwav_metadata_type_list_info_date:
+                    case drwav_metadata_type_list_info_genre:
+                    case drwav_metadata_type_list_info_album:
+                    case drwav_metadata_type_list_info_tracknumber: {
+                        DebugWithNewLine("type: list info");
+                        DebugWithNewLine(m.infoText);
+                        break;
+                    }
+                    case drwav_metadata_type_unknown: {
+                        DebugWithNewLine("type: unknown");
+                        DebugWithNewLine(m.unknown);
+                        break;
+                    }
+                }
+            }
+
+            result.num_wave_metadata = wav.numMetadata;
+            result.wave_metadata = {drwav_take_ownership_of_metadata(&wav),
+                                    [](drwav_metadata *m) { drwav_free(m, NULL); }};
         }
 
         result.num_channels = wav.channels;
@@ -449,6 +435,10 @@ static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f
     }
 }
 
+static size_t OnWrite(void *pUserData, const void *pData, size_t bytesToWrite) {
+    return fwrite(pData, 1, bytesToWrite, (FILE *)pUserData);
+}
+
 static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
@@ -456,109 +446,103 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
         return false;
     }
 
-    assert(IsThisMachineLittleEndian()); // TODO: add ability to write a wave file from a big endian machine
-
     const auto file = OpenFile(path, "wb");
     if (!file) return false;
 
-    const auto WriteU32 = [&](u32 val) { std::fwrite(&val, sizeof(val), 1, file.get()); };
-    const auto WriteU16 = [&](u16 val) { std::fwrite(&val, sizeof(val), 1, file.get()); };
-    const auto WriteU8 = [&](u8 val) { std::fwrite(&val, sizeof(val), 1, file.get()); };
-    const auto WriteChars = [&](std::string_view str) { std::fwrite(str.data(), 1, str.size(), file.get()); };
+    drwav_data_format format {};
+    format.container = drwav_container_riff; // Use rf64 for large files?
+    format.format =
+        (bits_per_sample == 32 || bits_per_sample == 64) ? DR_WAVE_FORMAT_IEEE_FLOAT : DR_WAVE_FORMAT_PCM;
+    format.channels = audio_data.num_channels;
+    format.sampleRate = audio_data.sample_rate;
+    format.bitsPerSample = bits_per_sample;
 
-    WriteChars("RIFF");
-    WriteU32(0); // placeholder for the file size - 8, will be filled at end
-    WriteChars("WAVE");
-
-    // fmt chunk
-    {
-        WriteChars("fmt ");
-        WriteU32(16);
-
-        u16 compression_code = 0;
-        switch (bits_per_sample) {
-            case 8:
-            case 16:
-            case 24:
-                compression_code = 1; // pcm
-                break;
-            case 32:
-            case 64:
-                compression_code = 3; // float
-                break;
-            default: break;
-        }
-        WriteU16(compression_code);
-        WriteU16((u16)audio_data.num_channels);
-        WriteU32(audio_data.sample_rate);
-
-        const u32 block_align = bits_per_sample / 8 * audio_data.num_channels;
-        WriteU32(block_align * audio_data.sample_rate);
-        WriteU16((u16)block_align);
-        WriteU16((u16)bits_per_sample);
-    }
-
-    // inst chunk
-    {
-        if (audio_data.instrument_data) {
-            WriteChars("inst");
-            WriteU32(7);
-            WriteU8(audio_data.instrument_data->midi_note);
-            WriteU8(audio_data.instrument_data->fine_tune_db);
-            WriteU8(audio_data.instrument_data->gain);
-            WriteU8(audio_data.instrument_data->low_note);
-            WriteU8(audio_data.instrument_data->high_note);
-            WriteU8(audio_data.instrument_data->low_velocity);
-            WriteU8(audio_data.instrument_data->high_velocity);
-
-            WriteU8(0); // padding
-        }
-    }
-
-    // fact chunk seems necessary for IEEE float
-    if (bits_per_sample == 32 || bits_per_sample == 64) {
-        WriteChars("fact");
-        WriteU32(4);
-        WriteU32((u32)audio_data.NumFrames());
-    }
-
-    // any other chunks that we saved
-    {
-        for (auto &chunk : audio_data.wave_metadata) {
-            DebugWithNewLine("Writing WAVE chunk ", (char)chunk[0], (char)chunk[1], (char)chunk[2],
-                             (char)chunk[3]);
-            std::fwrite(chunk.data(), 1, chunk.size(), file.get());
-            if ((chunk.size() % 2) == 1) {
-                WriteU8(0); // padding
+    if (audio_data.num_wave_metadata) {
+        DebugWithNewLine("\n\n\nWRITE\n\n\n");
+        for (size_t i = 0; i < audio_data.num_wave_metadata; ++i) {
+            auto &m = audio_data.wave_metadata.get()[i];
+            switch (m.type) {
+                case drwav_metadata_type_smpl: {
+                    DebugWithNewLine("type: smpl");
+                    DebugWithNewLine(m.smpl);
+                    break;
+                }
+                case drwav_metadata_type_inst: {
+                    DebugWithNewLine("type: inst");
+                    DebugWithNewLine(m.inst);
+                    break;
+                }
+                case drwav_metadata_type_cue: {
+                    DebugWithNewLine("type: cue");
+                    DebugWithNewLine(m.cue);
+                    break;
+                }
+                case drwav_metadata_type_acid: {
+                    DebugWithNewLine("type: acid");
+                    DebugWithNewLine(m.acid);
+                    break;
+                }
+                case drwav_metadata_type_list_label: {
+                    DebugWithNewLine("type: labelOrNote");
+                    DebugWithNewLine(m.labelOrNote);
+                    break;
+                }
+                case drwav_metadata_type_list_note: {
+                    DebugWithNewLine("type: list_note");
+                    DebugWithNewLine(m.labelOrNote);
+                    break;
+                }
+                case drwav_metadata_type_list_labelled_text: {
+                    DebugWithNewLine("type: list_labelled_text");
+                    DebugWithNewLine(m.labelledText);
+                    break;
+                }
+                case drwav_metadata_type_list_info_software:
+                case drwav_metadata_type_list_info_copyright:
+                case drwav_metadata_type_list_info_title:
+                case drwav_metadata_type_list_info_artist:
+                case drwav_metadata_type_list_info_comment:
+                case drwav_metadata_type_list_info_date:
+                case drwav_metadata_type_list_info_genre:
+                case drwav_metadata_type_list_info_album:
+                case drwav_metadata_type_list_info_tracknumber: {
+                    DebugWithNewLine("type: list info");
+                    DebugWithNewLine(m.infoText);
+                    break;
+                }
+                case drwav_metadata_type_unknown: {
+                    DebugWithNewLine("type: unknown");
+                    DebugWithNewLine(m.unknown);
+                    break;
+                }
             }
         }
     }
 
-    // data chunk
-    {
-        const auto total_num_bytes = bits_per_sample / 8 * (u32)audio_data.interleaved_samples.size();
+    drwav wav;
+    drwav_init_write_with_metadata(&wav, &format, OnWrite, OnSeekFile, file.get(), nullptr,
+                                   audio_data.num_wave_metadata ? audio_data.wave_metadata.get() : NULL,
+                                   audio_data.num_wave_metadata);
 
-        WriteChars("data");
-        WriteU32(total_num_bytes);
+    u32 f;
+    bool succeed_writing = true;
+    GetAudioDataConvertedAndScaledToBitDepth(
+        audio_data.interleaved_samples, f, bits_per_sample, [&](const void *raw_data) {
+            if (!succeed_writing) return;
+            u64 frames_written = 0;
+            if (format.format == DR_WAVE_FORMAT_PCM) {
+                frames_written = drwav_write_pcm_frames(&wav, audio_data.NumFrames(), raw_data);
+            } else if (format.format == DR_WAVE_FORMAT_IEEE_FLOAT) {
+                frames_written = drwav_write_float_frames(&wav, audio_data.NumFrames(), raw_data);
+            }
+            if (frames_written != audio_data.NumFrames()) {
+                ErrorWithNewLine("frames_written != audio_data.interleaved_samples.size()");
+                succeed_writing = true;
+            }
+        });
 
-        u32 format;
-        GetAudioDataConvertedAndScaledToBitDepth(
-            audio_data.interleaved_samples, format, bits_per_sample, [&](const void *raw_data) {
-                std::fwrite(raw_data, bits_per_sample / 8, audio_data.interleaved_samples.size(), file.get());
-                if ((total_num_bytes % 2) == 1) {
-                    WriteU8(0); // add padding because we must must be 2 byte aligned
-                }
-            });
-    }
-
-    // go back and fill in the file size
-    {
-        const auto file_size = std::ftell(file.get());
-        std::fseek(file.get(), 4, SEEK_SET);
-        WriteU32(file_size - 8);
-    }
-
-    return true;
+    drwav_uninit(&wav);
+    return succeed_writing;
 }
 
 static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
@@ -910,14 +894,14 @@ TEST_CASE("[AudioData]") {
         const fs::path out_filename = "out_wave_with_markers_and_loop.wav";
         auto f = ReadAudioFile(in_filename);
         REQUIRE(f);
-        REQUIRE(f->wave_metadata.size() >= 2);
-        DebugWithNewLine("f->wave_metadata ", f->wave_metadata.size());
+        REQUIRE(f->num_wave_metadata >= 2);
+        DebugWithNewLine("f->wave_metadata ", f->num_wave_metadata);
         REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
         REQUIRE(fs::is_regular_file(out_filename));
         auto out_f = ReadAudioFile(out_filename);
         REQUIRE(out_f);
-        REQUIRE(out_f->wave_metadata.size() >= 2);
-        DebugWithNewLine("out_f->wave_metadata ", out_f->wave_metadata.size());
+        REQUIRE(out_f->num_wave_metadata >= 2);
+        DebugWithNewLine("out_f->wave_metadata ", out_f->num_wave_metadata);
     }
 
     SUBCASE("flac with comments") {

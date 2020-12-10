@@ -2,6 +2,7 @@
 #include <optional>
 #include <vector>
 
+#include "dr_wav.h"
 #include "FLAC/metadata.h"
 #include "doctest.hpp"
 #include "filesystem.hpp"
@@ -71,7 +72,8 @@ struct AudioData {
     std::optional<InstrumentData> instrument_data {};
     std::optional<SampleLoops> loops {};
 
-    std::vector<std::vector<u8>> wave_metadata {};
+    std::shared_ptr<drwav_metadata> wave_metadata {};
+    unsigned num_wave_metadata {};
     std::vector<std::shared_ptr<FLAC__StreamMetadata>> flac_metadata {};
 };
 

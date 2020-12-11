@@ -79,9 +79,9 @@ struct Metadata {
 };
 
 struct WaveMetadata {
-    void Assign(drwav_metadata *owned_metadata, unsigned _num_wave_metadata) {
+    void Assign(const drwav_metadata *owned_metadata, unsigned _num_wave_metadata) {
         num_metadata = _num_wave_metadata;
-        metadata = {owned_metadata, [](drwav_metadata *m) { drwav_free(m, NULL); }};
+        metadata = {owned_metadata, [](const drwav_metadata *m) { drwav_free((void *)m, NULL); }};
     }
 
     std::optional<drwav_acid> GetAcid() const {
@@ -100,10 +100,6 @@ struct WaveMetadata {
         if (num_metadata) return {metadata.get(), num_metadata};
         return {};
     }
-    tcb::span<drwav_metadata> Items() {
-        if (num_metadata) return {metadata.get(), num_metadata};
-        return {};
-    }
     unsigned NumItems() const { return num_metadata; }
 
   private:
@@ -114,7 +110,7 @@ struct WaveMetadata {
         return {};
     }
 
-    std::shared_ptr<drwav_metadata> metadata {};
+    std::shared_ptr<const drwav_metadata> metadata {};
     unsigned num_metadata {};
 };
 
@@ -160,6 +156,8 @@ struct AudioData {
 
     Metadata metadata {};
 
+    // Useful to keep these around in case there are particulars that are not set in the editable Metadata
+    // block
     WaveMetadata wave_metadata {};
     std::vector<std::shared_ptr<FLAC__StreamMetadata>> flac_metadata {};
 };

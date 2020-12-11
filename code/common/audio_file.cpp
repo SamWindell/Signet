@@ -390,10 +390,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         result.interleaved_samples.resize(wav.totalPCMFrameCount * wav.channels);
 
         if (wav.numMetadata) {
-            ReadWaveMetadata(result, {wav.metadata, wav.numMetadata});
-
             DebugWithNewLine("Wav num metadata: ", wav.numMetadata);
-
             for (size_t i = 0; i < wav.numMetadata; ++i) {
                 auto &m = wav.metadata[i];
                 switch (m.type) {
@@ -453,7 +450,9 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
                 }
             }
 
-            result.wave_metadata.Assign(drwav_take_ownership_of_metadata(&wav), wav.numMetadata);
+            ReadWaveMetadata(result, {wav.metadata, wav.numMetadata});
+            u32 num_metadata = wav.numMetadata;
+            result.wave_metadata.Assign(drwav_take_ownership_of_metadata(&wav), num_metadata);
         }
 
         f32_buf.resize(result.interleaved_samples.size());
@@ -622,16 +621,23 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
 
     std::vector<std::shared_ptr<void>> allocations;
     std::vector<drwav_metadata> metadata;
+    auto AllocateString = [&allocations](const char *data, size_t size) -> char * {
+        if (!size) return nullptr;
+        auto mem = std::shared_ptr<char[]>(new char[size + 1]);
+        memcpy(mem.get(), data, size);
+        mem.get()[size] = '\0';
+        allocations.push_back(mem);
+        return mem.get();
+    };
+
     for (const auto &m : audio_data.wave_metadata.Items()) {
         if (m.type & drwav_metadata_type_list_all_info_strings && m.infoText.stringSize) {
             drwav_metadata item {};
             item.type = m.type;
             item.infoText.stringSize = m.infoText.stringSize;
-            auto mem = std::shared_ptr<char[]>(new char[m.infoText.stringSize + 1]);
-            memcpy(mem.get(), m.infoText.string, m.infoText.stringSize);
-            mem.get()[m.infoText.stringSize] = '\0';
-            item.infoText.string = mem.get();
-            allocations.push_back(mem);
+            if (m.infoText.stringSize) {
+                item.infoText.string = AllocateString(m.infoText.string, m.infoText.stringSize);
+            }
             metadata.push_back(item);
         }
     }
@@ -702,34 +708,42 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
         item.smpl.samplerSpecificData = nullptr;
 
         item.smpl.numSampleLoops = (u32)loops.loops.size();
+        if (item.smpl.numSampleLoops) {
+            auto smpl_loops_alloc =
+                std::shared_ptr<drwav_smpl_loop[]>(new drwav_smpl_loop[item.smpl.numSampleLoops]);
+            allocations.push_back(smpl_loops_alloc);
+            size_t smpl_loops_index = 0;
 
-        auto smpl_loops_alloc =
-            std::shared_ptr<drwav_smpl_loop[]>(new drwav_smpl_loop[item.smpl.numSampleLoops]);
-        size_t smpl_loops_index = 0;
+            item.smpl.loops = smpl_loops_alloc.get();
+            for (const auto &loop : loops.loops) {
+                drwav_smpl_loop smpl_loop {};
 
-        item.smpl.loops = smpl_loops_alloc.get();
-        for (const auto &loop : loops.loops) {
-            drwav_smpl_loop smpl_loop {};
+                cue_points.push_back({cue_point_id, loop.name, loop.start_frame});
+                smpl_loop.cuePointId = cue_point_id;
+                ++cue_point_id;
 
-            cue_points.push_back({cue_point_id, loop.name, loop.start_frame});
-            smpl_loop.cuePointId = cue_point_id;
-            ++cue_point_id;
+                switch (loop.type) {
+                    case MetadataItems::LoopType::Forward:
+                        smpl_loop.type = drwav_smpl_loop_type_forward;
+                        break;
+                    case MetadataItems::LoopType::Backward:
+                        smpl_loop.type = drwav_smpl_loop_type_backward;
+                        break;
+                    case MetadataItems::LoopType::PingPong:
+                        smpl_loop.type = drwav_smpl_loop_type_pingpong;
+                        break;
+                    default: smpl_loop.type = drwav_smpl_loop_type_forward;
+                }
+                smpl_loop.firstSampleByteOffset =
+                    (u32)(loop.start_frame * audio_data.num_channels * (bits_per_sample / 8));
+                smpl_loop.lastSampleByteOffset =
+                    (u32)((loop.end_frame - 1) * audio_data.num_channels * (bits_per_sample / 8));
+                smpl_loop.sampleFraction =
+                    0; // Note: we are discarding this value even if we have unchaged the loop
+                smpl_loop.playCount = loop.num_times_to_loop;
 
-            switch (loop.type) {
-                case MetadataItems::LoopType::Forward: smpl_loop.type = drwav_smpl_loop_type_forward; break;
-                case MetadataItems::LoopType::Backward: smpl_loop.type = drwav_smpl_loop_type_backward; break;
-                case MetadataItems::LoopType::PingPong: smpl_loop.type = drwav_smpl_loop_type_pingpong; break;
-                default: smpl_loop.type = drwav_smpl_loop_type_forward;
+                smpl_loops_alloc.get()[smpl_loops_index++] = smpl_loop;
             }
-            smpl_loop.firstSampleByteOffset =
-                (u32)(loop.start_frame * audio_data.num_channels * (bits_per_sample / 8));
-            smpl_loop.lastSampleByteOffset =
-                (u32)((loop.end_frame - 1) * audio_data.num_channels * (bits_per_sample / 8));
-            smpl_loop.sampleFraction =
-                0; // Note: we are discarding this value even if we have unchaged the loop
-            smpl_loop.playCount = loop.num_times_to_loop;
-
-            smpl_loops_alloc.get()[smpl_loops_index++] = smpl_loop;
         }
 
         metadata.push_back(item);
@@ -750,14 +764,46 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
             drwav_metadata item {};
             item.type = drwav_metadata_type_list_labelled_cue_region;
 
-            // cue_points.push_back({cue_point_id, });
+            item.labelledCueRegion.cuePointId = cue_point_id;
+            item.labelledCueRegion.sampleLength = (u32)(r.num_frames * audio_data.num_channels);
+            item.labelledCueRegion.purposeId[0] = 'b';
+            item.labelledCueRegion.purposeId[1] = 'e';
+            item.labelledCueRegion.purposeId[2] = 'a';
+            item.labelledCueRegion.purposeId[3] = 't';
 
-            // item.cuePointId =
+            if (r.name) {
+                item.labelledCueRegion.stringSize = (u32)(r.name->size());
+                item.labelledCueRegion.string = AllocateString(r.name->data(), r.name->size());
+            }
+
+            cue_points.push_back({cue_point_id++, r.initial_marker_name, r.start_frame});
+            metadata.push_back(item);
         }
     }
 
-    for (auto &cue : cue_points) {
-        // TODO: write the cue points
+    if (cue_points.size()) {
+        drwav_metadata item {};
+        item.type = drwav_metadata_type_cue;
+
+        auto cue_points_mem = std::shared_ptr<drwav_cue_point[]>(new drwav_cue_point[cue_points.size()]);
+        allocations.push_back(cue_points_mem);
+        size_t cue_points_mem_index = 0;
+
+        item.cue.numCuePoints = (u32)cue_points.size();
+        item.cue.cuePoints = cue_points_mem.get();
+
+        for (const auto &cue : cue_points) {
+            drwav_cue_point p {};
+            p.id = cue.id;
+            p.dataChunkId[0] = 'd';
+            p.dataChunkId[1] = 'a';
+            p.dataChunkId[2] = 't';
+            p.dataChunkId[3] = 'a';
+            p.sampleByteOffset = (u32)(cue.frame_position * audio_data.num_channels * (bits_per_sample / 8));
+            cue_points_mem.get()[cue_points_mem_index++] = p;
+        }
+
+        metadata.push_back(item);
     }
 
     drwav wav;

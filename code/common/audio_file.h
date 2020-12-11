@@ -2,10 +2,11 @@
 #include <optional>
 #include <vector>
 
-#include "dr_wav.h"
 #include "FLAC/metadata.h"
 #include "doctest.hpp"
+#include "dr_wav.h"
 #include "filesystem.hpp"
+#include "span.hpp"
 
 #include "types.h"
 
@@ -14,25 +15,107 @@ enum class AudioFileFormat {
     Flac,
 };
 
-struct SamplerData {
-    s8 midi_note; //  0 - 127
-    s8 low_note; //  0 - 127
-    s8 high_note; // 0 - 127
-    s8 low_velocity; //  1 - 127
-    s8 high_velocity; // 1 - 127
+namespace MetadataItems {
+
+struct SamplerMappingData {
+    s8 fine_tune_cents {}; // -50 to +50
+    s8 gain_db {}; // -64 to +64
+    s8 low_note {0}; //  0 - 127
+    s8 high_note {127}; // 0 - 127
+    s8 low_velocity {1}; //  1 - 127
+    s8 high_velocity {127}; // 1 - 127
 };
 
 enum class LoopType { Forward, Backward, PingPong };
 
-struct SampleLoop {
+struct Loop {
+    std::optional<std::string> name;
     LoopType type;
     size_t start_frame;
     size_t end_frame;
     unsigned num_times_to_loop; // 0 for infinite
 };
 
-struct SampleLoops {
-    std::vector<SampleLoop> loops;
+struct Loops {
+    std::vector<Loop> loops;
+};
+
+struct Region {
+    std::optional<std::string> initial_marker_name;
+    std::optional<std::string> name;
+    size_t start_frame;
+    size_t num_frames;
+};
+
+struct Regions {
+    std::vector<Region> regions;
+};
+
+struct Marker {
+    std::optional<std::string> name;
+    size_t start_frame;
+};
+
+struct Markers {
+    std::vector<Marker> markers;
+};
+
+struct TimingInfo {
+    unsigned num_beats = 4;
+    unsigned time_signature_denominator = 4;
+    unsigned time_signature_numerator = 4;
+    float tempo = 120;
+};
+
+} // namespace MetadataItems
+
+struct Metadata {
+    std::optional<int> root_midi_note {};
+    std::optional<MetadataItems::TimingInfo> timing_info {};
+    std::optional<MetadataItems::SamplerMappingData> sampler_mapping_data {};
+    std::optional<MetadataItems::Loops> loops {};
+    std::optional<MetadataItems::Markers> markers {};
+    std::optional<MetadataItems::Regions> regions {};
+};
+
+struct WaveMetadata {
+    void Assign(drwav_metadata *owned_metadata, unsigned _num_wave_metadata) {
+        num_metadata = _num_wave_metadata;
+        metadata = {owned_metadata, [](drwav_metadata *m) { drwav_free(m, NULL); }};
+    }
+
+    std::optional<drwav_acid> GetAcid() const {
+        const auto result = GetType(drwav_metadata_type_acid);
+        if (result) return result->acid;
+        return {};
+    }
+
+    std::optional<drwav_smpl> GetSmpl() const {
+        const auto result = GetType(drwav_metadata_type_smpl);
+        if (result) return result->smpl;
+        return {};
+    }
+
+    tcb::span<const drwav_metadata> Items() const {
+        if (num_metadata) return {metadata.get(), num_metadata};
+        return {};
+    }
+    tcb::span<drwav_metadata> Items() {
+        if (num_metadata) return {metadata.get(), num_metadata};
+        return {};
+    }
+    unsigned NumItems() const { return num_metadata; }
+
+  private:
+    std::optional<drwav_metadata> GetType(drwav_metadata_type type) const {
+        for (const auto &m : Items()) {
+            if (m.type == type) return m;
+        }
+        return {};
+    }
+
+    std::shared_ptr<drwav_metadata> metadata {};
+    unsigned num_metadata {};
 };
 
 struct AudioData {
@@ -61,17 +144,23 @@ struct AudioData {
         }
     }
 
+    void FramesWereRemovedFromStart(size_t num_frames) {
+        // go through all the metadata and handle if these removed frames effects any markers
+    }
+
+    void AudioDataWasStretched(float stretch_factor) {
+        // go through all the metadata and scale any frame markers
+    }
+
     std::vector<double> interleaved_samples {};
     unsigned num_channels {};
     unsigned sample_rate {};
     unsigned bits_per_sample = 24;
     AudioFileFormat format {AudioFileFormat::Wav};
 
-    std::optional<SamplerData> instrument_data {};
-    std::optional<SampleLoops> loops {};
+    Metadata metadata {};
 
-    std::shared_ptr<drwav_metadata> wave_metadata {};
-    unsigned num_wave_metadata {};
+    WaveMetadata wave_metadata {};
     std::vector<std::shared_ptr<FLAC__StreamMetadata>> flac_metadata {};
 };
 

@@ -629,11 +629,11 @@ This chunk contains some information about the time signature and the tempo of t
 */
 
 typedef enum {
-    drwav_acid_flag_one_shot = 1,
+    drwav_acid_flag_one_shot = 1, /* If this is not set, then it is a loop instead of a one-shot. */
     drwav_acid_flag_root_note_set = 2,
     drwav_acid_flag_stretch = 4,
     drwav_acid_flag_disk_based = 8,
-    drwav_acid_flag_acidizer = 16,
+    drwav_acid_flag_acidizer = 16, /* Not sure what this means. */
 } drwav_acid_flag;
 
 typedef struct {
@@ -643,18 +643,18 @@ typedef struct {
     /* Valid if flags contains drwav_acid_flag_root_note_set. It represents the MIDI root note the file - a value from 0 to 127. */
     drwav_uint16 midiUnityNote;
 
-    /* Reserved values that should probably be ignored. */
+    /* Reserved values that should probably be ignored. reserved1 seems to often be 128 and reserved2 is 0. */
     drwav_uint16 reserved1;
     float reserved2;
 
-    /* Number of beats in a bar. */
+    /* Number of beats. */
     drwav_uint32 numBeats;
 
     /* The time signature of the audio. */
     drwav_uint16 meterDenominator;
     drwav_uint16 meterNumerator;
 
-    /* Beats per minute of the track. */
+    /* Beats per minute of the track. Setting a value of 0 suggests that there is no tempo. */
     float tempo;
 } drwav_acid;
 
@@ -1015,14 +1015,6 @@ little-endian. Use drwav_write_raw() to write raw audio data without performing 
 DRWAV_API drwav_uint64 drwav_write_pcm_frames(drwav* pWav, drwav_uint64 framesToWrite, const void* pData);
 DRWAV_API drwav_uint64 drwav_write_pcm_frames_le(drwav* pWav, drwav_uint64 framesToWrite, const void* pData);
 DRWAV_API drwav_uint64 drwav_write_pcm_frames_be(drwav* pWav, drwav_uint64 framesToWrite, const void* pData);
-
-/*
-Writes float/double frames.
-
-Returns the number of frames written.
-*/
-DRWAV_API drwav_uint64 drwav_write_float_frames(drwav* pWav, drwav_uint64 framesToWrite, const void* pData);
-
 
 /* Conversion Utilities */
 #ifndef DR_WAV_NO_CONVERSION_API
@@ -2263,11 +2255,13 @@ static drwav_uint64 drwav__read_acid_to_metadata_obj(drwav__metadata_parser *par
         metadata->acid.flags = drwav__bytes_to_u32(acidData + 0);
         metadata->acid.midiUnityNote = drwav__bytes_to_u16(acidData + 4);
         metadata->acid.reserved1 = drwav__bytes_to_u16(acidData + 6);
-        metadata->acid.reserved2 = *(float *)(acidData + 8);
+        drwav_uint32 reserved2U32 = drwav__bytes_to_u32(acidData + 8);
+        metadata->acid.reserved2 = *(float *)&reserved2U32;
         metadata->acid.numBeats = drwav__bytes_to_u32(acidData + 12);
         metadata->acid.meterDenominator = drwav__bytes_to_u16(acidData + 16);
         metadata->acid.meterNumerator = drwav__bytes_to_u16(acidData + 18);
-        metadata->acid.tempo = *(float *)(acidData + 20);
+        drwav_uint32 tempoU32 = drwav__bytes_to_u32(acidData + 20);
+        metadata->acid.tempo = *(float *)&tempoU32;
     }
 
     return bytesRead;
@@ -3378,11 +3372,11 @@ static size_t drwav__write_or_count_metadata(drwav *pWav, drwav_metadata *metada
                 bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, metadata->acid.flags);
                 bytesWritten += drwav__write_or_count_u16ne_to_le(pWav, metadata->acid.midiUnityNote);
                 bytesWritten += drwav__write_or_count_u16ne_to_le(pWav, metadata->acid.reserved1);
-                bytesWritten += drwav__write_or_count(pWav, &metadata->acid.reserved2, sizeof(float));
+                bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, *(drwav_uint32 *)(&metadata->acid.reserved2));
                 bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, metadata->acid.numBeats);
                 bytesWritten += drwav__write_or_count_u16ne_to_le(pWav, metadata->acid.meterDenominator);
                 bytesWritten += drwav__write_or_count_u16ne_to_le(pWav, metadata->acid.meterNumerator);
-                bytesWritten += drwav__write_or_count(pWav, &metadata->acid.tempo, sizeof(float));
+                bytesWritten += drwav__write_or_count_u32ne_to_le(pWav, *(drwav_uint32 *)(&metadata->acid.tempo));
                 break;
             }
 
@@ -4991,12 +4985,6 @@ DRWAV_API size_t drwav_write_raw(drwav* pWav, size_t bytesToWrite, const void* p
     pWav->dataChunkDataSize += bytesWritten;
 
     return bytesWritten;
-}
-
-DRWAV_API drwav_uint64 drwav_write_float_frames(drwav* pWav, drwav_uint64 framesToWrite, const void* pData)
-{
-    /* We don't want to do any byte swapping for IEEE floats. */
-    return drwav_write_pcm_frames_le(pWav, framesToWrite, pData);
 }
 
 DRWAV_API drwav_uint64 drwav_write_pcm_frames_le(drwav* pWav, drwav_uint64 framesToWrite, const void* pData)

@@ -35,6 +35,9 @@ target_include_directories(third_party_libs PUBLIC code/third_party_libs/flac/sr
                                                    code/third_party_libs)
 target_compile_definitions(third_party_libs PUBLIC FLAC__NO_DLL)
 
+add_subdirectory(code/third_party_libs/cereal)
+target_link_libraries(third_party_libs PUBLIC cereal)
+
 #
 
 add_library(
@@ -100,7 +103,7 @@ if (WIN32)
 else ()
     target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
 endif ()
-target_link_libraries(common PRIVATE third_party_libs)
+target_link_libraries(common PUBLIC third_party_libs)
 
 configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
                ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)

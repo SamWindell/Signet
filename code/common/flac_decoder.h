@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "FLAC/stream_decoder.h"
-#include "audio_file.h"
+#include "audio_data.h"
 #include "common.h"
 
 struct FlacFileDataContext {
@@ -114,12 +114,23 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
     auto &context = *((FlacFileDataContext *)client_data);
 
     switch (metadata->type) {
+        case FLAC__METADATA_TYPE_APPLICATION: {
+            if (memcmp(metadata->data.application.id, flac_custom_signet_application_id, 4) == 0) {
+                std::string data {(char *)metadata->data.application.data,
+                                  metadata->length - (FLAC__STREAM_METADATA_APPLICATION_ID_LEN / 8)};
+                std::stringstream ss(data);
+                cereal::JSONInputArchive archive(ss);
+                archive(cereal::make_nvp(signet_root_json_object_name, context.data.metadata));
+                return;
+            }
+            break;
+        }
         case FLAC__METADATA_TYPE_STREAMINFO: {
             context.data.num_channels = metadata->data.stream_info.channels;
             context.data.bits_per_sample = metadata->data.stream_info.bits_per_sample;
             context.data.sample_rate = metadata->data.stream_info.sample_rate;
             context.data.interleaved_samples.reserve(metadata->data.stream_info.total_samples);
-            break;
+            return;
         }
         case FLAC__METADATA_TYPE_CUESHEET:
         case FLAC__METADATA_TYPE_SEEKTABLE: {
@@ -128,15 +139,12 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
             // We're discarding these at the moment because this data contains references to particular points
             // in the audio file. We might changing the length of the audio file so this would become
             // invalidated.
-            break;
-        }
-        default: {
-            std::shared_ptr<FLAC__StreamMetadata> ptr {FLAC__metadata_object_clone(metadata),
-                                                       &FLAC__metadata_object_delete};
-            context.data.flac_metadata.push_back(ptr);
-            break;
+            return;
         }
     }
+    std::shared_ptr<FLAC__StreamMetadata> ptr {FLAC__metadata_object_clone(metadata),
+                                               &FLAC__metadata_object_delete};
+    context.data.flac_metadata.push_back(ptr);
 }
 
 void FlacStreamDecodeErrorCallback(const FLAC__StreamDecoder *decoder,

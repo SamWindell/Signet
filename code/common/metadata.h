@@ -5,6 +5,10 @@
 #include <vector>
 
 #include "dr_wav.h"
+#include <cereal/cereal.hpp>
+
+static const char *flac_custom_signet_application_id = "SGNT";
+static const char *signet_root_json_object_name = "metadata";
 
 namespace MetadataItems {
 
@@ -15,6 +19,12 @@ struct SamplerMapping {
     int high_note {127}; // 0 - 127
     int low_velocity {1}; //  1 - 127
     int high_velocity {127}; // 1 - 127
+
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(fine_tune_cents), CEREAL_NVP(gain_db), CEREAL_NVP(low_note), CEREAL_NVP(high_note),
+                CEREAL_NVP(low_velocity), CEREAL_NVP(high_velocity));
+    }
 };
 
 enum class LoopType { Forward, Backward, PingPong };
@@ -25,10 +35,12 @@ struct Loop {
     size_t start_frame;
     size_t num_frames;
     unsigned num_times_to_loop; // 0 for infinite
-};
 
-struct Loops {
-    std::vector<Loop> loops;
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(name), CEREAL_NVP(type), CEREAL_NVP(start_frame), CEREAL_NVP(num_frames),
+                CEREAL_NVP(num_times_to_loop));
+    }
 };
 
 struct Region {
@@ -36,19 +48,22 @@ struct Region {
     std::optional<std::string> name;
     size_t start_frame;
     size_t num_frames;
-};
 
-struct Regions {
-    std::vector<Region> regions;
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(initial_marker_name), CEREAL_NVP(name), CEREAL_NVP(start_frame),
+                CEREAL_NVP(num_frames));
+    }
 };
 
 struct Marker {
     std::optional<std::string> name;
     size_t start_frame;
-};
 
-struct Markers {
-    std::vector<Marker> markers;
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(name), CEREAL_NVP(start_frame));
+    }
 };
 
 enum class PlaybackType { OneShot, Loop };
@@ -59,11 +74,22 @@ struct TimingInfo {
     unsigned time_signature_denominator = 4;
     unsigned time_signature_numerator = 4;
     float tempo = 0;
+
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(playback_type), CEREAL_NVP(num_beats), CEREAL_NVP(time_signature_denominator),
+                CEREAL_NVP(time_signature_numerator), CEREAL_NVP(tempo));
+    }
 };
 
 struct MidiMapping {
     int root_midi_note {};
     std::optional<SamplerMapping> sampler_mapping {};
+
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(root_midi_note), CEREAL_NVP(sampler_mapping));
+    }
 };
 
 } // namespace MetadataItems
@@ -71,9 +97,15 @@ struct MidiMapping {
 struct Metadata {
     std::optional<MetadataItems::MidiMapping> midi_mapping {};
     std::optional<MetadataItems::TimingInfo> timing_info {};
-    std::optional<MetadataItems::Loops> loops {};
-    std::optional<MetadataItems::Markers> markers {};
-    std::optional<MetadataItems::Regions> regions {};
+    std::vector<MetadataItems::Loop> loops {};
+    std::vector<MetadataItems::Marker> markers {};
+    std::vector<MetadataItems::Region> regions {};
+
+    template <class Archive>
+    void serialize(Archive &archive) {
+        archive(CEREAL_NVP(midi_mapping), CEREAL_NVP(timing_info), CEREAL_NVP(loops), CEREAL_NVP(markers),
+                CEREAL_NVP(regions));
+    }
 
     template <typename Type>
     void HandleStartFramesRemovedForType(std::vector<Type> &vector, size_t num_frames_removed) {

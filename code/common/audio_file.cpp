@@ -9,6 +9,10 @@
 #include "doctest.hpp"
 #include "dr_wav.h"
 #include "magic_enum.hpp"
+#include <cereal/archives/json.hpp>
+#include <cereal/types/optional.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 
 #include "common.h"
 #include "flac_decoder.h"
@@ -222,9 +226,9 @@ class WaveMetadataToNonSpecificMetadata {
         for (const auto &m : m_wave_metadata) {
             switch (m.type) {
                 case drwav_metadata_type_smpl: {
-                    MetadataItems::Loops loops;
+                    std::vector<MetadataItems::Loop> loops;
                     for (u32 i = 0; i < m.smpl.numSampleLoops; ++i) {
-                        loops.loops.push_back(CreateSampleLoop(m.smpl.loops[i]));
+                        loops.push_back(CreateSampleLoop(m.smpl.loops[i]));
                     }
                     result.loops = loops;
                     break;
@@ -243,9 +247,9 @@ class WaveMetadataToNonSpecificMetadata {
                     break;
                 }
                 case drwav_metadata_type_cue: {
-                    MetadataItems::Markers markers;
+                    std::vector<MetadataItems::Marker> markers;
                     for (u32 i = 0; i < m.cue.numCuePoints; ++i) {
-                        markers.markers.push_back(CreateMarker(m.cue.cuePoints[i]));
+                        markers.push_back(CreateMarker(m.cue.cuePoints[i]));
                     }
                     result.markers = markers;
                     break;
@@ -260,10 +264,7 @@ class WaveMetadataToNonSpecificMetadata {
                     break;
                 }
                 case drwav_metadata_type_list_labelled_cue_region: {
-                    if (!result.regions) {
-                        result.regions.emplace();
-                    }
-                    result.regions->regions.push_back(CreateRegion(m.labelledCueRegion));
+                    result.regions.push_back(CreateRegion(m.labelledCueRegion));
                     break;
                 }
             }
@@ -624,14 +625,14 @@ class NonSpecificMetadataToWaveMetadata {
         if (m_audio_data.metadata.midi_mapping && m_audio_data.metadata.midi_mapping->sampler_mapping) {
             AddInstMetadata(*m_audio_data.metadata.midi_mapping);
         }
-        if (m_audio_data.metadata.loops) {
-            AddSmplMetadata(*m_audio_data.metadata.loops, m_audio_data.wave_metadata.GetSmpl());
+        if (m_audio_data.metadata.loops.size()) {
+            AddSmplMetadata(m_audio_data.metadata.loops, m_audio_data.wave_metadata.GetSmpl());
         }
-        if (m_audio_data.metadata.regions) {
-            AddLabelledCueRegionMetadatas(*m_audio_data.metadata.regions);
+        if (m_audio_data.metadata.regions.size()) {
+            AddLabelledCueRegionMetadatas(m_audio_data.metadata.regions);
         }
 
-        // must be the last as other chunks might add cues to it
+        // must be the last as other chunks might have added cues to it
         AddCueMetadata(m_audio_data.metadata.markers);
 
         return m_wave_metadata;
@@ -658,7 +659,7 @@ class NonSpecificMetadataToWaveMetadata {
         return (u32)(frame_pos * m_audio_data.num_channels * (m_bits_per_sample / 8));
     }
 
-    u32 BufferUniqueCuePoint(std::optional<std::string> name, size_t start_frame) {
+    u32 CreateUniqueCuePointId(std::optional<std::string> name, size_t start_frame) {
         const auto id = (u32)m_cue_points_buffer.size();
         m_cue_points_buffer.push_back({id, name, start_frame});
         return id;
@@ -678,11 +679,9 @@ class NonSpecificMetadataToWaveMetadata {
         }
     }
 
-    void AddCueMetadata(const std::optional<MetadataItems::Markers> &markers) {
-        if (markers) {
-            for (const auto &m : markers->markers) {
-                BufferUniqueCuePoint(m.name, m.start_frame);
-            }
+    void AddCueMetadata(const std::vector<MetadataItems::Marker> &markers) {
+        for (const auto &m : markers) {
+            CreateUniqueCuePointId(m.name, m.start_frame);
         }
 
         if (m_cue_points_buffer.size()) {
@@ -738,7 +737,7 @@ class NonSpecificMetadataToWaveMetadata {
         drwav_metadata item {};
         item.type = drwav_metadata_type_inst;
 
-        // TODO: notify the use about values that have clamped
+        // TODO: notify the user about values that have clamped
         item.inst.midiUnityNote = (s8)std::clamp(midi_mapping.root_midi_note, 0, 127);
         item.inst.fineTuneCents = (s8)std::clamp(midi_mapping.sampler_mapping->fine_tune_cents, -50, 50);
         item.inst.gainDecibels = (s8)std::clamp(midi_mapping.sampler_mapping->gain_db, -64, 64);
@@ -750,7 +749,8 @@ class NonSpecificMetadataToWaveMetadata {
         m_wave_metadata.push_back(item);
     }
 
-    void AddSmplMetadata(const MetadataItems::Loops &loops, const std::optional<drwav_smpl> current_smpl) {
+    void AddSmplMetadata(const std::vector<MetadataItems::Loop> &loops,
+                         const std::optional<drwav_smpl> current_smpl) {
         if (current_smpl) assert(m_audio_data.metadata.midi_mapping);
 
         drwav_metadata item {};
@@ -767,14 +767,14 @@ class NonSpecificMetadataToWaveMetadata {
         item.smpl.numBytesOfSamplerSpecificData = 0;
         item.smpl.samplerSpecificData = nullptr;
 
-        item.smpl.numSampleLoops = (u32)loops.loops.size();
+        item.smpl.numSampleLoops = (u32)loops.size();
         if (item.smpl.numSampleLoops) {
-            item.smpl.loops = AllocateObjects<drwav_smpl_loop>(loops.loops.size());
+            item.smpl.loops = AllocateObjects<drwav_smpl_loop>(loops.size());
             size_t smpl_loops_index = 0;
-            for (const auto &loop : loops.loops) {
+            for (const auto &loop : loops) {
                 drwav_smpl_loop smpl_loop {};
 
-                smpl_loop.cuePointId = BufferUniqueCuePoint(loop.name, loop.start_frame);
+                smpl_loop.cuePointId = CreateUniqueCuePointId(loop.name, loop.start_frame);
 
                 switch (loop.type) {
                     case MetadataItems::LoopType::Forward:
@@ -802,14 +802,14 @@ class NonSpecificMetadataToWaveMetadata {
         m_wave_metadata.push_back(item);
     }
 
-    void AddLabelledCueRegionMetadatas(const MetadataItems::Regions &regions) {
-        for (const auto &r : regions.regions) {
+    void AddLabelledCueRegionMetadatas(const std::vector<MetadataItems::Region> &regions) {
+        for (const auto &r : regions) {
             // Note: we are discarding of the purposeId, and the language items even if we haven't changed the
             // loop
             drwav_metadata item {};
             item.type = drwav_metadata_type_list_labelled_cue_region;
 
-            item.labelledCueRegion.cuePointId = BufferUniqueCuePoint(r.initial_marker_name, r.start_frame);
+            item.labelledCueRegion.cuePointId = CreateUniqueCuePointId(r.initial_marker_name, r.start_frame);
             item.labelledCueRegion.sampleLength = (u32)(r.num_frames * m_audio_data.num_channels);
             item.labelledCueRegion.purposeId[0] = 'b';
             item.labelledCueRegion.purposeId[1] = 'e';
@@ -997,38 +997,33 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
         }
     }
 
-    // if (audio_data.instrument_data) {
-    //     if (!vorbis_comment_meta) {
-    //         vorbis_comment_meta = {FLAC__metadata_object_new(FLAC__METADATA_TYPE_VORBIS_COMMENT),
-    //                                &FLAC__metadata_object_delete};
-    //     }
+    // Add in our custom metadata to a block we have created with ID SGNT
+    FLAC__StreamMetadata signet_metadata {};
+    {
+        std::stringstream ss;
+        {
+            // in a separate block becease the archive needs it's destructor called before we can use the
+            // string
+            cereal::JSONOutputArchive archive(ss);
+            archive(cereal::make_nvp(signet_root_json_object_name, audio_data.metadata));
+        }
 
-    //     std::string buffer;
-    //     auto AddComment = [&](std::string_view key, u8 value) {
-    //         buffer = std::string(key);
-    //         buffer.append("=");
-    //         buffer.append(std::to_string((int)value));
-
-    //         FLAC__StreamMetadata_VorbisComment_Entry entry;
-    //         entry.length = (u32)buffer.size();
-    //         entry.entry = (FLAC__byte *)buffer.data();
-    //         FLAC__metadata_object_vorbiscomment_append_comment(vorbis_comment_meta.get(), entry, true);
-    //     };
-
-    //     AddComment("MIDI_NOTE", audio_data.instrument_data->midi_note);
-    //     AddComment("LOW_NOTE", audio_data.instrument_data->low_note);
-    //     AddComment("HIGH_NOTE", audio_data.instrument_data->high_note);
-    //     AddComment("LOW_VELOCITY", audio_data.instrument_data->low_velocity);
-    //     AddComment("HIGH_VELOCITY", audio_data.instrument_data->high_velocity);
-    // }
+        signet_metadata.type = FLAC__METADATA_TYPE_APPLICATION;
+        memcpy(signet_metadata.data.application.id, flac_custom_signet_application_id, 4);
+        FLAC__metadata_object_application_set_data(&signet_metadata, (FLAC__byte *)ss.str().data(),
+                                                   (unsigned)ss.str().size(), true);
+        metadata.push_back(&signet_metadata);
+    }
 
     if (vorbis_comment_meta) {
         metadata.push_back(vorbis_comment_meta.get());
     }
 
-    const bool set_metadata =
-        FLAC__stream_encoder_set_metadata(encoder.get(), metadata.data(), (unsigned)metadata.size());
-    assert(set_metadata);
+    if (metadata.size()) {
+        const bool set_metadata =
+            FLAC__stream_encoder_set_metadata(encoder.get(), metadata.data(), (unsigned)metadata.size());
+        assert(set_metadata);
+    }
 
     auto f = OpenFile(filename, "w+b");
     if (!f) {
@@ -1219,16 +1214,27 @@ TEST_CASE("[AudioData]") {
     SUBCASE("wave with marker and loops") {
         const fs::path in_filename = TEST_DATA_DIRECTORY "/wave_with_markers_and_loop.wav";
         const fs::path out_filename = "out_wave_with_markers_and_loop.wav";
+        const fs::path out_flac_filename = "out_flac_with_markers_and_loop.flac";
         auto f = ReadAudioFile(in_filename);
         REQUIRE(f);
         REQUIRE(f->wave_metadata.NumItems() >= 2);
-        DebugWithNewLine("f->wave_metadata ", f->wave_metadata.NumItems());
+        MESSAGE(f->wave_metadata.NumItems());
+
         REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
         REQUIRE(fs::is_regular_file(out_filename));
+
         auto out_f = ReadAudioFile(out_filename);
         REQUIRE(out_f);
         REQUIRE(out_f->wave_metadata.NumItems() >= 2);
-        DebugWithNewLine("out_f->wave_metadata ", out_f->wave_metadata.NumItems());
+        MESSAGE(out_f->wave_metadata.NumItems());
+
+        REQUIRE(WriteAudioFile(out_flac_filename, f.value(), 16));
+        REQUIRE(fs::is_regular_file(out_flac_filename));
+
+        auto out_f2 = ReadAudioFile(out_flac_filename);
+        REQUIRE(out_f2);
+        REQUIRE(out_f2->metadata.loops.size() != 0);
+        MESSAGE(out_f2->metadata.loops.size());
     }
 
     SUBCASE("flac with comments") {

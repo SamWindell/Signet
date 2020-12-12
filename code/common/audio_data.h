@@ -41,56 +41,35 @@ struct AudioData {
     }
 
     void FramesWereRemovedFromStart(size_t num_frames) {
-        if (metadata.regions) {
-            metadata.HandleStartFramesRemovedForType<MetadataItems::Region>(metadata.regions->regions,
-                                                                            num_frames);
-        }
-        if (metadata.markers) {
-            metadata.HandleStartFramesRemovedForType<MetadataItems::Marker>(metadata.markers->markers,
-                                                                            num_frames);
-        }
-        if (metadata.loops) {
-            metadata.HandleStartFramesRemovedForType<MetadataItems::Loop>(metadata.loops->loops, num_frames);
-        }
+        metadata.HandleStartFramesRemovedForType<MetadataItems::Region>(metadata.regions, num_frames);
+        metadata.HandleStartFramesRemovedForType<MetadataItems::Marker>(metadata.markers, num_frames);
+        metadata.HandleStartFramesRemovedForType<MetadataItems::Loop>(metadata.loops, num_frames);
     }
 
     void FramesWereRemovedFromEnd() {
-        if (metadata.regions) {
-            metadata.HandleEndFramesRemovedForType<MetadataItems::Region>(metadata.regions->regions,
-                                                                          NumFrames());
-        }
-        if (metadata.markers) {
-            for (auto it = metadata.markers->markers.begin(); it != metadata.markers->markers.end();) {
-                if (it->start_frame >= NumFrames()) {
-                    it = metadata.markers->markers.erase(it);
-                } else {
-                    ++it;
-                }
+        metadata.HandleEndFramesRemovedForType<MetadataItems::Region>(metadata.regions, NumFrames());
+        metadata.HandleEndFramesRemovedForType<MetadataItems::Loop>(metadata.loops, NumFrames());
+        for (auto it = metadata.markers.begin(); it != metadata.markers.end();) {
+            if (it->start_frame >= NumFrames()) {
+                it = metadata.markers.erase(it);
+            } else {
+                ++it;
             }
-        }
-        if (metadata.loops) {
-            metadata.HandleEndFramesRemovedForType<MetadataItems::Loop>(metadata.loops->loops, NumFrames());
         }
     }
 
     void AudioDataWasStretched(double stretch_factor) {
-        if (metadata.regions) {
-            for (auto &r : metadata.regions->regions) {
-                r.start_frame = (size_t)(r.start_frame * stretch_factor);
-                assert(r.start_frame < NumFrames());
-            }
+        for (auto &r : metadata.regions) {
+            r.start_frame = (size_t)(r.start_frame * stretch_factor);
+            assert(r.start_frame < NumFrames());
         }
-        if (metadata.markers) {
-            for (auto &r : metadata.markers->markers) {
-                r.start_frame = (size_t)(r.start_frame * stretch_factor);
-                assert(r.start_frame < NumFrames());
-            }
+        for (auto &r : metadata.markers) {
+            r.start_frame = (size_t)(r.start_frame * stretch_factor);
+            assert(r.start_frame < NumFrames());
         }
-        if (metadata.loops) {
-            for (auto &r : metadata.loops->loops) {
-                r.start_frame = (size_t)(r.start_frame * stretch_factor);
-                assert(r.start_frame < NumFrames());
-            }
+        for (auto &r : metadata.loops) {
+            r.start_frame = (size_t)(r.start_frame * stretch_factor);
+            assert(r.start_frame < NumFrames());
         }
     }
 

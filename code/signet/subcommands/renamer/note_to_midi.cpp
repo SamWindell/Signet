@@ -1,5 +1,7 @@
 #include "note_to_midi.h"
 
+#include "doctest.hpp"
+
 void NoteToMIDIConverter::CreateCLI(CLI::App &renamer) {
     auto note_to_midi = renamer.add_subcommand(
         "note-to-midi", "Replace all occurrences of note names with the corresponding MIDI note number. For "

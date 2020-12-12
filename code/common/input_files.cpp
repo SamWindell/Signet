@@ -1,6 +1,7 @@
 #include "input_files.h"
 
 #include "CLI11.hpp"
+#include "doctest.hpp"
 
 #include "backup.h"
 #include "common.h"

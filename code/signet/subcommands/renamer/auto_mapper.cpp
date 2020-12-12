@@ -2,6 +2,8 @@
 
 #include <regex>
 
+#include "doctest.hpp"
+
 void AutoMapper::CreateCLI(CLI::App &renamer) {
     auto auto_map = renamer.add_subcommand(
         "auto-map",

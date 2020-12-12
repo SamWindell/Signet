@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include "CLI11.hpp"
+#include "doctest.hpp"
 
 #include "audio_file.h"
 #include "backup.h"

@@ -1,6 +1,7 @@
 #include "pitch_detector.h"
 
 #include "CLI11.hpp"
+#include "doctest.hpp"
 #include "dywapitchtrack/dywapitchtrack.h"
 
 #include "audio_file.h"

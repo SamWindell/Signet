@@ -105,6 +105,7 @@ void SilenceRemover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             const auto new_size = loud_region_end * audio.num_channels;
             if (!audio.interleaved_samples.size() != new_size) {
                 f.GetWritableAudio().interleaved_samples.resize(new_size);
+                f.GetWritableAudio().FramesWereRemovedFromEnd();
             }
         }
         if (m_region == Region::Start || m_region == Region::Both) {
@@ -113,6 +114,7 @@ void SilenceRemover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                 auto &out_audio = f.GetWritableAudio();
                 out_audio.interleaved_samples.erase(out_audio.interleaved_samples.begin(),
                                                     out_audio.interleaved_samples.begin() + num_samples);
+                out_audio.FramesWereRemovedFromStart(loud_region_start);
             }
         }
     }

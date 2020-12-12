@@ -60,12 +60,14 @@ void Trimmer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
         if (m_end_duration && remaining_region_end != audio.NumFrames()) {
             auto &out_audio = f.GetWritableAudio();
             out_audio.interleaved_samples.resize(remaining_region_end * out_audio.num_channels);
+            out_audio.FramesWereRemovedFromEnd();
         }
         if (m_start_duration && remaining_region_start != 0) {
             auto &out_audio = f.GetWritableAudio();
             out_audio.interleaved_samples.erase(out_audio.interleaved_samples.begin(),
                                                 out_audio.interleaved_samples.begin() +
                                                     remaining_region_start * out_audio.num_channels);
+            out_audio.FramesWereRemovedFromStart(remaining_region_start);
         }
     }
 }

@@ -19,6 +19,7 @@ void Tuner::ChangePitch(AudioData &audio, const double cents) {
     const auto new_sample_rate = (double)audio.sample_rate * multiplier;
     Converter::ConvertSampleRate(audio.interleaved_samples, audio.num_channels, (double)audio.sample_rate,
                                  new_sample_rate);
+    audio.AudioDataWasStretched(multiplier);
 }
 
 void Tuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {

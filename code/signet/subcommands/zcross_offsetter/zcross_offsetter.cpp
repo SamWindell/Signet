@@ -42,6 +42,7 @@ bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioData &audio,
         audio.interleaved_samples.begin() + new_start_frame * audio.num_channels;
     std::vector<double> new_interleaved_samples {interleaved_samples_new_start_it,
                                                  audio.interleaved_samples.end()};
+
     if (append_skipped_frames_on_end) {
         new_interleaved_samples.insert(new_interleaved_samples.end(), audio.interleaved_samples.begin(),
                                        interleaved_samples_new_start_it);
@@ -49,6 +50,10 @@ bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioData &audio,
     }
 
     audio.interleaved_samples = new_interleaved_samples;
+    if (new_start_frame) {
+        audio.FramesWereRemovedFromStart(new_start_frame);
+    }
+
     return true;
 }
 

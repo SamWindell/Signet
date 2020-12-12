@@ -60,10 +60,7 @@ struct Markers {
     std::vector<Marker> markers;
 };
 
-enum class PlaybackType {
-    OneShot,
-    Loop
-};
+enum class PlaybackType { OneShot, Loop };
 
 struct TimingInfo {
     PlaybackType playback_type {PlaybackType::OneShot};
@@ -86,6 +83,29 @@ struct Metadata {
     std::optional<MetadataItems::Loops> loops {};
     std::optional<MetadataItems::Markers> markers {};
     std::optional<MetadataItems::Regions> regions {};
+
+    template <typename Type>
+    void HandleStartFramesRemovedForType(std::vector<Type> &vector, size_t num_frames_removed) {
+        for (auto it = vector.begin(); it != vector.end();) {
+            if (it->start_frame < num_frames_removed) {
+                it = vector.erase(it);
+            } else {
+                it->start_frame -= num_frames_removed;
+                ++it;
+            }
+        }
+    }
+
+    template <typename Type>
+    void HandleEndFramesRemovedForType(std::vector<Type> &vector, size_t new_file_size_in_frames) {
+        for (auto it = vector.begin(); it != vector.end();) {
+            if (it->start_frame + it->num_frames > new_file_size_in_frames) {
+                it = vector.erase(it);
+            } else {
+                ++it;
+            }
+        }
+    }
 };
 
 struct WaveMetadata {
@@ -151,11 +171,57 @@ struct AudioData {
     }
 
     void FramesWereRemovedFromStart(size_t num_frames) {
-        // go through all the metadata and handle if these removed frames effects any markers
+        if (metadata.regions) {
+            metadata.HandleStartFramesRemovedForType<MetadataItems::Region>(metadata.regions->regions,
+                                                                            num_frames);
+        }
+        if (metadata.markers) {
+            metadata.HandleStartFramesRemovedForType<MetadataItems::Marker>(metadata.markers->markers,
+                                                                            num_frames);
+        }
+        if (metadata.loops) {
+            metadata.HandleStartFramesRemovedForType<MetadataItems::Loop>(metadata.loops->loops, num_frames);
+        }
     }
 
-    void AudioDataWasStretched(float stretch_factor) {
-        // go through all the metadata and scale any frame markers
+    void FramesWereRemovedFromEnd() {
+        if (metadata.regions) {
+            metadata.HandleEndFramesRemovedForType<MetadataItems::Region>(metadata.regions->regions,
+                                                                          NumFrames());
+        }
+        if (metadata.markers) {
+            for (auto it = metadata.markers->markers.begin(); it != metadata.markers->markers.end();) {
+                if (it->start_frame >= NumFrames()) {
+                    it = metadata.markers->markers.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        }
+        if (metadata.loops) {
+            metadata.HandleEndFramesRemovedForType<MetadataItems::Loop>(metadata.loops->loops, NumFrames());
+        }
+    }
+
+    void AudioDataWasStretched(double stretch_factor) {
+        if (metadata.regions) {
+            for (auto &r : metadata.regions->regions) {
+                r.start_frame = (size_t)(r.start_frame * stretch_factor);
+                assert(r.start_frame < NumFrames());
+            }
+        }
+        if (metadata.markers) {
+            for (auto &r : metadata.markers->markers) {
+                r.start_frame = (size_t)(r.start_frame * stretch_factor);
+                assert(r.start_frame < NumFrames());
+            }
+        }
+        if (metadata.loops) {
+            for (auto &r : metadata.loops->loops) {
+                r.start_frame = (size_t)(r.start_frame * stretch_factor);
+                assert(r.start_frame < NumFrames());
+            }
+        }
     }
 
     std::vector<double> interleaved_samples {};

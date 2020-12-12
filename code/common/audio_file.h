@@ -17,9 +17,9 @@ enum class AudioFileFormat {
 
 namespace MetadataItems {
 
-struct SamplerMappingData {
-    s8 fine_tune_cents {}; // -50 to +50
-    s8 gain_db {}; // -64 to +64
+struct SamplerMapping {
+    s8 fine_tune_cents {0}; // -50 to +50
+    s8 gain_db {0}; // -64 to +64
     s8 low_note {0}; //  0 - 127
     s8 high_note {127}; // 0 - 127
     s8 low_velocity {1}; //  1 - 127
@@ -32,7 +32,7 @@ struct Loop {
     std::optional<std::string> name;
     LoopType type;
     size_t start_frame;
-    size_t end_frame;
+    size_t num_frames;
     unsigned num_times_to_loop; // 0 for infinite
 };
 
@@ -60,19 +60,29 @@ struct Markers {
     std::vector<Marker> markers;
 };
 
+enum class PlaybackType {
+    OneShot,
+    Loop
+};
+
 struct TimingInfo {
+    PlaybackType playback_type {PlaybackType::OneShot};
     unsigned num_beats = 4;
     unsigned time_signature_denominator = 4;
     unsigned time_signature_numerator = 4;
-    float tempo = 120;
+    float tempo = 0;
+};
+
+struct MidiMapping {
+    int root_midi_note {};
+    std::optional<SamplerMapping> sampler_mapping {};
 };
 
 } // namespace MetadataItems
 
 struct Metadata {
-    std::optional<int> root_midi_note {};
+    std::optional<MetadataItems::MidiMapping> midi_mapping {};
     std::optional<MetadataItems::TimingInfo> timing_info {};
-    std::optional<MetadataItems::SamplerMappingData> sampler_mapping_data {};
     std::optional<MetadataItems::Loops> loops {};
     std::optional<MetadataItems::Markers> markers {};
     std::optional<MetadataItems::Regions> regions {};

@@ -225,12 +225,13 @@ MetadataItems::Loop CreateSampleLoop(const drwav_smpl_loop &loop,
     }
 
     result.start_frame = loop.firstSampleByteOffset / (audio.bits_per_sample / 8) / audio.num_channels;
-    result.end_frame = (loop.lastSampleByteOffset / (audio.bits_per_sample / 8) / audio.num_channels) + 1;
+    const auto end_frame = (loop.lastSampleByteOffset / (audio.bits_per_sample / 8) / audio.num_channels) + 1;
+    result.num_frames = end_frame - result.start_frame;
     result.num_times_to_loop = loop.playCount;
 
     // TODO: handle these cases properly instead of asserting
     assert(result.start_frame < audio.NumFrames());
-    assert(result.end_frame <= audio.NumFrames());
+    assert(end_frame <= audio.NumFrames());
 
     return result;
 }
@@ -316,7 +317,10 @@ void ReadWaveMetadata(AudioData &out, tcb::span<const drwav_metadata> metadata) 
     // TODO: is this metadata valid if the wave file was compressed, are things like
     // cue_point.sampleByteOffset valid?
 
-    out.metadata.root_midi_note = FindMidiRootNote(metadata);
+    if (const auto root_note = FindMidiRootNote(metadata)) {
+        out.metadata.midi_mapping.emplace();
+        out.metadata.midi_mapping->root_midi_note = *root_note;
+    }
 
     for (const auto &m : metadata) {
         switch (m.type) {
@@ -329,14 +333,16 @@ void ReadWaveMetadata(AudioData &out, tcb::span<const drwav_metadata> metadata) 
                 break;
             }
             case drwav_metadata_type_inst: {
-                MetadataItems::SamplerMappingData data;
+                MetadataItems::SamplerMapping data;
                 data.fine_tune_cents = m.inst.fineTuneCents;
                 data.gain_db = m.inst.gainDecibels;
                 data.low_note = m.inst.lowNote;
                 data.high_note = m.inst.highNote;
                 data.low_velocity = m.inst.lowVelocity;
                 data.high_velocity = m.inst.highVelocity;
-                out.metadata.sampler_mapping_data = data;
+                assert(out.metadata.midi_mapping); // we should have created it for the midi root note after
+                                                   // calling FindMidiRootNote
+                out.metadata.midi_mapping->sampler_mapping = data;
                 break;
             }
             case drwav_metadata_type_cue: {
@@ -601,6 +607,234 @@ static size_t OnWrite(void *pUserData, const void *pData, size_t bytesToWrite) {
     return fwrite(pData, 1, bytesToWrite, (FILE *)pUserData);
 }
 
+class WaveFileMetadataArray {
+  public:
+    WaveFileMetadataArray(const AudioData &audio_data, const unsigned bits_per_sample)
+        : m_audio_data(audio_data), m_bits_per_sample(bits_per_sample) {}
+
+    const std::vector<drwav_metadata> &BuildMetadata() {
+        CopyInfoTextsFromOriginalWaveData();
+
+        if (m_audio_data.metadata.timing_info) {
+            AddAcidMetadata(*m_audio_data.metadata.timing_info, m_audio_data.wave_metadata.GetAcid());
+        }
+        if (m_audio_data.metadata.midi_mapping && m_audio_data.metadata.midi_mapping->sampler_mapping) {
+            AddInstMetadata(*m_audio_data.metadata.midi_mapping);
+        }
+        if (m_audio_data.metadata.loops) {
+            AddSmplMetadata(*m_audio_data.metadata.loops, m_audio_data.wave_metadata.GetSmpl());
+        }
+        if (m_audio_data.metadata.regions) {
+            AddLabelledCueRegionMetadatas(*m_audio_data.metadata.regions);
+        }
+
+        // must be the last as other chunks might add cues to it
+        AddCueMetadata(m_audio_data.metadata.markers);
+
+        return m_wave_metadata;
+    }
+
+  private:
+    char *AllocateAndCopyString(const char *data, size_t size) {
+        if (!size) return nullptr;
+        auto mem = std::shared_ptr<char[]>(new char[size + 1]);
+        memcpy(mem.get(), data, size);
+        mem.get()[size] = '\0';
+        m_allocations.push_back(mem);
+        return mem.get();
+    };
+
+    template <typename Type>
+    Type *AllocateObjects(size_t num_objects) {
+        auto mem = std::shared_ptr<Type[]>(new Type[num_objects]);
+        m_allocations.push_back(mem);
+        return mem.get();
+    }
+
+    u32 FramePosToSampleBytes(size_t frame_pos) {
+        return (u32)(frame_pos * m_audio_data.num_channels * (m_bits_per_sample / 8));
+    }
+
+    u32 BufferUniqueCuePoint(std::optional<std::string> name, size_t start_frame) {
+        const auto id = (u32)m_cue_points_buffer.size();
+        m_cue_points_buffer.push_back({id, name, start_frame});
+        return id;
+    }
+
+    void CopyInfoTextsFromOriginalWaveData() {
+        for (const auto &m : m_audio_data.wave_metadata.Items()) {
+            if (m.type & drwav_metadata_type_list_all_info_strings && m.infoText.stringSize) {
+                drwav_metadata item {};
+                item.type = m.type;
+                item.infoText.stringSize = m.infoText.stringSize;
+                if (m.infoText.stringSize) {
+                    item.infoText.string = AllocateAndCopyString(m.infoText.string, m.infoText.stringSize);
+                }
+                m_wave_metadata.push_back(item);
+            }
+        }
+    }
+
+    void AddCueMetadata(const std::optional<MetadataItems::Markers> &markers) {
+        if (markers) {
+            for (const auto &m : markers->markers) {
+                BufferUniqueCuePoint(m.name, m.start_frame);
+            }
+        }
+
+        if (m_cue_points_buffer.size()) {
+            drwav_metadata item {};
+            item.type = drwav_metadata_type_cue;
+
+            item.cue.numCuePoints = (u32)m_cue_points_buffer.size();
+            item.cue.cuePoints = AllocateObjects<drwav_cue_point>(m_cue_points_buffer.size());
+
+            size_t index = 0;
+            for (const auto &cue : m_cue_points_buffer) {
+                drwav_cue_point p {};
+                p.id = cue.id;
+                p.dataChunkId[0] = 'd';
+                p.dataChunkId[1] = 'a';
+                p.dataChunkId[2] = 't';
+                p.dataChunkId[3] = 'a';
+                p.sampleByteOffset = FramePosToSampleBytes(cue.frame_position);
+                item.cue.cuePoints[index++] = p;
+            }
+
+            m_wave_metadata.push_back(item);
+        }
+    }
+
+    void AddAcidMetadata(const MetadataItems::TimingInfo &timing_info,
+                         const std::optional<drwav_acid> current_acid) {
+        drwav_metadata item {};
+        item.type = drwav_metadata_type_acid;
+        if (current_acid) item.acid = *current_acid;
+
+        if (m_audio_data.metadata.midi_mapping) {
+            item.acid.flags |= drwav_acid_flag_root_note_set;
+            item.acid.midiUnityNote =
+                (u16)std::clamp(m_audio_data.metadata.midi_mapping->root_midi_note, 0, 127);
+        }
+
+        item.acid.flags &= ~drwav_acid_flag_one_shot;
+        if (timing_info.playback_type == MetadataItems::PlaybackType::OneShot) {
+            item.acid.flags |= drwav_acid_flag_one_shot;
+        }
+
+        item.acid.numBeats = timing_info.num_beats;
+        item.acid.meterDenominator = (u16)timing_info.time_signature_denominator;
+        item.acid.meterNumerator = (u16)timing_info.time_signature_numerator;
+        item.acid.tempo = timing_info.tempo;
+
+        m_wave_metadata.push_back(item);
+    }
+
+    void AddInstMetadata(const MetadataItems::MidiMapping &midi_mapping) {
+        assert(midi_mapping.sampler_mapping);
+        drwav_metadata item {};
+        item.type = drwav_metadata_type_inst;
+        item.inst.midiUnityNote = (u8)std::clamp(midi_mapping.root_midi_note, 0, 127);
+        item.inst.fineTuneCents = midi_mapping.sampler_mapping->fine_tune_cents;
+        item.inst.gainDecibels = midi_mapping.sampler_mapping->gain_db;
+        item.inst.lowNote = midi_mapping.sampler_mapping->low_note;
+        item.inst.highNote = midi_mapping.sampler_mapping->high_note;
+        item.inst.lowVelocity = midi_mapping.sampler_mapping->low_velocity;
+        item.inst.highVelocity = midi_mapping.sampler_mapping->high_velocity;
+
+        m_wave_metadata.push_back(item);
+    }
+
+    void AddSmplMetadata(const MetadataItems::Loops &loops, const std::optional<drwav_smpl> current_smpl) {
+
+        if (current_smpl) assert(m_audio_data.metadata.midi_mapping);
+
+        drwav_metadata item {};
+        item.type = drwav_metadata_type_smpl;
+        if (current_smpl) item.smpl = *current_smpl;
+
+        item.smpl.samplePeriodNanoseconds = u32((1.0 / (double)m_audio_data.sample_rate) * 1000000000.0);
+        if (m_audio_data.metadata.midi_mapping)
+            item.smpl.midiUnityNote = m_audio_data.metadata.midi_mapping->root_midi_note;
+        else
+            item.smpl.midiUnityNote = 60;
+
+        // if it exists, this data is opaque to us, so it's safer to just clear it
+        item.smpl.numBytesOfSamplerSpecificData = 0;
+        item.smpl.samplerSpecificData = nullptr;
+
+        item.smpl.numSampleLoops = (u32)loops.loops.size();
+        if (item.smpl.numSampleLoops) {
+            item.smpl.loops = AllocateObjects<drwav_smpl_loop>(loops.loops.size());
+            size_t smpl_loops_index = 0;
+            for (const auto &loop : loops.loops) {
+                drwav_smpl_loop smpl_loop {};
+
+                smpl_loop.cuePointId = BufferUniqueCuePoint(loop.name, loop.start_frame);
+
+                switch (loop.type) {
+                    case MetadataItems::LoopType::Forward:
+                        smpl_loop.type = drwav_smpl_loop_type_forward;
+                        break;
+                    case MetadataItems::LoopType::Backward:
+                        smpl_loop.type = drwav_smpl_loop_type_backward;
+                        break;
+                    case MetadataItems::LoopType::PingPong:
+                        smpl_loop.type = drwav_smpl_loop_type_pingpong;
+                        break;
+                    default: smpl_loop.type = drwav_smpl_loop_type_forward;
+                }
+                smpl_loop.firstSampleByteOffset = FramePosToSampleBytes(loop.start_frame);
+                smpl_loop.lastSampleByteOffset =
+                    FramePosToSampleBytes(loop.start_frame + loop.num_frames - 1);
+                smpl_loop.sampleFraction =
+                    0; // Note: we are discarding this value even if we have unchaged the loop
+                smpl_loop.playCount = loop.num_times_to_loop;
+
+                item.smpl.loops[smpl_loops_index++] = smpl_loop;
+            }
+        }
+
+        m_wave_metadata.push_back(item);
+    }
+
+    void AddLabelledCueRegionMetadatas(const MetadataItems::Regions &regions) {
+        for (const auto &r : regions.regions) {
+            // Note: we are discarding of the purposeId, and the language items even if we haven't changed the
+            // loop
+            drwav_metadata item {};
+            item.type = drwav_metadata_type_list_labelled_cue_region;
+
+            item.labelledCueRegion.cuePointId = BufferUniqueCuePoint(r.initial_marker_name, r.start_frame);
+            item.labelledCueRegion.sampleLength = (u32)(r.num_frames * m_audio_data.num_channels);
+            item.labelledCueRegion.purposeId[0] = 'b';
+            item.labelledCueRegion.purposeId[1] = 'e';
+            item.labelledCueRegion.purposeId[2] = 'a';
+            item.labelledCueRegion.purposeId[3] = 't';
+
+            if (r.name) {
+                item.labelledCueRegion.stringSize = (u32)(r.name->size());
+                item.labelledCueRegion.string = AllocateAndCopyString(r.name->data(), r.name->size());
+            }
+
+            m_wave_metadata.push_back(item);
+        }
+    }
+
+    const AudioData &m_audio_data;
+    unsigned m_bits_per_sample;
+
+    struct CuePoint {
+        u32 id;
+        std::optional<std::string> name;
+        size_t frame_position;
+    };
+    std::vector<CuePoint> m_cue_points_buffer;
+
+    std::vector<std::shared_ptr<void>> m_allocations;
+    std::vector<drwav_metadata> m_wave_metadata;
+};
+
 static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
@@ -619,208 +853,21 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
     format.sampleRate = audio_data.sample_rate;
     format.bitsPerSample = bits_per_sample;
 
-    std::vector<std::shared_ptr<void>> allocations;
-    std::vector<drwav_metadata> metadata;
-    auto AllocateString = [&allocations](const char *data, size_t size) -> char * {
-        if (!size) return nullptr;
-        auto mem = std::shared_ptr<char[]>(new char[size + 1]);
-        memcpy(mem.get(), data, size);
-        mem.get()[size] = '\0';
-        allocations.push_back(mem);
-        return mem.get();
-    };
-
-    for (const auto &m : audio_data.wave_metadata.Items()) {
-        if (m.type & drwav_metadata_type_list_all_info_strings && m.infoText.stringSize) {
-            drwav_metadata item {};
-            item.type = m.type;
-            item.infoText.stringSize = m.infoText.stringSize;
-            if (m.infoText.stringSize) {
-                item.infoText.string = AllocateString(m.infoText.string, m.infoText.stringSize);
-            }
-            metadata.push_back(item);
-        }
-    }
-
-    if (audio_data.metadata.timing_info) {
-        const auto &timing_info = *audio_data.metadata.timing_info;
-        const auto current_acid = audio_data.wave_metadata.GetAcid();
-
-        drwav_metadata item {};
-        item.type = drwav_metadata_type_acid;
-        if (current_acid) item.acid = *current_acid;
-
-        if (audio_data.metadata.root_midi_note) {
-            item.acid.flags |= drwav_acid_flag_root_note_set;
-            item.acid.midiUnityNote = (u16)std::clamp(*audio_data.metadata.root_midi_note, 0, 127);
-        }
-
-        item.acid.numBeats = timing_info.num_beats;
-        item.acid.meterDenominator = (u16)timing_info.time_signature_denominator;
-        item.acid.meterNumerator = (u16)timing_info.time_signature_numerator;
-        item.acid.tempo = timing_info.tempo;
-
-        metadata.push_back(item);
-    }
-
-    if (audio_data.metadata.sampler_mapping_data) {
-        const auto &sampler_mapping_data = *audio_data.metadata.sampler_mapping_data;
-        assert(audio_data.metadata.root_midi_note);
-
-        drwav_metadata item {};
-        item.type = drwav_metadata_type_inst;
-        item.inst.midiUnityNote = (u8)std::clamp(*audio_data.metadata.root_midi_note, 0, 127);
-        item.inst.fineTuneCents = sampler_mapping_data.fine_tune_cents;
-        item.inst.gainDecibels = sampler_mapping_data.gain_db;
-        item.inst.lowNote = sampler_mapping_data.low_note;
-        item.inst.highNote = sampler_mapping_data.high_note;
-        item.inst.lowVelocity = sampler_mapping_data.low_velocity;
-        item.inst.highVelocity = sampler_mapping_data.high_velocity;
-
-        metadata.push_back(item);
-    }
-
-    struct CuePoints {
-        int id;
-        std::optional<std::string> name;
-        size_t frame_position;
-    };
-    int cue_point_id = 0;
-    std::vector<CuePoints> cue_points;
-
-    if (audio_data.metadata.loops) {
-        const auto &loops = *audio_data.metadata.loops;
-        const auto current_smpl = audio_data.wave_metadata.GetSmpl();
-        if (current_smpl) assert(audio_data.metadata.root_midi_note);
-
-        drwav_metadata item {};
-        item.type = drwav_metadata_type_smpl;
-        if (current_smpl) item.smpl = *current_smpl;
-
-        item.smpl.samplePeriodNanoseconds = u32((1.0 / (double)audio_data.sample_rate) * 1000000000.0);
-        if (audio_data.metadata.root_midi_note)
-            item.smpl.midiUnityNote = *audio_data.metadata.root_midi_note;
-        else
-            item.smpl.midiUnityNote = 60;
-
-        // if it exists, this data is opaque to us, so it's safer to just clear it
-        item.smpl.numBytesOfSamplerSpecificData = 0;
-        item.smpl.samplerSpecificData = nullptr;
-
-        item.smpl.numSampleLoops = (u32)loops.loops.size();
-        if (item.smpl.numSampleLoops) {
-            auto smpl_loops_alloc =
-                std::shared_ptr<drwav_smpl_loop[]>(new drwav_smpl_loop[item.smpl.numSampleLoops]);
-            allocations.push_back(smpl_loops_alloc);
-            size_t smpl_loops_index = 0;
-
-            item.smpl.loops = smpl_loops_alloc.get();
-            for (const auto &loop : loops.loops) {
-                drwav_smpl_loop smpl_loop {};
-
-                cue_points.push_back({cue_point_id, loop.name, loop.start_frame});
-                smpl_loop.cuePointId = cue_point_id;
-                ++cue_point_id;
-
-                switch (loop.type) {
-                    case MetadataItems::LoopType::Forward:
-                        smpl_loop.type = drwav_smpl_loop_type_forward;
-                        break;
-                    case MetadataItems::LoopType::Backward:
-                        smpl_loop.type = drwav_smpl_loop_type_backward;
-                        break;
-                    case MetadataItems::LoopType::PingPong:
-                        smpl_loop.type = drwav_smpl_loop_type_pingpong;
-                        break;
-                    default: smpl_loop.type = drwav_smpl_loop_type_forward;
-                }
-                smpl_loop.firstSampleByteOffset =
-                    (u32)(loop.start_frame * audio_data.num_channels * (bits_per_sample / 8));
-                smpl_loop.lastSampleByteOffset =
-                    (u32)((loop.end_frame - 1) * audio_data.num_channels * (bits_per_sample / 8));
-                smpl_loop.sampleFraction =
-                    0; // Note: we are discarding this value even if we have unchaged the loop
-                smpl_loop.playCount = loop.num_times_to_loop;
-
-                smpl_loops_alloc.get()[smpl_loops_index++] = smpl_loop;
-            }
-        }
-
-        metadata.push_back(item);
-    }
-
-    if (audio_data.metadata.markers) {
-        const auto &markers = *audio_data.metadata.markers;
-        for (const auto &m : markers.markers) {
-            cue_points.push_back({cue_point_id++, m.name, m.start_frame});
-        }
-    }
-
-    if (audio_data.metadata.regions) {
-        const auto &regions = *audio_data.metadata.regions;
-        for (const auto &r : regions.regions) {
-            // Note: we are discarding of the purposeId, and the language items even if we haven't changed the
-            // loop
-            drwav_metadata item {};
-            item.type = drwav_metadata_type_list_labelled_cue_region;
-
-            item.labelledCueRegion.cuePointId = cue_point_id;
-            item.labelledCueRegion.sampleLength = (u32)(r.num_frames * audio_data.num_channels);
-            item.labelledCueRegion.purposeId[0] = 'b';
-            item.labelledCueRegion.purposeId[1] = 'e';
-            item.labelledCueRegion.purposeId[2] = 'a';
-            item.labelledCueRegion.purposeId[3] = 't';
-
-            if (r.name) {
-                item.labelledCueRegion.stringSize = (u32)(r.name->size());
-                item.labelledCueRegion.string = AllocateString(r.name->data(), r.name->size());
-            }
-
-            cue_points.push_back({cue_point_id++, r.initial_marker_name, r.start_frame});
-            metadata.push_back(item);
-        }
-    }
-
-    if (cue_points.size()) {
-        drwav_metadata item {};
-        item.type = drwav_metadata_type_cue;
-
-        auto cue_points_mem = std::shared_ptr<drwav_cue_point[]>(new drwav_cue_point[cue_points.size()]);
-        allocations.push_back(cue_points_mem);
-        size_t cue_points_mem_index = 0;
-
-        item.cue.numCuePoints = (u32)cue_points.size();
-        item.cue.cuePoints = cue_points_mem.get();
-
-        for (const auto &cue : cue_points) {
-            drwav_cue_point p {};
-            p.id = cue.id;
-            p.dataChunkId[0] = 'd';
-            p.dataChunkId[1] = 'a';
-            p.dataChunkId[2] = 't';
-            p.dataChunkId[3] = 'a';
-            p.sampleByteOffset = (u32)(cue.frame_position * audio_data.num_channels * (bits_per_sample / 8));
-            cue_points_mem.get()[cue_points_mem_index++] = p;
-        }
-
-        metadata.push_back(item);
-    }
+    // WaveFileMetadataArray must exist for the lifetime of drwav as drwav keeps a pointer to the metadata
+    WaveFileMetadataArray wave_file_metadata(audio_data, bits_per_sample);
+    const auto metadata = wave_file_metadata.BuildMetadata();
 
     drwav wav;
     drwav_init_write_with_metadata(&wav, &format, OnWrite, OnSeekFile, file.get(), nullptr,
-                                   metadata.size() ? metadata.data() : NULL, (u32)metadata.size());
+                                   metadata.size() ? (drwav_metadata *)metadata.data() : NULL,
+                                   (u32)metadata.size());
 
     u32 f;
     bool succeed_writing = true;
     GetAudioDataConvertedAndScaledToBitDepth(
         audio_data.interleaved_samples, f, bits_per_sample, [&](const void *raw_data) {
             if (!succeed_writing) return;
-            u64 frames_written = 0;
-            if (format.format == DR_WAVE_FORMAT_PCM) {
-                frames_written = drwav_write_pcm_frames(&wav, audio_data.NumFrames(), raw_data);
-            } else if (format.format == DR_WAVE_FORMAT_IEEE_FLOAT) {
-                frames_written = drwav_write_float_frames(&wav, audio_data.NumFrames(), raw_data);
-            }
+            const auto frames_written = drwav_write_pcm_frames(&wav, audio_data.NumFrames(), raw_data);
             if (frames_written != audio_data.NumFrames()) {
                 ErrorWithNewLine("frames_written != audio_data.interleaved_samples.size()");
                 succeed_writing = true;

@@ -650,6 +650,7 @@ class NonSpecificMetadataToWaveMetadata {
 
     template <typename Type>
     Type *AllocateObjects(size_t num_objects) {
+        if (!num_objects) return nullptr;
         auto mem = std::shared_ptr<Type[]>(new Type[num_objects]);
         m_allocations.push_back(mem);
         return mem.get();
@@ -988,35 +989,28 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
     FLAC__stream_encoder_set_total_samples_estimate(encoder.get(), audio_data.interleaved_samples.size());
 
     std::vector<FLAC__StreamMetadata *> metadata;
-    std::shared_ptr<FLAC__StreamMetadata> vorbis_comment_meta {};
     for (auto m : audio_data.flac_metadata) {
-        if (m->type == FLAC__METADATA_TYPE_VORBIS_COMMENT) {
-            vorbis_comment_meta = m;
-        } else {
-            metadata.push_back(m.get());
-        }
+        metadata.push_back(m.get());
     }
 
-    // Add in our custom metadata to a block we have created with ID SGNT
+    // Add in our metadata to a custome FLAC block
     FLAC__StreamMetadata signet_metadata {};
     {
         std::stringstream ss;
-        {
-            // in a separate block becease the archive needs it's destructor called before we can use the
-            // string
+        try {
             cereal::JSONOutputArchive archive(ss);
             archive(cereal::make_nvp(signet_root_json_object_name, audio_data.metadata));
+        } catch (const std::exception &e) {
+            ErrorWithNewLine("Internal error when writing FLAC signet json metadata: ", e.what());
         }
-
-        signet_metadata.type = FLAC__METADATA_TYPE_APPLICATION;
-        memcpy(signet_metadata.data.application.id, flac_custom_signet_application_id, 4);
-        FLAC__metadata_object_application_set_data(&signet_metadata, (FLAC__byte *)ss.str().data(),
-                                                   (unsigned)ss.str().size(), true);
-        metadata.push_back(&signet_metadata);
-    }
-
-    if (vorbis_comment_meta) {
-        metadata.push_back(vorbis_comment_meta.get());
+        const auto str = ss.str();
+        if (str.size()) {
+            signet_metadata.type = FLAC__METADATA_TYPE_APPLICATION;
+            memcpy(signet_metadata.data.application.id, flac_custom_signet_application_id, 4);
+            FLAC__metadata_object_application_set_data(&signet_metadata, (FLAC__byte *)str.data(),
+                                                       (unsigned)str.size(), true);
+            metadata.push_back(&signet_metadata);
+        }
     }
 
     if (metadata.size()) {

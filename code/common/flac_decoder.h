@@ -116,11 +116,17 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
     switch (metadata->type) {
         case FLAC__METADATA_TYPE_APPLICATION: {
             if (memcmp(metadata->data.application.id, flac_custom_signet_application_id, 4) == 0) {
-                std::string data {(char *)metadata->data.application.data,
-                                  metadata->length - (FLAC__STREAM_METADATA_APPLICATION_ID_LEN / 8)};
-                std::stringstream ss(data);
-                cereal::JSONInputArchive archive(ss);
-                archive(cereal::make_nvp(signet_root_json_object_name, context.data.metadata));
+                const auto id_bytes = (FLAC__STREAM_METADATA_APPLICATION_ID_LEN / 8);
+                if (metadata->length > id_bytes) {
+                    std::string data {(char *)metadata->data.application.data, metadata->length - id_bytes};
+                    std::stringstream ss(data);
+                    try {
+                        cereal::JSONInputArchive archive(ss);
+                        archive(cereal::make_nvp(signet_root_json_object_name, context.data.metadata));
+                    } catch (const std::exception &e) {
+                        ErrorWithNewLine("Error parsing FLAC signet metadata: ", e.what());
+                    }
+                }
                 return;
             }
             break;

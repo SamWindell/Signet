@@ -619,17 +619,24 @@ class NonSpecificMetadataToWaveMetadata {
     const std::vector<drwav_metadata> &BuildMetadata() {
         CopyInfoTextsFromOriginalWaveData();
 
+        bool root_note_written = false;
         if (m_audio_data.metadata.timing_info) {
             AddAcidMetadata(*m_audio_data.metadata.timing_info, m_audio_data.wave_metadata.GetAcid());
+            root_note_written = true;
         }
         if (m_audio_data.metadata.midi_mapping && m_audio_data.metadata.midi_mapping->sampler_mapping) {
             AddInstMetadata(*m_audio_data.metadata.midi_mapping);
+            root_note_written = true;
         }
         if (m_audio_data.metadata.loops.size()) {
             AddSmplMetadata(m_audio_data.metadata.loops, m_audio_data.wave_metadata.GetSmpl());
+            root_note_written = true;
         }
         if (m_audio_data.metadata.regions.size()) {
             AddLabelledCueRegionMetadatas(m_audio_data.metadata.regions);
+        }
+        if (!root_note_written && m_audio_data.metadata.midi_mapping) {
+            AddSmplMetadata(m_audio_data.metadata.loops, {});
         }
 
         // must be the last as other chunks might have added cues to it
@@ -759,10 +766,11 @@ class NonSpecificMetadataToWaveMetadata {
         if (current_smpl) item.smpl = *current_smpl;
 
         item.smpl.samplePeriodNanoseconds = u32((1.0 / (double)m_audio_data.sample_rate) * 1000000000.0);
-        if (m_audio_data.metadata.midi_mapping)
+        if (m_audio_data.metadata.midi_mapping) {
             item.smpl.midiUnityNote = m_audio_data.metadata.midi_mapping->root_midi_note;
-        else
+        } else {
             item.smpl.midiUnityNote = 60;
+        }
 
         // if it exists, this data is opaque to us, so it's safer to just clear it
         item.smpl.numBytesOfSamplerSpecificData = 0;
@@ -834,10 +842,10 @@ class NonSpecificMetadataToWaveMetadata {
         std::optional<std::string> name;
         size_t frame_position;
     };
-    std::vector<CuePoint> m_cue_points_buffer;
+    std::vector<CuePoint> m_cue_points_buffer {};
 
-    std::vector<std::shared_ptr<void>> m_allocations;
-    std::vector<drwav_metadata> m_wave_metadata;
+    std::vector<std::shared_ptr<void>> m_allocations {};
+    std::vector<drwav_metadata> m_wave_metadata {};
 };
 
 static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {

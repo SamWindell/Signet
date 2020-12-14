@@ -207,6 +207,30 @@ std::ostream &operator<<(std::ostream &os, const drwav_unknown_metadata &u) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const drwav_bext &b) {
+    os << "{\n";
+    os << "  description: " << ((b.description) ? b.description : "") << "\n";
+    os << "  originatorName: " << ((b.originatorName) ? b.originatorName : "") << "\n";
+    os << "  originatorReference: " << ((b.originatorReference) ? b.originatorReference : "") << "\n";
+    os << "  originationDate: " << std::string_view(b.originationDate, sizeof(b.originationDate)) << "\n";
+    os << "  originationTime: " << std::string_view(b.originationTime, sizeof(b.originationTime)) << "\n";
+    os << "  timeReference: " << b.timeReference << "\n";
+    os << "  version: " << b.version << "\n";
+    os << "  loudnessValue: " << b.loudnessValue << "\n";
+    os << "  loudnessRange: " << b.loudnessRange << "\n";
+    os << "  maxTruePeakLevel: " << b.maxTruePeakLevel << "\n";
+    os << "  maxMomentaryLoudness: " << b.maxMomentaryLoudness << "\n";
+    os << "  maxShortTermLoudness: " << b.maxShortTermLoudness << "\n";
+    os << "  codingHistory: ";
+    if (b.codingHistory) {
+        os << b.codingHistory;
+    }
+    os << "\n";
+    os << "}\n";
+    return os;
+}
+
+
 class WaveMetadataToNonSpecificMetadata {
   public:
     WaveMetadataToNonSpecificMetadata(const WaveMetadata &wave_metadata, const AudioData &audio)
@@ -408,6 +432,11 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
                 DebugWithNewLine(m.acid);
                 break;
             }
+            case drwav_metadata_type_bext: {
+                DebugWithNewLine("type: bext");
+                DebugWithNewLine(m.bext);
+                break;
+            }
             case drwav_metadata_type_list_label: {
                 DebugWithNewLine("type: labelOrNote");
                 DebugWithNewLine(m.labelOrNote);
@@ -447,6 +476,7 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
 
 std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
+    DebugWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
     const auto file = OpenFile(path, "rb");
     if (!file) return {};
 
@@ -1220,7 +1250,6 @@ TEST_CASE("[AudioData]") {
         auto f = ReadAudioFile(in_filename);
         REQUIRE(f);
         REQUIRE(f->wave_metadata.NumItems() >= 2);
-        MESSAGE(f->wave_metadata.NumItems());
 
         REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
         REQUIRE(fs::is_regular_file(out_filename));
@@ -1228,7 +1257,6 @@ TEST_CASE("[AudioData]") {
         auto out_f = ReadAudioFile(out_filename);
         REQUIRE(out_f);
         REQUIRE(out_f->wave_metadata.NumItems() >= 2);
-        MESSAGE(out_f->wave_metadata.NumItems());
 
         REQUIRE(WriteAudioFile(out_flac_filename, f.value(), 16));
         REQUIRE(fs::is_regular_file(out_flac_filename));
@@ -1236,8 +1264,30 @@ TEST_CASE("[AudioData]") {
         auto out_f2 = ReadAudioFile(out_flac_filename);
         REQUIRE(out_f2);
         REQUIRE(out_f2->metadata.loops.size() != 0);
-        MESSAGE(out_f2->metadata.loops.size());
     }
+
+    SUBCASE("wave with bext") {
+        const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_bext.wav";
+        auto f = ReadAudioFile(in_filename);
+        REQUIRE(f);
+        REQUIRE(f->wave_metadata.NumItems() >= 1);
+    }
+
+    SUBCASE("wave with bpm and time sig") {
+        const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_metadata_80bpm_5-4_time_sig.wav";
+        auto f = ReadAudioFile(in_filename);
+        REQUIRE(f);
+        REQUIRE(f->wave_metadata.NumItems() >= 1);
+    }
+
+
+    SUBCASE("wave with region and marker") {
+        const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_region_and_marker.wav";
+        auto f = ReadAudioFile(in_filename);
+        REQUIRE(f);
+        REQUIRE(f->wave_metadata.NumItems() >= 1);
+    }
+
 
     SUBCASE("flac with comments") {
         const fs::path in_filename = TEST_DATA_DIRECTORY "/flac_with_comments.flac";

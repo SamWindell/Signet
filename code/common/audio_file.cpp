@@ -251,20 +251,20 @@ class WaveMetadataToNonSpecificMetadata {
             switch (m.type) {
                 case drwav_metadata_type_smpl: {
                     std::vector<MetadataItems::Loop> loops;
-                    for (u32 i = 0; i < m.smpl.numSampleLoops; ++i) {
-                        loops.push_back(CreateSampleLoop(m.smpl.loops[i]));
+                    for (u32 i = 0; i < m.data.smpl.numSampleLoops; ++i) {
+                        loops.push_back(CreateSampleLoop(m.data.smpl.loops[i]));
                     }
                     result.loops = loops;
                     break;
                 }
                 case drwav_metadata_type_inst: {
                     MetadataItems::SamplerMapping data;
-                    data.fine_tune_cents = m.inst.fineTuneCents;
-                    data.gain_db = m.inst.gainDecibels;
-                    data.low_note = m.inst.lowNote;
-                    data.high_note = m.inst.highNote;
-                    data.low_velocity = m.inst.lowVelocity;
-                    data.high_velocity = m.inst.highVelocity;
+                    data.fine_tune_cents = m.data.inst.fineTuneCents;
+                    data.gain_db = m.data.inst.gainDecibels;
+                    data.low_note = m.data.inst.lowNote;
+                    data.high_note = m.data.inst.highNote;
+                    data.low_velocity = m.data.inst.lowVelocity;
+                    data.high_velocity = m.data.inst.highVelocity;
                     assert(result.midi_mapping); // we should have created it for the midi root note after
                                                  // calling FindMidiRootNote
                     result.midi_mapping->sampler_mapping = data;
@@ -272,23 +272,23 @@ class WaveMetadataToNonSpecificMetadata {
                 }
                 case drwav_metadata_type_cue: {
                     std::vector<MetadataItems::Marker> markers;
-                    for (u32 i = 0; i < m.cue.numCuePoints; ++i) {
-                        markers.push_back(CreateMarker(m.cue.cuePoints[i]));
+                    for (u32 i = 0; i < m.data.cue.numCuePoints; ++i) {
+                        markers.push_back(CreateMarker(m.data.cue.cuePoints[i]));
                     }
                     result.markers = markers;
                     break;
                 }
                 case drwav_metadata_type_acid: {
                     MetadataItems::TimingInfo info;
-                    info.num_beats = m.acid.numBeats;
-                    info.time_signature_denominator = m.acid.meterDenominator;
-                    info.time_signature_numerator = m.acid.meterNumerator;
-                    info.tempo = m.acid.tempo;
+                    info.num_beats = m.data.acid.numBeats;
+                    info.time_signature_denominator = m.data.acid.meterDenominator;
+                    info.time_signature_numerator = m.data.acid.meterNumerator;
+                    info.tempo = m.data.acid.tempo;
                     result.timing_info = info;
                     break;
                 }
                 case drwav_metadata_type_list_labelled_cue_region: {
-                    result.regions.push_back(CreateRegion(m.labelledCueRegion));
+                    result.regions.push_back(CreateRegion(m.data.labelledCueRegion));
                     break;
                 }
             }
@@ -303,8 +303,8 @@ class WaveMetadataToNonSpecificMetadata {
 
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_list_label) {
-                if (m.labelOrNote.cuePointId == loop.cuePointId && m.labelOrNote.stringSize) {
-                    result.name = std::string(m.labelOrNote.string);
+                if (m.data.labelOrNote.cuePointId == loop.cuePointId && m.data.labelOrNote.stringSize) {
+                    result.name = std::string(m.data.labelOrNote.string);
                 }
             }
         }
@@ -338,8 +338,8 @@ class WaveMetadataToNonSpecificMetadata {
 
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_cue) {
-                for (u32 i = 0; i < m.cue.numCuePoints; ++i) {
-                    const auto &cue_point = m.cue.cuePoints[i];
+                for (u32 i = 0; i < m.data.cue.numCuePoints; ++i) {
+                    const auto &cue_point = m.data.cue.cuePoints[i];
                     if (cue_point.id == region.cuePointId) {
                         result.start_frame =
                             cue_point.sampleByteOffset / (m_audio.bits_per_sample / 8) / m_audio.num_channels;
@@ -348,8 +348,8 @@ class WaveMetadataToNonSpecificMetadata {
                     }
                 }
             } else if (m.type == drwav_metadata_type_list_label) {
-                if (m.labelOrNote.cuePointId == region.cuePointId && m.labelOrNote.stringSize) {
-                    result.initial_marker_name = std::string(m.labelOrNote.string);
+                if (m.data.labelOrNote.cuePointId == region.cuePointId && m.data.labelOrNote.stringSize) {
+                    result.initial_marker_name = std::string(m.data.labelOrNote.string);
                 }
             }
         }
@@ -368,8 +368,8 @@ class WaveMetadataToNonSpecificMetadata {
         MetadataItems::Marker result {};
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_list_label) {
-                if (m.labelOrNote.cuePointId == cue_point.id && m.labelOrNote.stringSize) {
-                    result.name = std::string(m.labelOrNote.string);
+                if (m.data.labelOrNote.cuePointId == cue_point.id && m.data.labelOrNote.stringSize) {
+                    result.name = std::string(m.data.labelOrNote.string);
                     break;
                 }
             }
@@ -385,19 +385,19 @@ class WaveMetadataToNonSpecificMetadata {
         // There are 3 different places this data might be...  so we just kind of arbitrarily pick one
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_inst) {
-                return m.inst.midiUnityNote;
+                return m.data.inst.midiUnityNote;
             }
         }
 
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_smpl) {
-                return m.smpl.midiUnityNote;
+                return m.data.smpl.midiUnityNote;
             }
         }
 
         for (const auto &m : m_wave_metadata) {
-            if (m.type == drwav_metadata_type_acid && m.acid.flags & drwav_acid_flag_root_note_set) {
-                return m.acid.midiUnityNote;
+            if (m.type == drwav_metadata_type_acid && m.data.acid.flags & drwav_acid_flag_root_note_set) {
+                return m.data.acid.midiUnityNote;
             }
         }
 
@@ -414,42 +414,42 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
         switch (m.type) {
             case drwav_metadata_type_smpl: {
                 DebugWithNewLine("type: smpl");
-                DebugWithNewLine(m.smpl);
+                DebugWithNewLine(m.data.smpl);
                 break;
             }
             case drwav_metadata_type_inst: {
                 DebugWithNewLine("type: inst");
-                DebugWithNewLine(m.inst);
+                DebugWithNewLine(m.data.inst);
                 break;
             }
             case drwav_metadata_type_cue: {
                 DebugWithNewLine("type: cue");
-                DebugWithNewLine(m.cue);
+                DebugWithNewLine(m.data.cue);
                 break;
             }
             case drwav_metadata_type_acid: {
                 DebugWithNewLine("type: acid");
-                DebugWithNewLine(m.acid);
+                DebugWithNewLine(m.data.acid);
                 break;
             }
             case drwav_metadata_type_bext: {
                 DebugWithNewLine("type: bext");
-                DebugWithNewLine(m.bext);
+                DebugWithNewLine(m.data.bext);
                 break;
             }
             case drwav_metadata_type_list_label: {
                 DebugWithNewLine("type: labelOrNote");
-                DebugWithNewLine(m.labelOrNote);
+                DebugWithNewLine(m.data.labelOrNote);
                 break;
             }
             case drwav_metadata_type_list_note: {
                 DebugWithNewLine("type: list_note");
-                DebugWithNewLine(m.labelOrNote);
+                DebugWithNewLine(m.data.labelOrNote);
                 break;
             }
             case drwav_metadata_type_list_labelled_cue_region: {
                 DebugWithNewLine("type: list_labelled_cue_region");
-                DebugWithNewLine(m.labelledCueRegion);
+                DebugWithNewLine(m.data.labelledCueRegion);
                 break;
             }
             case drwav_metadata_type_list_info_software:
@@ -462,12 +462,12 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
             case drwav_metadata_type_list_info_album:
             case drwav_metadata_type_list_info_tracknumber: {
                 DebugWithNewLine("type: list info");
-                DebugWithNewLine(m.infoText);
+                DebugWithNewLine(m.data.infoText);
                 break;
             }
             case drwav_metadata_type_unknown: {
                 DebugWithNewLine("type: unknown");
-                DebugWithNewLine(m.unknown);
+                DebugWithNewLine(m.data.unknown);
                 break;
             }
         }
@@ -705,12 +705,12 @@ class NonSpecificMetadataToWaveMetadata {
 
     void CopyInfoTextsFromOriginalWaveData() {
         for (const auto &m : m_audio_data.wave_metadata.Items()) {
-            if (m.type & drwav_metadata_type_list_all_info_strings && m.infoText.stringSize) {
+            if (m.type & drwav_metadata_type_list_all_info_strings && m.data.infoText.stringSize) {
                 drwav_metadata item {};
                 item.type = m.type;
-                item.infoText.stringSize = m.infoText.stringSize;
-                if (m.infoText.stringSize) {
-                    item.infoText.string = AllocateAndCopyString(m.infoText.string, m.infoText.stringSize);
+                item.data.infoText.stringSize = m.data.infoText.stringSize;
+                if (m.data.infoText.stringSize) {
+                    item.data.infoText.string = AllocateAndCopyString(m.data.infoText.string, m.data.infoText.stringSize);
                 }
                 m_wave_metadata.push_back(item);
             }
@@ -726,8 +726,8 @@ class NonSpecificMetadataToWaveMetadata {
             drwav_metadata item {};
             item.type = drwav_metadata_type_cue;
 
-            item.cue.numCuePoints = (u32)m_cue_points_buffer.size();
-            item.cue.cuePoints = AllocateObjects<drwav_cue_point>(m_cue_points_buffer.size());
+            item.data.cue.numCuePoints = (u32)m_cue_points_buffer.size();
+            item.data.cue.cuePoints = AllocateObjects<drwav_cue_point>(m_cue_points_buffer.size());
 
             size_t index = 0;
             for (const auto &cue : m_cue_points_buffer) {
@@ -738,7 +738,7 @@ class NonSpecificMetadataToWaveMetadata {
                 p.dataChunkId[2] = 't';
                 p.dataChunkId[3] = 'a';
                 p.sampleByteOffset = FramePosToSampleBytes(cue.frame_position);
-                item.cue.cuePoints[index++] = p;
+                item.data.cue.cuePoints[index++] = p;
             }
 
             m_wave_metadata.push_back(item);
@@ -749,23 +749,23 @@ class NonSpecificMetadataToWaveMetadata {
                          const std::optional<drwav_acid> current_acid) {
         drwav_metadata item {};
         item.type = drwav_metadata_type_acid;
-        if (current_acid) item.acid = *current_acid;
+        if (current_acid) item.data.acid = *current_acid;
 
         if (m_audio_data.metadata.midi_mapping) {
-            item.acid.flags |= drwav_acid_flag_root_note_set;
-            item.acid.midiUnityNote =
+            item.data.acid.flags |= drwav_acid_flag_root_note_set;
+            item.data.acid.midiUnityNote =
                 (u16)std::clamp(m_audio_data.metadata.midi_mapping->root_midi_note, 0, 127);
         }
 
-        item.acid.flags &= ~drwav_acid_flag_one_shot;
+        item.data.acid.flags &= ~drwav_acid_flag_one_shot;
         if (timing_info.playback_type == MetadataItems::PlaybackType::OneShot) {
-            item.acid.flags |= drwav_acid_flag_one_shot;
+            item.data.acid.flags |= drwav_acid_flag_one_shot;
         }
 
-        item.acid.numBeats = timing_info.num_beats;
-        item.acid.meterDenominator = (u16)timing_info.time_signature_denominator;
-        item.acid.meterNumerator = (u16)timing_info.time_signature_numerator;
-        item.acid.tempo = timing_info.tempo;
+        item.data.acid.numBeats = timing_info.num_beats;
+        item.data.acid.meterDenominator = (u16)timing_info.time_signature_denominator;
+        item.data.acid.meterNumerator = (u16)timing_info.time_signature_numerator;
+        item.data.acid.tempo = timing_info.tempo;
 
         m_wave_metadata.push_back(item);
     }
@@ -776,13 +776,13 @@ class NonSpecificMetadataToWaveMetadata {
         item.type = drwav_metadata_type_inst;
 
         // TODO: notify the user about values that have clamped
-        item.inst.midiUnityNote = (s8)std::clamp(midi_mapping.root_midi_note, 0, 127);
-        item.inst.fineTuneCents = (s8)std::clamp(midi_mapping.sampler_mapping->fine_tune_cents, -50, 50);
-        item.inst.gainDecibels = (s8)std::clamp(midi_mapping.sampler_mapping->gain_db, -64, 64);
-        item.inst.lowNote = (s8)std::clamp(midi_mapping.sampler_mapping->low_note, 0, 127);
-        item.inst.highNote = (s8)std::clamp(midi_mapping.sampler_mapping->high_note, 0, 127);
-        item.inst.lowVelocity = (s8)std::clamp(midi_mapping.sampler_mapping->low_velocity, 1, 127);
-        item.inst.highVelocity = (s8)std::clamp(midi_mapping.sampler_mapping->high_velocity, 1, 127);
+        item.data.inst.midiUnityNote = (s8)std::clamp(midi_mapping.root_midi_note, 0, 127);
+        item.data.inst.fineTuneCents = (s8)std::clamp(midi_mapping.sampler_mapping->fine_tune_cents, -50, 50);
+        item.data.inst.gainDecibels = (s8)std::clamp(midi_mapping.sampler_mapping->gain_db, -64, 64);
+        item.data.inst.lowNote = (s8)std::clamp(midi_mapping.sampler_mapping->low_note, 0, 127);
+        item.data.inst.highNote = (s8)std::clamp(midi_mapping.sampler_mapping->high_note, 0, 127);
+        item.data.inst.lowVelocity = (s8)std::clamp(midi_mapping.sampler_mapping->low_velocity, 1, 127);
+        item.data.inst.highVelocity = (s8)std::clamp(midi_mapping.sampler_mapping->high_velocity, 1, 127);
 
         m_wave_metadata.push_back(item);
     }
@@ -793,22 +793,22 @@ class NonSpecificMetadataToWaveMetadata {
 
         drwav_metadata item {};
         item.type = drwav_metadata_type_smpl;
-        if (current_smpl) item.smpl = *current_smpl;
+        if (current_smpl) item.data.smpl = *current_smpl;
 
-        item.smpl.samplePeriodNanoseconds = u32((1.0 / (double)m_audio_data.sample_rate) * 1000000000.0);
+        item.data.smpl.samplePeriodNanoseconds = u32((1.0 / (double)m_audio_data.sample_rate) * 1000000000.0);
         if (m_audio_data.metadata.midi_mapping) {
-            item.smpl.midiUnityNote = m_audio_data.metadata.midi_mapping->root_midi_note;
+            item.data.smpl.midiUnityNote = m_audio_data.metadata.midi_mapping->root_midi_note;
         } else {
-            item.smpl.midiUnityNote = 60;
+            item.data.smpl.midiUnityNote = 60;
         }
 
         // if it exists, this data is opaque to us, so it's safer to just clear it
-        item.smpl.numBytesOfSamplerSpecificData = 0;
-        item.smpl.samplerSpecificData = nullptr;
+        item.data.smpl.numBytesOfSamplerSpecificData = 0;
+        item.data.smpl.samplerSpecificData = nullptr;
 
-        item.smpl.numSampleLoops = (u32)loops.size();
-        if (item.smpl.numSampleLoops) {
-            item.smpl.loops = AllocateObjects<drwav_smpl_loop>(loops.size());
+        item.data.smpl.numSampleLoops = (u32)loops.size();
+        if (item.data.smpl.numSampleLoops) {
+            item.data.smpl.loops = AllocateObjects<drwav_smpl_loop>(loops.size());
             size_t smpl_loops_index = 0;
             for (const auto &loop : loops) {
                 drwav_smpl_loop smpl_loop {};
@@ -834,7 +834,7 @@ class NonSpecificMetadataToWaveMetadata {
                     0; // Note: we are discarding this value even if we have unchaged the loop
                 smpl_loop.playCount = loop.num_times_to_loop;
 
-                item.smpl.loops[smpl_loops_index++] = smpl_loop;
+                item.data.smpl.loops[smpl_loops_index++] = smpl_loop;
             }
         }
 
@@ -848,16 +848,16 @@ class NonSpecificMetadataToWaveMetadata {
             drwav_metadata item {};
             item.type = drwav_metadata_type_list_labelled_cue_region;
 
-            item.labelledCueRegion.cuePointId = CreateUniqueCuePointId(r.initial_marker_name, r.start_frame);
-            item.labelledCueRegion.sampleLength = (u32)(r.num_frames * m_audio_data.num_channels);
-            item.labelledCueRegion.purposeId[0] = 'b';
-            item.labelledCueRegion.purposeId[1] = 'e';
-            item.labelledCueRegion.purposeId[2] = 'a';
-            item.labelledCueRegion.purposeId[3] = 't';
+            item.data.labelledCueRegion.cuePointId = CreateUniqueCuePointId(r.initial_marker_name, r.start_frame);
+            item.data.labelledCueRegion.sampleLength = (u32)(r.num_frames * m_audio_data.num_channels);
+            item.data.labelledCueRegion.purposeId[0] = 'b';
+            item.data.labelledCueRegion.purposeId[1] = 'e';
+            item.data.labelledCueRegion.purposeId[2] = 'a';
+            item.data.labelledCueRegion.purposeId[3] = 't';
 
             if (r.name) {
-                item.labelledCueRegion.stringSize = (u32)(r.name->size());
-                item.labelledCueRegion.string = AllocateAndCopyString(r.name->data(), r.name->size());
+                item.data.labelledCueRegion.stringSize = (u32)(r.name->size());
+                item.data.labelledCueRegion.string = AllocateAndCopyString(r.name->data(), r.name->size());
             }
 
             m_wave_metadata.push_back(item);

@@ -139,13 +139,13 @@ struct WaveMetadata {
 
     std::optional<drwav_acid> GetAcid() const {
         const auto result = GetType(drwav_metadata_type_acid);
-        if (result) return result->acid;
+        if (result) return result->data.acid;
         return {};
     }
 
     std::optional<drwav_smpl> GetSmpl() const {
         const auto result = GetType(drwav_metadata_type_smpl);
-        if (result) return result->smpl;
+        if (result) return result->data.smpl;
         return {};
     }
 

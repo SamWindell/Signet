@@ -18,15 +18,11 @@ class EmbedSamplerInfo : public Subcommand {
     bool m_note_range_auto_map {};
     std::optional<int> m_low_note_number;
     std::optional<std::string> m_low_note_regex_pattern;
-    bool m_low_note_unchanged {};
     std::optional<int> m_high_note_number;
     std::optional<std::string> m_high_note_regex_pattern;
-    bool m_high_note_unchanged {};
 
     std::optional<int> m_low_velo_number;
     std::optional<std::string> m_low_velo_regex_pattern;
-    bool m_low_velo_unchanged {};
     std::optional<int> m_high_velo_number;
     std::optional<std::string> m_high_velo_regex_pattern;
-    bool m_high_velo_unchanged {};
 };

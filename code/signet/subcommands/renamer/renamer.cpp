@@ -127,8 +127,7 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                     WarningWithNewLine(
                         "Renamer: One of the detected pitch variables was used in the file name, but we "
                         "could not find any pitch in the audio. All detected pitch variables will be "
-                        "replaced "
-                        "substituted with nothing.");
+                        "replaced with nothing.");
                     Replace(filename, "<detected-pitch>", "");
                     Replace(filename, "<detected-midi-note>", "");
                     Replace(filename, "<detected-midi-note-octave-plus-1>", "");

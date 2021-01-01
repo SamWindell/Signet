@@ -18,4 +18,5 @@ class Subcommand {
 
     virtual void GenerateFiles(const tcb::span<EditTrackedAudioFile> files, SignetBackup &backup) {}
     virtual void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {}
+    virtual void ProcessFolders(const FolderMapType &folders) {}
 };

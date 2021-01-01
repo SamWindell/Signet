@@ -9,6 +9,7 @@
 #include "cli_formatter.h"
 #include "subcommands/auto_tuner/auto_tuner.h"
 #include "subcommands/converter/converter.h"
+#include "subcommands/embed_sampler_info/embed_sampler_info.h"
 #include "subcommands/fader/fader.h"
 #include "subcommands/filters/filters.h"
 #include "subcommands/folderiser/folderiser.h"
@@ -27,6 +28,7 @@
 SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<AutoTuner>());
     m_subcommands.push_back(std::make_unique<Converter>());
+    m_subcommands.push_back(std::make_unique<EmbedSamplerInfo>());
     m_subcommands.push_back(std::make_unique<Fader>());
     m_subcommands.push_back(std::make_unique<Folderiser>());
     m_subcommands.push_back(std::make_unique<Gainer>());
@@ -105,6 +107,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
             MessageWithNewLine(subcommand->GetName(), "Starting processing");
             subcommand->ProcessFiles(m_input_audio_files.GetAllFiles());
+            subcommand->ProcessFolders(m_input_audio_files.GetAllFolders());
             subcommand->GenerateFiles(m_input_audio_files.GetAllFiles(), m_backup);
 
             int num_audio_edits = 0;

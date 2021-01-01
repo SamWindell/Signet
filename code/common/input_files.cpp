@@ -37,6 +37,14 @@ void InputAudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
             m_all_files.push_back(proximate);
         }
     }
+    for (auto &f : m_all_files) {
+        fs::path parent = ".";
+        if (f.GetPath().has_parent_path()) parent = f.GetPath().parent_path();
+        if (m_folders.find(parent) == m_folders.end()) {
+            m_folders.insert({parent, {}});
+        }
+        m_folders[parent].push_back(&f);
+    }
 }
 
 bool InputAudioFiles::WouldWritingAllFilesCreateConflicts() {

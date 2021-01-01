@@ -14,6 +14,8 @@ class InputAudioFiles {
     std::vector<EditTrackedAudioFile> &GetAllFiles() { return m_all_files; }
     usize NumFiles() const { return m_all_files.size(); }
 
+    auto &GetAllFolders() { return m_folders; }
+
     bool WriteAllAudioFiles(SignetBackup &backup);
     int GetNumFilesProcessed() const {
         int n = 0;
@@ -31,4 +33,5 @@ class InputAudioFiles {
 
     bool m_is_single_file {};
     std::vector<EditTrackedAudioFile> m_all_files {};
+    FolderMapType m_folders {};
 };

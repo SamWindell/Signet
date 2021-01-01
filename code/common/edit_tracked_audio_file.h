@@ -3,6 +3,11 @@
 #include "common.h"
 #include "string_utils.h"
 
+#include <map>
+
+struct EditTrackedAudioFile;
+using FolderMapType = std::map<fs::path, std::vector<EditTrackedAudioFile *>>;
+
 // Changes made to the data, path or format are tracked, and the data is only loaded when it is requested
 struct EditTrackedAudioFile {
     EditTrackedAudioFile(const fs::path &path)

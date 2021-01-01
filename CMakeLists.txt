@@ -70,6 +70,7 @@ add_library(
     code/signet/subcommands/tuner/tuner.cpp
     code/signet/subcommands/filters/filters.cpp
     code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
+    code/signet/subcommands/embed_sampler_info/embed_sampler_info.cpp
     code/tests/test_helpers.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)

@@ -13,7 +13,7 @@ class Highpass final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
-    std::string GetName() override { return "Highpass"; }
+    std::string GetName() const override { return "Highpass"; }
 
   private:
     double m_cutoff;
@@ -23,7 +23,7 @@ class Lowpass final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
-    std::string GetName() override { return "Lowpass"; }
+    std::string GetName() const override { return "Lowpass"; }
 
   private:
     double m_cutoff;

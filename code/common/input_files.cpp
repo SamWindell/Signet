@@ -30,8 +30,9 @@ void InputAudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
         std::error_code ec;
         const auto proximate = fs::proximate(path);
         if (ec) {
-            ErrorWithNewLine("Internal error in function " __FUNCTION__ ": fs::proximate failed for path ",
-                             path, " for reason ", ec.message());
+            ErrorWithNewLine("Signet",
+                             "Internal error in function {}: fs::proximate failed for path {} for reason {}",
+                             __FUNCTION__, path, ec.message());
             m_all_files.push_back(path);
         } else {
             m_all_files.push_back(proximate);
@@ -52,13 +53,15 @@ bool InputAudioFiles::WouldWritingAllFilesCreateConflicts() {
     bool file_conflicts = false;
     for (const auto &f : GetAllFiles()) {
         if (files_set.find(f.GetPath()) != files_set.end()) {
-            ErrorWithNewLine("filepath ", f.GetPath(), " would have the same filename as another file");
+            ErrorWithNewLine("Signet", "filepath {} would have the same filename as another file",
+                             f.GetPath());
             file_conflicts = true;
         }
         files_set.insert(f.GetPath());
     }
     if (file_conflicts) {
-        ErrorWithNewLine("files could be unexpectedly overwritten, please review your renaming settings, "
+        ErrorWithNewLine("Signet",
+                         "files could be unexpectedly overwritten, please review your renaming settings, "
                          "no action will be taken now");
         return true;
     }
@@ -135,9 +138,9 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
     }
 
     if (error_occurred) {
-        ErrorWithNewLine("An error happened while backing-up/writing an audio files so Signet has stopped. "
-                         "However, no damage should be done. Run signet --undo to undo any changes that "
-                         "happened up to the point of this error");
+        ErrorWithNewLine(
+            "Signet",
+            "An error happened while backing-up or writing an audio files. Signet has stopped. Run 'signet --undo' to undo any changes that happened up to the point of this error");
     }
 
     return !error_occurred;

@@ -7,7 +7,7 @@ class Converter final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
-    std::string GetName() override { return "Converter"; }
+    std::string GetName() const override { return "Converter"; }
 
     static void ConvertSampleRate(std::vector<double> &buffer,
                                   const unsigned num_channels,

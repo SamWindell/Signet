@@ -166,11 +166,11 @@ void PitchDetector::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             snprintf(cents_diff.data(), cents_diff.size(), "%.1f",
                      GetCentsDifference(closest_musical_note.pitch, *pitch));
 
-            MessageWithNewLine("Pitch-Dectector", f.filename, " detected pitch ", *pitch, " Hz (",
-                               cents_diff.data(), " cents from ", closest_musical_note.name, ", MIDI ",
-                               closest_musical_note.midi_note, ")");
+            MessageWithNewLine(GetName(), "{} detected pitch {} Hz ({} cents from {}, MIDI {})", f.filename,
+                               *pitch, cents_diff.data(), closest_musical_note.name,
+                               closest_musical_note.midi_note);
         } else {
-            MessageWithNewLine("Pitch-Dectector", "No pitch could be found");
+            MessageWithNewLine(GetName(), "No pitch could be found");
         }
     }
 }

@@ -19,7 +19,7 @@ size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<con
             index_of_min = frame;
         }
     }
-    MessageWithNewLine("ZCross", "Best zero-crossing range is ", minimum_range);
+    MessageWithNewLine(GetNameInternal(), "Best zero-crossing range is {}", minimum_range);
     return index_of_min;
 }
 
@@ -27,16 +27,17 @@ bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioData &audio,
                                                               const AudioDuration &search_size,
                                                               const bool append_skipped_frames_on_end) {
     const auto search_frames = search_size.GetDurationAsFrames(audio.sample_rate, audio.NumFrames());
-    MessageWithNewLine("Searching ", search_frames, " frames for a zero-crossing");
+    MessageWithNewLine(GetNameInternal(), "Searching {} frames for a zero-crossing", search_frames);
 
     const auto new_start_frame =
         FindFrameNearestToZeroInBuffer(audio.interleaved_samples, search_frames, audio.num_channels);
     if (new_start_frame == 0) {
-        MessageWithNewLine("Searching", "No start frame change needed");
+        MessageWithNewLine(GetNameInternal(), "Searching", "No start frame change needed");
         return false;
     }
 
-    MessageWithNewLine("ZCross", "Found best approx zero-crossing frame at position ", new_start_frame);
+    MessageWithNewLine(GetNameInternal(), "Found best approx zero-crossing frame at position {}",
+                       new_start_frame);
 
     auto interleaved_samples_new_start_it =
         audio.interleaved_samples.begin() + new_start_frame * audio.num_channels;

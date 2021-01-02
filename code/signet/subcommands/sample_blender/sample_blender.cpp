@@ -46,10 +46,10 @@ CLI::App *SampleBlender::CreateSubcommandCLI(CLI::App &app) {
 
 void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFile &f1, BaseBlendFile &f2) {
     if (f1.root_note + m_semitone_interval >= f2.root_note) {
-        MessageWithNewLine("SampleBlender", "Samples are close enough together already");
+        MessageWithNewLine(GetName(), "Samples are close enough together already");
         return;
     }
-    MessageWithNewLine("SampleBlender", "Blending between ", f1.file->GetPath(), " and ", f2.file->GetPath());
+    MessageWithNewLine(GetName(), "Blending between {} and {}", f1.file->GetPath(), f2.file->GetPath());
 
     const auto max_semitone_distance = f2.root_note - f1.root_note;
     for (int root_note = f1.root_note + m_semitone_interval; root_note < f2.root_note;
@@ -93,27 +93,27 @@ void SampleBlender::GenerateFiles(const tcb::span<EditTrackedAudioFile> input_fi
 
         if (std::regex_match(name, pieces_match, r)) {
             if (pieces_match.size() != 2) {
-                ErrorWithNewLine("SampleBlender",
+                ErrorWithNewLine(GetName(),
                                  "Expected exactly 1 regex group to be captured to represent the root note");
                 return;
             }
             const auto root_note = std::stoi(pieces_match[1]);
             if (root_note < 0 || root_note > 127) {
-                WarningWithNewLine("SampleBlender: root note of file ", name,
-                                   " is not in the range 0-127 so cannot be processed");
+                WarningWithNewLine(
+                    "SampleBlender: root note of file {} is not in the range 0-127 so cannot be processed",
+                    name);
             } else {
                 auto &vec = base_file_folders[p.GetPath().parent_path().generic_string()];
                 vec.emplace_back(&p, root_note);
-                MessageWithNewLine("SampleBlender", "found file ", p.GetPath(), " with root note ",
-                                   root_note);
+                MessageWithNewLine(GetName(), "found file {} with root note {}", p.GetPath(), root_note);
             }
         }
     }
 
     for (auto &[folder, files] : base_file_folders) {
         if (files.size() < 2) {
-            WarningWithNewLine("SampleBlender: regex pattern ", m_regex,
-                               " does not match at least 2 filenames in folder ", folder);
+            WarningWithNewLine(GetName(), "regex pattern {} does not match at least 2 filenames in folder {}",
+                               m_regex, folder);
             continue;
         }
         std::sort(files.begin(), files.end(),
@@ -122,8 +122,9 @@ void SampleBlender::GenerateFiles(const tcb::span<EditTrackedAudioFile> input_fi
         for (usize i = 0; i < files.size() - 1; ++i) {
             if (files[i].root_note == files[i + 1].root_note) {
                 WarningWithNewLine(
-                    "2 files have the same root note, unable to perform blend: ", files[i].file->GetPath(),
-                    " and ", files[i + 1].file->GetPath(), " in folder ", folder);
+                    GetName(),
+                    "2 files have the same root note, unable to perform blend: {} and {} in folder {}",
+                    files[i].file->GetPath(), files[i + 1].file->GetPath(), folder);
                 continue;
             }
         }

@@ -14,12 +14,13 @@ static bool g_messages_enabled = true;
 bool GetMessagesEnabled() { return g_messages_enabled; }
 void SetMessagesEnabled(bool v) { g_messages_enabled = v; }
 
-void PrintErrorPrefix() {
-    std::cout << rang::fg::red << rang::style::bold << "ERROR: " << rang::fg::reset << rang::style::reset;
+void PrintErrorPrefix(std::string_view heading) {
+    std::cout << rang::fg::red << rang::style::bold << "ERROR (" << heading << "): " << rang::fg::reset
+              << rang::style::reset;
 }
 
-void PrintWarningPrefix() {
-    std::cout << rang::fg::yellow << rang::style::bold << "WARNING: " << rang::fg::reset
+void PrintWarningPrefix(std::string_view heading) {
+    std::cout << rang::fg::yellow << rang::style::bold << "WARNING (" << heading << "): " << rang::fg::reset
               << rang::style::reset;
 }
 
@@ -90,7 +91,7 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
 #endif
 
     std::error_code std_ec {ec, std::generic_category()};
-    WarningWithNewLine("could not open file ", path, " for reason: ", std_ec.message());
+    WarningWithNewLine("Signet", "could not open file {} for reason: {}", path, std_ec.message());
     return {nullptr, SafeFClose};
 }
 

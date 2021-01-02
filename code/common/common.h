@@ -7,49 +7,57 @@
 #include <string_view>
 #include <vector>
 
+#include <fmt/core.h>
+
 #include "filesystem.hpp"
+
+template <>
+struct fmt::formatter<fs::path> {
+    constexpr auto parse(format_parse_context &ctx) { return ctx.end(); }
+
+    template <typename FormatContext>
+    auto format(const fs::path &p, FormatContext &ctx) {
+        return format_to(ctx.out(), "\"{}\"", p.generic_string());
+    }
+};
 
 bool GetMessagesEnabled();
 void SetMessagesEnabled(bool v);
 
-void PrintErrorPrefix();
-void PrintWarningPrefix();
+void PrintErrorPrefix(std::string_view heading);
+void PrintWarningPrefix(std::string_view heading);
 void PrintDebugPrefix();
 void PrintMessagePrefix(std::string_view heading);
 
-template <typename Arg, typename... Args>
-void ErrorWithNewLine(Arg &&arg, Args &&... args) {
-    PrintErrorPrefix();
-    std::cout << std::forward<Arg>(arg);
-    ((std::cout << std::forward<Args>(args)), ...);
-    std::cout << "\n";
+template <typename... Args>
+void ErrorWithNewLine(std::string_view heading, std::string_view format, const Args &... args) {
+    PrintErrorPrefix(heading);
+    fmt::vprint(format, fmt::make_format_args(args...));
+    fmt::print("\n");
 }
 
-template <typename Arg, typename... Args>
-void WarningWithNewLine(Arg &&arg, Args &&... args) {
-    PrintWarningPrefix();
-    std::cout << std::forward<Arg>(arg);
-    ((std::cout << std::forward<Args>(args)), ...);
-    std::cout << "\n";
+template <typename... Args>
+void WarningWithNewLine(std::string_view heading, std::string_view format, Args &&... args) {
+    PrintWarningPrefix(heading);
+    fmt::vprint(format, fmt::make_format_args(args...));
+    fmt::print("\n");
 }
 
-template <typename Arg, typename... Args>
-void MessageWithNewLine(const std::string_view heading, Arg &&arg, Args &&... args) {
+template <typename... Args>
+void MessageWithNewLine(std::string_view heading, std::string_view format, Args &&... args) {
     if (GetMessagesEnabled()) {
         PrintMessagePrefix(heading);
-        std::cout << std::forward<Arg>(arg);
-        ((std::cout << std::forward<Args>(args)), ...);
-        std::cout << "\n";
+        fmt::vprint(format, fmt::make_format_args(args...));
+        fmt::print("\n");
     }
 }
 
-template <typename Arg, typename... Args>
-void DebugWithNewLine(Arg &&arg, Args &&... args) {
+template <typename... Args>
+void DebugWithNewLine(std::string_view format, Args &&... args) {
 #if SIGNET_DEBUG
     PrintDebugPrefix();
-    std::cout << std::forward<Arg>(arg);
-    ((std::cout << std::forward<Args>(args)), ...);
-    std::cout << "\n";
+    fmt::vprint(format, fmt::make_format_args(args...));
+    fmt::print("\n");
 #endif
 }
 

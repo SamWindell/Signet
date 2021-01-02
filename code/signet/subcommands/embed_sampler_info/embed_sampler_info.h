@@ -8,7 +8,7 @@ class EmbedSamplerInfo : public Subcommand {
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
     void ProcessFolders(const FolderMapType &folders) override;
 
-    std::string GetName() override { return "Sample Info Embeder"; }
+    std::string GetName() const override { return "Sample Info Embeder"; }
 
   private:
     std::optional<int> m_root_number;

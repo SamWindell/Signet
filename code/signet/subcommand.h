@@ -14,7 +14,7 @@ class Subcommand {
   public:
     virtual ~Subcommand() {}
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
-    virtual std::string GetName() = 0;
+    virtual std::string GetName() const = 0;
 
     virtual void GenerateFiles(const tcb::span<EditTrackedAudioFile> files, SignetBackup &backup) {}
     virtual void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {}

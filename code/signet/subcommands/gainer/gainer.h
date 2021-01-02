@@ -22,7 +22,7 @@ class Gainer final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
-    std::string GetName() override { return "Gainer"; }
+    std::string GetName() const override { return "Gainer"; }
 
   private:
     GainAmount m_gain;

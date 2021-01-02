@@ -82,23 +82,22 @@ void SilenceRemover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
         loud_region_end = std::min(audio.NumFrames(), loud_region_end + 4);
 
         if (loud_region_start >= loud_region_end) {
-            MessageWithNewLine("SilenceRemover", "The whole sample is silence - no change will be made");
+            MessageWithNewLine(GetName(), "The whole sample is silence - no change will be made");
             continue;
         }
         if (loud_region_start == 0 && loud_region_end == audio.NumFrames()) {
-            MessageWithNewLine("SilenceRemover", "No silence to trim at start or end");
+            MessageWithNewLine(GetName(), "No silence to trim at start or end");
             continue;
         }
 
         if (loud_region_start != 0 && loud_region_end != audio.NumFrames()) {
-            MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start,
-                               " frames from the start and ", audio.NumFrames() - loud_region_end,
-                               " frames from the end");
+            MessageWithNewLine(GetName(), "Removing {} frames from the start and {} frames from the end",
+                               loud_region_start, audio.NumFrames() - loud_region_end);
         } else if (loud_region_start) {
-            MessageWithNewLine("SilenceRemover", "Removing ", loud_region_start, " frames from the start");
+            MessageWithNewLine(GetName(), "Removing {} frames from the start", loud_region_start);
         } else {
-            MessageWithNewLine("SilenceRemover", "Removing ", audio.NumFrames() - loud_region_end,
-                               " frames from the end");
+            MessageWithNewLine(GetName(), "Removing {} frames from the end",
+                               audio.NumFrames() - loud_region_end);
         }
 
         if (m_region == Region::End || m_region == Region::Both) {

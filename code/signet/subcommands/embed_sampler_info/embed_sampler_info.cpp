@@ -236,9 +236,9 @@ void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files)
                 assert(pieces_match.size() == 1); // should be validated by the CLI parsing
                 auto o = GetIntIfValid(pieces_match[0].str());
                 if (!o) {
-                    ErrorWithNewLine("Embed Sampler Info", "The given regex pattern ", pattern,
-                                     " does not capture an integer in the filename ", filename,
-                                     ". The value will instead be set to an appropriate default value.");
+                    ErrorWithNewLine(
+                        "Embed Sampler Info: The given regex pattern {} does not capture an integer in the filename {}. The value will instead be set to an appropriate default value.",
+                        pattern, filename);
                 } else {
                     out = o.value();
                 }

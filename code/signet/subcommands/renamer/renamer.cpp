@@ -125,9 +125,8 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                         std::to_string(ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note)));
                 } else {
                     WarningWithNewLine(
-                        "Renamer: One of the detected pitch variables was used in the file name, but we "
-                        "could not find any pitch in the audio. All detected pitch variables will be "
-                        "replaced with nothing.");
+                        GetName(),
+                        "One of the detected pitch variables was used in the file name, but we could not find any pitch in the audio. All detected pitch variables will be replaced with nothing.");
                     Replace(filename, "<detected-pitch>", "");
                     Replace(filename, "<detected-midi-note>", "");
                     Replace(filename, "<detected-midi-note-octave-plus-1>", "");
@@ -151,8 +150,9 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                     }
                 }
                 if (!replaced) {
-                    WarningWithNewLine("Renamer: The file does not have a parent path, but the variable "
-                                       "<parent-folder> was used. This will just be replaced by nothing.");
+                    WarningWithNewLine(
+                        GetName(),
+                        "The file does not have a parent path, but the variable <parent-folder> was used. This will just be replaced by nothing.");
                     Replace(filename, "<parent-folder>", "");
                 }
             }
@@ -161,9 +161,9 @@ void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             auto var_begin = std::sregex_iterator(filename.begin(), filename.end(), re);
             auto var_end = std::sregex_iterator();
             for (std::sregex_iterator i = var_begin; i != var_end; ++i) {
-                ErrorWithNewLine("Renamer: ", i->str(),
-                                 " is not a valid substitution variable. Available options are: \n",
-                                 RenameSubstitution::GetVariableNames());
+                ErrorWithNewLine(GetName(),
+                                 "{} is not a valid substitution variable. Available options are: \n{}",
+                                 i->str(), RenameSubstitution::GetVariableNames());
                 renamed = false;
             }
         }

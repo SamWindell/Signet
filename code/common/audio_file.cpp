@@ -60,7 +60,7 @@ static drwav_bool32 OnSeekFile(void *file, int offset, drwav_seek_origin origin)
         fseek_success) {
         return 1;
     }
-    WarningWithNewLine("failed to seek file");
+    WarningWithNewLine("Wav", "failed to seek file");
     return 0;
 }
 
@@ -229,7 +229,6 @@ std::ostream &operator<<(std::ostream &os, const drwav_bext &b) {
     os << "}\n";
     return os;
 }
-
 
 class WaveMetadataToNonSpecificMetadata {
   public:
@@ -409,47 +408,47 @@ class WaveMetadataToNonSpecificMetadata {
 };
 
 void DebugPrintAllMetadata(const WaveMetadata &metadata) {
-    DebugWithNewLine("Wav num metadata: ", metadata.NumItems());
+    DebugWithNewLine("Wav num metadata: {}", metadata.NumItems());
     for (const auto &m : metadata) {
         switch (m.type) {
             case drwav_metadata_type_smpl: {
                 DebugWithNewLine("type: smpl");
-                DebugWithNewLine(m.data.smpl);
+                std::cout << m.data.smpl;
                 break;
             }
             case drwav_metadata_type_inst: {
                 DebugWithNewLine("type: inst");
-                DebugWithNewLine(m.data.inst);
+                std::cout << m.data.inst;
                 break;
             }
             case drwav_metadata_type_cue: {
                 DebugWithNewLine("type: cue");
-                DebugWithNewLine(m.data.cue);
+                std::cout << m.data.cue;
                 break;
             }
             case drwav_metadata_type_acid: {
                 DebugWithNewLine("type: acid");
-                DebugWithNewLine(m.data.acid);
+                std::cout << m.data.acid;
                 break;
             }
             case drwav_metadata_type_bext: {
                 DebugWithNewLine("type: bext");
-                DebugWithNewLine(m.data.bext);
+                std::cout << m.data.bext;
                 break;
             }
             case drwav_metadata_type_list_label: {
                 DebugWithNewLine("type: labelOrNote");
-                DebugWithNewLine(m.data.labelOrNote);
+                std::cout << m.data.labelOrNote;
                 break;
             }
             case drwav_metadata_type_list_note: {
                 DebugWithNewLine("type: list_note");
-                DebugWithNewLine(m.data.labelOrNote);
+                std::cout << m.data.labelOrNote;
                 break;
             }
             case drwav_metadata_type_list_labelled_cue_region: {
                 DebugWithNewLine("type: list_labelled_cue_region");
-                DebugWithNewLine(m.data.labelledCueRegion);
+                std::cout << m.data.labelledCueRegion;
                 break;
             }
             case drwav_metadata_type_list_info_software:
@@ -462,12 +461,12 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
             case drwav_metadata_type_list_info_album:
             case drwav_metadata_type_list_info_tracknumber: {
                 DebugWithNewLine("type: list info");
-                DebugWithNewLine(m.data.infoText);
+                std::cout << m.data.infoText;
                 break;
             }
             case drwav_metadata_type_unknown: {
                 DebugWithNewLine("type: unknown");
-                DebugWithNewLine(m.data.unknown);
+                std::cout << m.data.unknown;
                 break;
             }
         }
@@ -475,8 +474,8 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
 }
 
 std::optional<AudioData> ReadAudioFile(const fs::path &path) {
-    MessageWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
-    DebugWithNewLine("Signet", "Reading file ", GetJustFilenameWithNoExtension(path));
+    MessageWithNewLine("Signet", "Reading file {}", GetJustFilenameWithNoExtension(path));
+    DebugWithNewLine("Signet", "Reading file {}", GetJustFilenameWithNoExtension(path));
     const auto file = OpenFile(path, "rb");
     if (!file) return {};
 
@@ -489,7 +488,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         DebugWithNewLine("=================");
         if (!drwav_init_ex_with_metadata(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0,
                                          nullptr, (u64)drwav_metadata_type_all)) {
-            WarningWithNewLine("could not init the WAV file ", path);
+            WarningWithNewLine("Wav", "could not init the WAV file {}", path);
             return {};
         }
         result.num_channels = wav.channels;
@@ -508,7 +507,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         f32_buf.resize(result.interleaved_samples.size());
         const auto frames_read = drwav_read_pcm_frames_f32(&wav, wav.totalPCMFrameCount, f32_buf.data());
         if (frames_read != wav.totalPCMFrameCount) {
-            WarningWithNewLine("failed to get all the frames from file ", path);
+            WarningWithNewLine("Wav", "failed to get all the frames from file {}", path);
             return {};
         }
         result.format = AudioFileFormat::Wav;
@@ -520,12 +519,12 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     } else if (ext == ".flac") {
         const bool decoded = DecodeFlacFile(file.get(), result);
         if (!decoded) {
-            WarningWithNewLine("failed to decode flac file ", path);
+            WarningWithNewLine("Wav", "failed to decode flac file {}", path);
             return {};
         }
         result.format = AudioFileFormat::Flac;
     } else {
-        WarningWithNewLine("file ", path, " is not a WAV or a FLAC");
+        WarningWithNewLine("Wav", "file {} is not a WAV or a FLAC", path);
         return {};
     }
 
@@ -559,8 +558,9 @@ std::vector<SignedIntType> CreateSignedIntSamplesFromFloat(const std::vector<dou
     }
 
     if (multiplier != 1.0) {
-        WarningWithNewLine("this audio file contained samples outside of the valid range, to avoid "
-                           "distortion, the whole file was scaled down in volume");
+        WarningWithNewLine(
+            "Signet",
+            "this audio file contained samples outside of the valid range, to avoid distortion, the whole file was scaled down in volume");
     }
 
     return result;
@@ -579,8 +579,9 @@ std::vector<UnsignedIntType> CreateUnsignedIntSamplesFromFloat(const std::vector
     }
 
     if (multiplier != 1.0) {
-        WarningWithNewLine("this audio file contained samples outside of the valid range, to avoid "
-                           "distortion, the whole file was scaled down in volume");
+        WarningWithNewLine(
+            "Signet",
+            "this audio file contained samples outside of the valid range, to avoid distortion, the whole file was scaled down in volume");
     }
 
     return result;
@@ -710,7 +711,8 @@ class NonSpecificMetadataToWaveMetadata {
                 item.type = m.type;
                 item.data.infoText.stringSize = m.data.infoText.stringSize;
                 if (m.data.infoText.stringSize) {
-                    item.data.infoText.string = AllocateAndCopyString(m.data.infoText.string, m.data.infoText.stringSize);
+                    item.data.infoText.string =
+                        AllocateAndCopyString(m.data.infoText.string, m.data.infoText.stringSize);
                 }
                 m_wave_metadata.push_back(item);
             }
@@ -848,7 +850,8 @@ class NonSpecificMetadataToWaveMetadata {
             drwav_metadata item {};
             item.type = drwav_metadata_type_list_labelled_cue_region;
 
-            item.data.labelledCueRegion.cuePointId = CreateUniqueCuePointId(r.initial_marker_name, r.start_frame);
+            item.data.labelledCueRegion.cuePointId =
+                CreateUniqueCuePointId(r.initial_marker_name, r.start_frame);
             item.data.labelledCueRegion.sampleLength = (u32)(r.num_frames * m_audio_data.num_channels);
             item.data.labelledCueRegion.purposeId[0] = 'b';
             item.data.labelledCueRegion.purposeId[1] = 'e';
@@ -881,7 +884,7 @@ class NonSpecificMetadataToWaveMetadata {
 static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_wave_bit_depths), std::end(valid_wave_bit_depths), bits_per_sample) ==
         std::end(valid_wave_bit_depths)) {
-        WarningWithNewLine("could not write wave file - the given bit depth is invalid");
+        WarningWithNewLine("Wav", "could not write wave file - {} is not a valid bit depth", bits_per_sample);
         return false;
     }
 
@@ -912,7 +915,9 @@ static bool WriteWaveFile(const fs::path &path, const AudioData &audio_data, con
             if (!succeed_writing) return;
             const auto frames_written = drwav_write_pcm_frames(&wav, audio_data.NumFrames(), raw_data);
             if (frames_written != audio_data.NumFrames()) {
-                ErrorWithNewLine("frames_written != audio_data.interleaved_samples.size()");
+                ErrorWithNewLine(
+                    "Wav", "failed to write the correct number of frames, {} were written, {} we requested",
+                    frames_written, audio_data.NumFrames());
                 succeed_writing = true;
             }
         });
@@ -925,29 +930,29 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
     switch (code) {
         case FLAC__STREAM_ENCODER_INIT_STATUS_OK: return;
         case FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_ENCODER_ERROR");
             return;
             /**< General failure to set up encoder; call FLAC__stream_encoder_get_state() for cause. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_UNSUPPORTED_CONTAINER");
             return;
             /**< The library was not compiled with support for the given container
              * format.
              */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_CALLBACKS");
             return;
             /**< A required callback was not supplied. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_NUMBER_OF_CHANNELS");
             return;
             /**< The encoder has an invalid setting for number of channels. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BITS_PER_SAMPLE");
             return;
             /**< The encoder has an invalid setting for bits-per-sample.
              * FLAC supports 4-32 bps but the reference encoder currently supports
@@ -955,39 +960,39 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
              */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_SAMPLE_RATE");
             return;
             /**< The encoder has an invalid setting for the input sample rate. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_BLOCK_SIZE");
             return;
             /**< The encoder has an invalid setting for the block size. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_MAX_LPC_ORDER");
             return;
             /**< The encoder has an invalid setting for the maximum LPC order. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_QLP_COEFF_PRECISION");
             return;
             /**< The encoder has an invalid setting for the precision of the quantized linear predictor
              * coefficients. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_BLOCK_SIZE_TOO_SMALL_FOR_LPC_ORDER");
             return;
             /**< The specified block size is less than the maximum LPC order. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_NOT_STREAMABLE");
             return;
             /**< The encoder is bound to the <A HREF="../format.html#subset">Subset</A> but other settings
              * violate it. */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_INVALID_METADATA");
             return;
             /**< The metadata input to the encoder is invalid, in one of the following ways:
              * - FLAC__stream_encoder_set_metadata() was called with a null pointer but a block count > 0
@@ -998,7 +1003,7 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
              */
 
         case FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED:
-            ErrorWithNewLine("FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED");
+            ErrorWithNewLine("Flac", "FLAC__STREAM_ENCODER_INIT_STATUS_ALREADY_INITIALIZED");
             return;
             /**< FLAC__stream_encoder_init_*() was called when the encoder was
              * already initialized, usually because
@@ -1010,14 +1015,15 @@ static bool
 WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_flac_bit_depths), std::end(valid_flac_bit_depths), bits_per_sample) ==
         std::end(valid_flac_bit_depths)) {
-        WarningWithNewLine("could not write flac file - the given bit depth is invalid");
+        WarningWithNewLine("Flac", "could not write flac file - {} is not a valid bit depth",
+                           bits_per_sample);
         return false;
     }
 
     std::unique_ptr<FLAC__StreamEncoder, decltype(&FLAC__stream_encoder_delete)> encoder {
         FLAC__stream_encoder_new(), &FLAC__stream_encoder_delete};
     if (!encoder) {
-        WarningWithNewLine("could not write flac file - no memory");
+        WarningWithNewLine("Flac", "could not write flac file - no memory");
         return false;
     }
 
@@ -1039,7 +1045,7 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
             cereal::JSONOutputArchive archive(ss);
             archive(cereal::make_nvp(signet_root_json_object_name, audio_data.metadata));
         } catch (const std::exception &e) {
-            ErrorWithNewLine("Internal error when writing FLAC signet json metadata: ", e.what());
+            ErrorWithNewLine("Flac", "Internal error when writing FLAC signet json metadata: {}", e.what());
         }
         const auto str = ss.str();
         if (str.size()) {
@@ -1059,13 +1065,13 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
 
     auto f = OpenFile(filename, "w+b");
     if (!f) {
-        WarningWithNewLine("could not write flac file - could not open file ", filename);
+        WarningWithNewLine("Flac", "could not write flac file - could not open file {}", filename);
         return false;
     }
 
     if (const auto o = FLAC__stream_encoder_init_FILE(encoder.get(), f.get(), nullptr, nullptr);
         o != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
-        WarningWithNewLine("could not write flac file:");
+        WarningWithNewLine("Flac", "could not write flac file: ");
         PrintFlacStatusCode(o);
         return false;
     }
@@ -1074,12 +1080,12 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
         CreateSignedIntSamplesFromFloat<s32>(audio_data.interleaved_samples, bits_per_sample);
     if (!FLAC__stream_encoder_process_interleaved(encoder.get(), int32_buffer.data(),
                                                   (unsigned)audio_data.NumFrames())) {
-        WarningWithNewLine("could not write flac file - failed encoding samples");
+        WarningWithNewLine("Flac", "could not write flac file - failed encoding samples");
         return false;
     }
 
     if (!FLAC__stream_encoder_finish(encoder.get())) {
-        WarningWithNewLine("could not write flac file - error finishing encoding");
+        WarningWithNewLine("Flac", "could not write flac file - error finishing encoding");
         return false;
     }
     return true;
@@ -1099,7 +1105,7 @@ bool WriteAudioFile(const fs::path &filename,
         result = WriteWaveFile(filename, audio_data, bits_per_sample);
     }
 
-    if (result) MessageWithNewLine("Signet", "Successfully wrote file ", filename);
+    if (result) MessageWithNewLine("Signet", "Successfully wrote file {}", filename);
     return result;
 }
 
@@ -1280,14 +1286,12 @@ TEST_CASE("[AudioData]") {
         REQUIRE(f->wave_metadata.NumItems() >= 1);
     }
 
-
     SUBCASE("wave with region and marker") {
         const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_region_and_marker.wav";
         auto f = ReadAudioFile(in_filename);
         REQUIRE(f);
         REQUIRE(f->wave_metadata.NumItems() >= 1);
     }
-
 
     SUBCASE("flac with comments") {
         const fs::path in_filename = TEST_DATA_DIRECTORY "/flac_with_comments.flac";

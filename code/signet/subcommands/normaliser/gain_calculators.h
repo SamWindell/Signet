@@ -25,8 +25,9 @@ class RMSGainCalculator : public NormalisationGainCalculator {
             m_sum_of_squares_channels.resize(audio.num_channels);
         }
         if (m_sum_of_squares_channels.size() != audio.num_channels) {
-            ErrorWithNewLine("audio file has a different number of channels to a previous one - for RMS "
-                             "normalisation, all files must have the same number of channels");
+            ErrorWithNewLine(
+                "Norm",
+                "audio file has a different number of channels to a previous one - for RMS normalisation, all files must have the same number of channels");
             return false;
         }
         for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {

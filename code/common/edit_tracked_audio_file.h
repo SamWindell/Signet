@@ -23,7 +23,7 @@ struct EditTrackedAudioFile {
             if (const auto data = ReadAudioFile(original_path)) {
                 LoadAudioData(*data);
             } else {
-                ErrorWithNewLine("could not load audio file ", original_path);
+                ErrorWithNewLine("Signet", "could not load audio file {}", original_path);
                 m_file_valid = false;
             }
         }

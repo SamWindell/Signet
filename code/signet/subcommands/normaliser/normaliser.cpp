@@ -47,6 +47,7 @@ void Normaliser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
         }
         if (!m_using_common_gain) {
             ErrorWithNewLine(
+                GetName(),
                 "unable to perform normalisation because the common gain was not successfully found");
             return;
         }
@@ -72,7 +73,7 @@ bool Normaliser::PerformNormalisation(AudioData &input_audio) const {
         }
     }
 
-    MessageWithNewLine("Normaliser", "Applying a gain of ", gain);
+    MessageWithNewLine(GetName(), "Applying a gain of {}", gain);
 
     for (auto &s : input_audio.interleaved_samples) {
         s *= gain;

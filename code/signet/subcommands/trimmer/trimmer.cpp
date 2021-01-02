@@ -43,18 +43,19 @@ void Trimmer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
 
         if (remaining_region_start >= remaining_region_end) {
             WarningWithNewLine(
+                GetName(),
                 "The trim region would result in the whole sample being removed - no change will be made");
             continue;
         }
 
         if (m_start_duration && m_end_duration) {
-            MessageWithNewLine("Trimmer", "Trimming ", remaining_region_start, " frames from the start and ",
-                               audio.NumFrames() - remaining_region_end, " frames from the end");
+            MessageWithNewLine(GetName(), "Trimming {} frames from the start and {} frames from the end",
+                               remaining_region_start, audio.NumFrames() - remaining_region_end);
         } else if (m_start_duration) {
-            MessageWithNewLine("Trimmer", "Trimming ", remaining_region_start, " frames from the start");
+            MessageWithNewLine(GetName(), "Trimming {} frames from the start", remaining_region_start);
         } else {
-            MessageWithNewLine("Trimmer", "Trimming ", audio.NumFrames() - remaining_region_end,
-                               " frames from the end");
+            MessageWithNewLine(GetName(), "Trimming {} frames from the end",
+                               audio.NumFrames() - remaining_region_end);
         }
 
         if (m_end_duration && remaining_region_end != audio.NumFrames()) {

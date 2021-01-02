@@ -10,7 +10,7 @@ class SampleBlender : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void GenerateFiles(const tcb::span<EditTrackedAudioFile> files, SignetBackup &backup) override;
-    std::string GetName() override { return "SampleBlender"; }
+    std::string GetName() const override { return "SampleBlender"; }
 
   private:
     struct BaseBlendFile {

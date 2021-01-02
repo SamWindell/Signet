@@ -29,7 +29,8 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                               m_append_skipped_frames_on_end);
         }
     }
-    std::string GetName() override { return "ZeroCrossingOffsetter"; }
+    std::string GetName() const override { return GetNameInternal(); }
+    static std::string GetNameInternal() { return "ZeroCrossingOffsetter"; }
 
     CLI::App *CreateSubcommandCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand(

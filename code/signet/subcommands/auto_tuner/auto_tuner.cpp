@@ -23,15 +23,15 @@ void AutoTuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             const auto closest_musical_note = FindClosestMidiPitch(*pitch);
             const double cents = GetCentsDifference(*pitch, closest_musical_note.pitch);
             if (std::abs(cents) < 1) {
-                MessageWithNewLine("AutoTuner",
-                                   "Sample is already in tune: ", closest_musical_note.ToString());
+                MessageWithNewLine(GetName(), "Sample is already in tune: {}",
+                                   closest_musical_note.ToString());
                 continue;
             }
-            MessageWithNewLine("AutoTuner", "Changing pitch from ", *pitch, " to ",
+            MessageWithNewLine(GetName(), "Changing pitch from {} to {}", *pitch,
                                closest_musical_note.ToString());
             Tuner::ChangePitch(f.GetWritableAudio(), cents);
         } else {
-            MessageWithNewLine("AutoTuner", "No pitch could be found");
+            MessageWithNewLine(GetName(), "No pitch could be found");
         }
     }
 }

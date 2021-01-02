@@ -12,6 +12,7 @@ BinPackArguments: true
 BinPackParameters: false
 BreakBeforeBraces: Attach
 BreakConstructorInitializersBeforeComma: true
+BreakStringLiterals: false
 ColumnLimit: 110
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 IndentCaseLabels: true

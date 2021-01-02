@@ -57,7 +57,7 @@ void Gainer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
         if (audio.IsEmpty()) continue;
 
         const auto amp = m_gain.GetMultiplier();
-        MessageWithNewLine("Gainer", "Applying a gain of ", amp);
+        MessageWithNewLine(GetName(), "Applying a gain of {}", amp);
         for (auto &s : audio.interleaved_samples) {
             s *= amp;
         }

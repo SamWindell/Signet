@@ -60,9 +60,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             MessageWithNewLine("Signet", "Done.");
             throw CLI::Success();
         },
-        "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new "
-        "files that were created are destroyed, and files that were renamed are un-renamed. You can only "
-        "undo once - you cannot keep going back in history.");
+        "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.");
 
     app.add_flag_callback(
         "--clear-backup",
@@ -72,11 +70,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             MessageWithNewLine("Signet", "Done.");
             throw CLI::Success();
         },
-        "Deletes all temporary files created by Signet. These files are needed for the undo system and are "
-        "saved to your OS's temporary folder. These files are cleared and new ones created every time you "
-        "run Signet. This option is only really useful if you have just processed lots of files and you "
-        "won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the "
-        "backup.");
+        "Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the backup.");
 
     app.add_flag_callback(
         "--silent", []() { SetMessagesEnabled(true); }, "Disable all messages");
@@ -118,8 +112,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 if (initial_file_edit_state[i].num_audio_edits != f.NumTimesAudioChanged()) ++num_audio_edits;
                 if (initial_file_edit_state[i].num_path_edits != f.NumTimesPathChanged()) ++num_path_edits;
             }
-            MessageWithNewLine(subcommand->GetName(), "Total audio files edited: ", num_audio_edits);
-            MessageWithNewLine(subcommand->GetName(), "Total audio file paths edited: ", num_path_edits);
+            MessageWithNewLine(subcommand->GetName(), "Total audio files edited: {}", num_audio_edits);
+            MessageWithNewLine(subcommand->GetName(), "Total audio file paths edited: {}", num_path_edits);
         });
     }
 

@@ -47,7 +47,7 @@ void AutoMapper::AddToFolderMap(const fs::path &path) {
     std::regex r {*m_automap_pattern};
     if (std::regex_match(filename, pieces_match, r)) {
         if (m_root_note_regex_group >= pieces_match.size()) {
-            ErrorWithNewLine("AutoMapper: the regex pattern does not contain contain the group given ",
+            ErrorWithNewLine("Auto-map", "the regex pattern does not contain contain the group given {}",
                              *m_automap_pattern);
             return;
         }
@@ -56,16 +56,18 @@ void AutoMapper::AddToFolderMap(const fs::path &path) {
         try {
             root_note = std::stoi(pieces_match[m_root_note_regex_group]);
         } catch (...) {
-            ErrorWithNewLine("AutoMapper: the given regex group does not contain an integer to represent the "
-                             "MIDI root note: ",
-                             pieces_match[m_root_note_regex_group]);
+            ErrorWithNewLine(
+                "Auto-map",
+                "the given regex group does not contain an integer to represent the MIDI root note: {}",
+                pieces_match[m_root_note_regex_group].str());
         }
 
         if (root_note < 0 || root_note > 127) {
-            WarningWithNewLine("AutoMapper: root note of file ", filename,
-                               " is not in the range 0-127 so cannot be processed");
+            WarningWithNewLine("Auto-map",
+                               "root note of file {} is not in the range 0-127 so cannot be processed",
+                               filename);
         } else {
-            MessageWithNewLine("AutoMapper", "automap found root note ", root_note, " in filename ", path);
+            MessageWithNewLine("Auto-map", "automap found root note {} in filename {}", root_note, path);
             const auto parent = GetParent(path);
             m_folder_map[parent].AddFile(path, root_note, pieces_match);
         }

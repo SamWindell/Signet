@@ -105,8 +105,8 @@ void Fader::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
                          m_fade_in_duration->GetDurationAsFrames(audio.sample_rate, audio.NumFrames()));
             PerformFade(audio, 0, (s64)fade_in_frames, m_fade_in_shape);
 
-            MessageWithNewLine("Fader", "Fading in ", fade_in_frames, " frames with a ",
-                               magic_enum::enum_name(m_fade_in_shape), " curve");
+            MessageWithNewLine(GetName(), "Fading in {} frames with a {} curve", fade_in_frames,
+                               magic_enum::enum_name(m_fade_in_shape));
         }
         if (m_fade_out_duration) {
             const auto fade_out_frames =
@@ -115,8 +115,8 @@ void Fader::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
             PerformFade(audio, last, start_frame, m_fade_out_shape);
 
-            MessageWithNewLine("Fader", "Fading out ", fade_out_frames, " frames with a ",
-                               magic_enum::enum_name(m_fade_out_shape), " curve");
+            MessageWithNewLine(GetName(), "Fading out {} frames with a {} curve", fade_out_frames,
+                               magic_enum::enum_name(m_fade_out_shape));
         }
     }
 }

@@ -8,7 +8,7 @@ class Fader final : public Subcommand {
   public:
     enum class Shape { Linear, Sine, SCurve, Log, Exp, Sqrt };
 
-    std::string GetName() override { return "Fader"; }
+    std::string GetName() const override { return "Fader"; }
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
 

@@ -177,14 +177,13 @@ std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_vie
     FilePathSet set {};
     for (const auto &include_part : include_parts) {
         if (include_part.find('*') != std::string_view::npos) {
-            MessageWithNewLine("Signet", "Searching for audio files using the pattern ", include_part);
+            MessageWithNewLine("Signet", "Searching for audio files using the pattern {}", include_part);
             const auto matching_paths = GetAudioFilePathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
             set.m_num_wildcard_parts++;
         } else if (fs::is_directory(std::string(include_part))) {
-            MessageWithNewLine("Signet", "Searching for audio files ",
-                               recursive_directory_search ? "recursively" : "non-recursively",
-                               " in the directory ", include_part);
+            MessageWithNewLine("Signet", "Searching for audio files {} in the directory {}",
+                               recursive_directory_search ? "recursively" : "non-recursively", include_part);
             const auto matching_paths =
                 GetAudioFilePathsInDirectory(include_part, recursive_directory_search);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
@@ -201,7 +200,7 @@ std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_vie
             return {};
         }
     }
-    MessageWithNewLine("Signet", "Found ", set.Size(), " matching audio files");
+    MessageWithNewLine("Signet", "Found {} matching audio files", set.Size());
     if (!recursive_directory_search && include_parts.size() == 1 &&
         fs::is_directory(std::string(include_parts[0]))) {
         MessageWithNewLine(

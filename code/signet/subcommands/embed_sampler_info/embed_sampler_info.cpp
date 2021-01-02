@@ -3,6 +3,7 @@
 #include <regex>
 
 #include "CLI11.hpp"
+#include <fmt/core.h>
 
 #include "midi_pitches.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
@@ -28,19 +29,28 @@ void CLIValidateIntArgIsInRange(const std::string &arg_description, int arg, int
     }
 }
 
-bool IsRegexString(std::string_view str) { return Contains(str, "(") && Contains(str, ")"); }
+bool IsRegexString(std::string_view str, const std::string &arg_description) {
+    std::regex r(str.data(), str.size());
+    const auto capture_regions = r.mark_count();
+    if (capture_regions == 1) return true;
+    if (capture_regions > 1) {
+        throw CLI::ValidationError(arg_description, "Argument does not have exactly 1 capture group.");
+    }
+    return false;
+}
 
 void CLISetArg(const std::string &arg_description,
                const std::string &arg_string,
                int min_int_value,
                std::optional<int> &int_value,
                std::optional<std::string> &regex_pattern) {
+    if (arg_string == "unchanged") return;
+
     if (auto o = GetIntIfValid(arg_string)) {
         CLIValidateIntArgIsInRange(arg_description, o.value(), min_int_value, 127);
         int_value = o.value();
-    } else if (IsRegexString(arg_string)) {
+    } else if (IsRegexString(arg_string, arg_description)) {
         regex_pattern = arg_string;
-    } else if (arg_string == "unchanged") {
     } else {
         throw CLI::ValidationError("Low note", "Argument is not an integer, 'unchanged' or a regex "
                                                "pattern to match against the filename.");
@@ -67,6 +77,29 @@ std::string GetAllDetectPitchOptions() {
     return result;
 }
 
+const std::string_view g_regex_capture_argument_description =
+    R"aa(An EMCAScript-style regex pattern containing 1 capture group which is to be used to get the value from the filename of the audio file (not including the extension). For example if the file was called sample_40.wav, you could use the regex pattern "sample_(\d+)" to get the value 40.)aa";
+
+std::string CLIGetNoteArgumentDescription() {
+    return fmt::format(R"aa(This value should be 1 of the following 3 formats:
+
+(1) A MIDI note number.
+(2) {}
+(3) 'auto-detect' or one of the other auto-detect options. This will invoke the pitch-detection algorithm to automatically get the MIDI number from the audio file. There are a few variations for auto-detect. They all use the same algorithm but some also shift the value in octaves. Here is the full list of options: {}.
+
+EXAMPLE
+
+'root 60'
+Sets the root note to MIDI number 60.
+
+'root "sample_(\d+)"'
+Sets the root note by looking at the filename and matching the given regex pattern to it.
+
+'root auto-detect'
+Sets the root note by running a pitch detection algorithm on the file. If the audio file does not have a pitch, the value will be set to 60.)aa",
+                       g_regex_capture_argument_description, GetAllDetectPitchOptions());
+}
+
 CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
     auto embedder = app.add_subcommand(
         "embed-sampler-info", "Sample Info Embed: embeds sampler metadata into the audio file(s), such as "
@@ -75,7 +108,7 @@ CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
 
     auto root = embedder->add_subcommand("root", "Embed the root note of the audio file");
     root->add_option_function<std::string>(
-            "note",
+            "Root note value",
             [this](const std::string &str) {
                 if (auto o = GetIntIfValid(str)) {
                     CLIValidateIntArgIsInRange("MIDI root note", o.value(), 0, 127);
@@ -90,7 +123,7 @@ CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
                         }
                     }
 
-                    if (IsRegexString(str)) {
+                    if (IsRegexString(str, "Root note")) {
                         m_root_regex_pattern = str;
                         return;
                     }
@@ -100,18 +133,13 @@ CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
                                            "pattern capturing a single group to represent the root note in "
                                            "the filename, or a special auto-detect variable.");
             },
-            "The root note which is either a MIDI note number, a regex pattern capturing a single "
-            "group to represent the root note in the filename, or a special auto-detect variable. The "
-            "auto-detect option means the value is determined by attempting to detect the pitch from the "
-            "audio file. There are a few different auto-detect options which all use the algorithm, but some "
-            "will also do octave-shifts. Here is the complete list of auto-detect options: " +
-                GetAllDetectPitchOptions())
+            CLIGetNoteArgumentDescription())
         ->required();
 
     auto note_range = embedder->add_subcommand("note-range", "Embed the low and high notes.");
     note_range
         ->add_option_function<std::vector<std::string>>(
-            "args",
+            "Note range value(s)",
             [this](const std::vector<std::string> &args) {
                 if (args.size() == 1) {
                     const std::string auto_map_string {"auto-map"};
@@ -129,7 +157,7 @@ CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
                 CLISetArg("MIDI low note number", args[0], 0, m_low_note_number, m_low_note_regex_pattern);
                 CLISetArg("MIDI high note number", args[1], 0, m_high_note_number, m_high_note_regex_pattern);
             },
-            R"aa(This value is either 'auto-map' or 2 separate values. 
+            R"aa(This value is either 'auto-map' or 2 separate values to set the low and high note range. 
 
 EXAMPLES
 
@@ -161,7 +189,7 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
         "values that a sample should play in. The whole MIDI velocity range is between 1 and 127.");
     velocity_range
         ->add_option_function<std::vector<std::string>>(
-            "args",
+            "Low and high velocity values",
             [this](const std::vector<std::string> &args) {
                 CLISetArg("Velocity low number", args[0], 1, m_low_velo_number, m_low_velo_regex_pattern);
                 CLISetArg("Velocity high number", args[1], 1, m_high_velo_number, m_high_velo_regex_pattern);
@@ -205,10 +233,15 @@ void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files)
             const std::regex r {pattern};
             std::smatch pieces_match;
             if (std::regex_match(filename, pieces_match, r)) {
-                assert(pieces_match.size() == 1); // TODO: proper error checking
-                auto o = GetIntIfValid(pieces_match.str());
-                assert(o.has_value()); // TODO: proper error checking
-                out = o.value();
+                assert(pieces_match.size() == 1); // should be validated by the CLI parsing
+                auto o = GetIntIfValid(pieces_match[0].str());
+                if (!o) {
+                    ErrorWithNewLine("Embed Sampler Info", "The given regex pattern ", pattern,
+                                     " does not capture an integer in the filename ", filename,
+                                     ". The value will instead be set to an appropriate default value.");
+                } else {
+                    out = o.value();
+                }
             }
         };
 
@@ -218,23 +251,23 @@ void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files)
         } else if (m_root_regex_pattern) {
             SetFromFilenameRegexMatch(m_root_regex_pattern.value(), metadata.midi_mapping->root_midi_note);
         } else if (m_root_auto_detect_name) {
-            auto pitch = PitchDetector::DetectPitch(f.GetAudio());
-            assert(pitch); // TODO: proper error checking
-            const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+            int midi_note = 60;
+            if (auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
+                midi_note = FindClosestMidiPitch(*pitch).midi_note;
+            }
 
             if (m_root_auto_detect_name == "detected") {
-                metadata.midi_mapping->root_midi_note = closest_musical_note.midi_note;
+                metadata.midi_mapping->root_midi_note = midi_note;
             } else if (m_root_auto_detect_name == "detected-octave-plus-1") {
-                metadata.midi_mapping->root_midi_note = std::min(closest_musical_note.midi_note + 12, 127);
+                metadata.midi_mapping->root_midi_note = std::min(midi_note + 12, 127);
             } else if (m_root_auto_detect_name == "detected-octave-plus-2") {
-                metadata.midi_mapping->root_midi_note = std::min(closest_musical_note.midi_note + 24, 127);
+                metadata.midi_mapping->root_midi_note = std::min(midi_note + 24, 127);
             } else if (m_root_auto_detect_name == "detected-octave-minus-1") {
-                metadata.midi_mapping->root_midi_note = std::max(closest_musical_note.midi_note - 12, 0);
+                metadata.midi_mapping->root_midi_note = std::max(midi_note - 12, 0);
             } else if (m_root_auto_detect_name == "detected-octave-minus-2") {
-                metadata.midi_mapping->root_midi_note = std::max(closest_musical_note.midi_note - 24, 0);
+                metadata.midi_mapping->root_midi_note = std::max(midi_note - 24, 0);
             } else if (m_root_auto_detect_name == "detected-nearest-to-middle-c") {
-                metadata.midi_mapping->root_midi_note =
-                    ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note);
+                metadata.midi_mapping->root_midi_note = ScaleByOctavesToBeNearestToMiddleC(midi_note);
             }
         }
 

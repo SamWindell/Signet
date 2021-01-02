@@ -18,11 +18,11 @@ add_library(
     code/third_party_libs/flac/src/lpc.c
     code/third_party_libs/flac/src/md5.c
     code/third_party_libs/flac/src/memory.c
+    code/third_party_libs/flac/src/metadata_object.c
     code/third_party_libs/flac/src/stream_decoder.c
     code/third_party_libs/flac/src/stream_encoder.c
     code/third_party_libs/flac/src/stream_encoder_framing.c
     code/third_party_libs/flac/src/window.c
-    code/third_party_libs/flac/src/metadata_object.c
     code/third_party_libs/r8brain-resampler/r8bbase.cpp)
 
 if (WIN32)
@@ -36,7 +36,8 @@ target_include_directories(third_party_libs PUBLIC code/third_party_libs/flac/sr
 target_compile_definitions(third_party_libs PUBLIC FLAC__NO_DLL)
 
 add_subdirectory(code/third_party_libs/cereal)
-target_link_libraries(third_party_libs PUBLIC cereal)
+add_subdirectory(code/third_party_libs/fmt)
+target_link_libraries(third_party_libs PUBLIC cereal fmt::fmt)
 
 #
 
@@ -78,7 +79,7 @@ target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSE
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(common PUBLIC SIGNET_DEBUG)
-endif()
+endif ()
 
 if (WIN32)
     set(WARNINGS_TO_ENABLE
@@ -118,7 +119,7 @@ if (WIN32)
         TARGET signet
         APPEND_STRING
         PROPERTY LINK_FLAGS " /MANIFESTUAC:NO")
-endif()
+endif ()
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)

@@ -3,3 +3,4 @@ build/
 *.DS_Store
 *.reapeaks
 tests_config.h
+.vscode/c_cpp_properties.json

@@ -122,8 +122,14 @@ class TestSubcommandProcessor {
             m_files.push_back(f.path);
             m_files.back().LoadAudioData(f.data);
         }
+        FolderMapType folder_map;
+        std::vector<EditTrackedAudioFile *> file_ptrs;
+        for (auto &f : m_files)
+            file_ptrs.push_back(&f);
+        folder_map["fake_folder_name"] = file_ptrs;
 
         subcommand.ProcessFiles(m_files);
+        subcommand.ProcessFolders(folder_map);
         SignetBackup backup;
         subcommand.GenerateFiles(m_files, backup);
     }
@@ -162,10 +168,18 @@ std::optional<std::string> ProcessPathWithSubcommand(const std::string_view subc
 
 template <typename SubcommandType>
 auto ProcessBuffersWithSubcommand(const std::string_view subcommand_and_args_string,
-                                  std::vector<AudioData> bufs) {
+                                  std::vector<AudioData> bufs,
+                                  std::vector<fs::path> paths = {}) {
     std::vector<DataAndPath> files;
-    for (const auto &b : bufs) {
-        files.push_back({b, "test.wav"});
+    if (paths.size() == 0) {
+        for (const auto &b : bufs) {
+            files.push_back({b, "test.wav"});
+        }
+    } else {
+        assert(bufs.size() == paths.size());
+        for (usize i = 0; i < bufs.size(); ++i) {
+            files.push_back({bufs[i], paths[i]});
+        }
     }
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, files).GetBufs();
 }

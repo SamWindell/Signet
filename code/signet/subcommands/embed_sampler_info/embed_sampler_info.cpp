@@ -440,7 +440,33 @@ TEST_CASE("EmbedSamplerInfo") {
         }
 
         SUBCASE("sets from auto-map") {
-            // TODO
+            const auto a3 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 220);
+            const auto a4 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 440);
+            const auto a5 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 880);
+
+            auto out = TestHelpers::ProcessBuffersWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info root auto-detect note-range auto-map", {a3, a4, a5},
+                {"a3.wav", "a4.wav", "a5.wav"});
+
+            REQUIRE(out.size());
+            for (const auto &o : out) {
+                REQUIRE(o);
+                REQUIRE(o->metadata.midi_mapping);
+                REQUIRE(o->metadata.midi_mapping->sampler_mapping);
+            }
+
+            auto &o_map1 = out[0]->metadata.midi_mapping.value();
+            auto &o_map2 = out[1]->metadata.midi_mapping.value();
+            auto &o_map3 = out[2]->metadata.midi_mapping.value();
+
+            REQUIRE(o_map1.root_midi_note == 57);
+            REQUIRE(o_map2.root_midi_note == 69);
+            REQUIRE(o_map3.root_midi_note == 81);
+
+            REQUIRE(o_map1.sampler_mapping->low_note == 0);
+            REQUIRE(o_map1.sampler_mapping->high_note < o_map2.sampler_mapping->low_note);
+            REQUIRE(o_map3.sampler_mapping->low_note > o_map2.sampler_mapping->high_note);
+            REQUIRE(o_map3.sampler_mapping->high_note == 127);
         }
     }
 

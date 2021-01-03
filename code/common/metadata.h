@@ -25,6 +25,10 @@ struct SamplerMapping {
         archive(CEREAL_NVP(fine_tune_cents), CEREAL_NVP(gain_db), CEREAL_NVP(low_note), CEREAL_NVP(high_note),
                 CEREAL_NVP(low_velocity), CEREAL_NVP(high_velocity));
     }
+
+    bool operator==(const SamplerMapping &other) const {
+        return std::memcmp(this, &other, sizeof(this)) == 0;
+    }
 };
 
 enum class LoopType { Forward, Backward, PingPong };
@@ -41,6 +45,11 @@ struct Loop {
         archive(CEREAL_NVP(name), CEREAL_NVP(type), CEREAL_NVP(start_frame), CEREAL_NVP(num_frames),
                 CEREAL_NVP(num_times_to_loop));
     }
+
+    bool operator==(const Loop &b) const {
+        return name == b.name && type == b.type && start_frame == b.start_frame &&
+               num_frames == b.num_frames && num_times_to_loop == b.num_times_to_loop;
+    }
 };
 
 struct Region {
@@ -54,6 +63,11 @@ struct Region {
         archive(CEREAL_NVP(initial_marker_name), CEREAL_NVP(name), CEREAL_NVP(start_frame),
                 CEREAL_NVP(num_frames));
     }
+
+    bool operator==(const Region &b) const {
+        return initial_marker_name == b.initial_marker_name && name == b.name &&
+               start_frame == b.start_frame && num_frames == b.num_frames;
+    }
 };
 
 struct Marker {
@@ -63,6 +77,10 @@ struct Marker {
     template <class Archive>
     void serialize(Archive &archive) {
         archive(CEREAL_NVP(name), CEREAL_NVP(start_frame));
+    }
+
+    bool operator==(const Marker &other) const {
+        return name == other.name && start_frame == other.start_frame;
     }
 };
 
@@ -80,10 +98,16 @@ struct TimingInfo {
         archive(CEREAL_NVP(playback_type), CEREAL_NVP(num_beats), CEREAL_NVP(time_signature_denominator),
                 CEREAL_NVP(time_signature_numerator), CEREAL_NVP(tempo));
     }
+
+    bool operator==(const TimingInfo &other) const {
+        return playback_type == other.playback_type && num_beats == other.num_beats &&
+               time_signature_denominator == other.time_signature_denominator &&
+               time_signature_numerator == other.time_signature_numerator && tempo == other.tempo;
+    }
 };
 
 struct MidiMapping {
-    int root_midi_note {};
+    int root_midi_note {60};
     std::optional<SamplerMapping> sampler_mapping {};
 
     template <class Archive>
@@ -156,7 +180,7 @@ struct WaveMetadata {
     unsigned NumItems() const { return num_metadata; }
 
     const drwav_metadata *begin() const { return (NumItems() != 0) ? &Items().front() : nullptr; }
-    const drwav_metadata *end() const { return (NumItems() != 0) ? &Items().back() : nullptr; }
+    const drwav_metadata *end() const { return (NumItems() != 0) ? (&Items().back() + 1) : nullptr; }
 
   private:
     std::optional<drwav_metadata> GetType(drwav_metadata_type type) const {

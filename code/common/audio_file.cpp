@@ -279,6 +279,9 @@ class WaveMetadataToNonSpecificMetadata {
                 }
                 case drwav_metadata_type_acid: {
                     MetadataItems::TimingInfo info;
+                    info.playback_type = (m.data.acid.flags & drwav_acid_flag_one_shot)
+                                             ? MetadataItems::PlaybackType::OneShot
+                                             : MetadataItems::PlaybackType::Loop;
                     info.num_beats = m.data.acid.numBeats;
                     info.time_signature_denominator = m.data.acid.meterDenominator;
                     info.time_signature_numerator = m.data.acid.meterNumerator;
@@ -744,6 +747,19 @@ class NonSpecificMetadataToWaveMetadata {
             }
 
             m_wave_metadata.push_back(item);
+        }
+
+        for (const auto &c : m_cue_points_buffer) {
+            if (c.name) {
+                drwav_metadata item {};
+                item.type = drwav_metadata_type_list_label;
+                item.data.labelOrNote.cuePointId = c.id;
+                item.data.labelOrNote.string = AllocateObjects<char>(c.name->size());
+                memcpy(item.data.labelOrNote.string, c.name->data(), c.name->size());
+                item.data.labelOrNote.stringSize = c.name->size();
+
+                m_wave_metadata.push_back(item);
+            }
         }
     }
 
@@ -1249,60 +1265,170 @@ TEST_CASE("[AudioData]") {
         }
     }
 
-    SUBCASE("wave with marker and loops") {
-        const fs::path in_filename = TEST_DATA_DIRECTORY "/wave_with_markers_and_loop.wav";
-        const fs::path out_filename = "out_wave_with_markers_and_loop.wav";
-        const fs::path out_flac_filename = "out_flac_with_markers_and_loop.flac";
-        auto f = ReadAudioFile(in_filename);
-        REQUIRE(f);
-        REQUIRE(f->wave_metadata.NumItems() >= 2);
+    SUBCASE("metadata") {
+        SUBCASE("read/write metadata") {
+            auto CheckAllMetadataReadingAndWriting = [](const fs::path &out_filename) {
+                auto buf = TestHelpers::CreateSineWaveAtFrequency(2, 44100, 0.01, 440);
 
-        REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
-        REQUIRE(fs::is_regular_file(out_filename));
+                SUBCASE("root_midi_note") {
+                    buf.metadata.midi_mapping.emplace();
+                    buf.metadata.midi_mapping->root_midi_note = 99;
+                    REQUIRE(WriteAudioFile(out_filename, buf, 16));
 
-        auto out_f = ReadAudioFile(out_filename);
-        REQUIRE(out_f);
-        REQUIRE(out_f->wave_metadata.NumItems() >= 2);
+                    auto read_file = ReadAudioFile(out_filename);
+                    REQUIRE(read_file);
+                    REQUIRE(read_file->metadata.midi_mapping);
+                    REQUIRE(read_file->metadata.midi_mapping->root_midi_note == 99);
+                }
 
-        REQUIRE(WriteAudioFile(out_flac_filename, f.value(), 16));
-        REQUIRE(fs::is_regular_file(out_flac_filename));
+                SUBCASE("sampler_mapping") {
+                    const MetadataItems::SamplerMapping sampler_mapping = {1, 2, 3, 4, 5, 6};
 
-        auto out_f2 = ReadAudioFile(out_flac_filename);
-        REQUIRE(out_f2);
-        REQUIRE(out_f2->metadata.loops.size() != 0);
-    }
+                    buf.metadata.midi_mapping.emplace();
+                    buf.metadata.midi_mapping->sampler_mapping = sampler_mapping;
+                    REQUIRE(WriteAudioFile(out_filename, buf, 16));
 
-    SUBCASE("wave with bext") {
-        const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_bext.wav";
-        auto f = ReadAudioFile(in_filename);
-        REQUIRE(f);
-        REQUIRE(f->wave_metadata.NumItems() >= 1);
-    }
+                    auto read_file = ReadAudioFile(out_filename);
+                    REQUIRE(read_file);
+                    REQUIRE(read_file->metadata.midi_mapping);
+                    REQUIRE(read_file->metadata.midi_mapping->sampler_mapping == sampler_mapping);
+                }
 
-    SUBCASE("wave with bpm and time sig") {
-        const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_metadata_80bpm_5-4_time_sig.wav";
-        auto f = ReadAudioFile(in_filename);
-        REQUIRE(f);
-        REQUIRE(f->wave_metadata.NumItems() >= 1);
-    }
+                SUBCASE("timing info") {
+                    const MetadataItems::TimingInfo timing_info = {MetadataItems::PlaybackType::Loop, 2, 3, 4,
+                                                                   87.0f};
 
-    SUBCASE("wave with region and marker") {
-        const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_region_and_marker.wav";
-        auto f = ReadAudioFile(in_filename);
-        REQUIRE(f);
-        REQUIRE(f->wave_metadata.NumItems() >= 1);
-    }
+                    buf.metadata.timing_info = timing_info;
+                    REQUIRE(WriteAudioFile(out_filename, buf, 16));
 
-    SUBCASE("flac with comments") {
-        const fs::path in_filename = TEST_DATA_DIRECTORY "/flac_with_comments.flac";
-        const fs::path out_filename = "out_flac_with_comments.flac";
-        auto f = ReadAudioFile(in_filename);
-        REQUIRE(f);
-        REQUIRE(f->flac_metadata.size() >= 1);
-        REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
-        REQUIRE(fs::is_regular_file(out_filename));
-        auto out_f = ReadAudioFile(out_filename);
-        REQUIRE(out_f);
-        REQUIRE(out_f->flac_metadata.size() >= 1);
+                    auto read_file = ReadAudioFile(out_filename);
+                    REQUIRE(read_file);
+                    REQUIRE(read_file->metadata.timing_info == timing_info);
+                }
+
+                SUBCASE("loops") {
+                    SUBCASE("single loop") {
+                        const MetadataItems::Loop loop {"loop name", MetadataItems::LoopType::Backward, 2, 5,
+                                                        80};
+
+                        buf.metadata.loops = {loop};
+                        REQUIRE(WriteAudioFile(out_filename, buf, 16));
+
+                        auto read_file = ReadAudioFile(out_filename);
+                        REQUIRE(read_file);
+                        REQUIRE(read_file->metadata.loops.size() == 1);
+                        REQUIRE(read_file->metadata.loops[0] == loop);
+                    }
+
+                    SUBCASE("multiple loops") {
+                        const MetadataItems::Loop loop1 {"loop name", MetadataItems::LoopType::Backward, 2, 5,
+                                                         80};
+                        const MetadataItems::Loop loop2 {"loop name2", MetadataItems::LoopType::PingPong, 3,
+                                                         8, 2};
+
+                        buf.metadata.loops = {loop1, loop2};
+                        REQUIRE(WriteAudioFile(out_filename, buf, 16));
+
+                        auto read_file = ReadAudioFile(out_filename);
+                        REQUIRE(read_file);
+                        REQUIRE(read_file->metadata.loops.size() == 2);
+                        REQUIRE(read_file->metadata.loops[0] == loop1);
+                        REQUIRE(read_file->metadata.loops[1] == loop2);
+                    }
+                }
+
+                SUBCASE("markers") {
+                    const std::vector<MetadataItems::Marker> markers {
+                        {"m1", 1},
+                        {"m2", 3},
+                        {"m3", 5},
+                    };
+                    buf.metadata.markers = markers;
+                    REQUIRE(WriteAudioFile(out_filename, buf, 16));
+
+                    auto read_file = ReadAudioFile(out_filename);
+                    REQUIRE(read_file);
+                    REQUIRE(read_file->metadata.markers.size() == markers.size());
+                    for (usize i = 0; i < markers.size(); ++i) {
+                        REQUIRE(read_file->metadata.markers[i] == markers[i]);
+                    }
+                }
+
+                SUBCASE("regions") {
+                    const std::vector<MetadataItems::Region> regions {
+                        {"marker name", "name", 1, 2},
+                        {"marker name2", "name2", 2, 3},
+                    };
+                    buf.metadata.regions = regions;
+                    REQUIRE(WriteAudioFile(out_filename, buf, 16));
+
+                    auto read_file = ReadAudioFile(out_filename);
+                    REQUIRE(read_file);
+                    REQUIRE(read_file->metadata.regions.size() == regions.size());
+                    for (usize i = 0; i < regions.size(); ++i) {
+                        REQUIRE(read_file->metadata.regions[i] == regions[i]);
+                    }
+                }
+            };
+            SUBCASE("wav") { CheckAllMetadataReadingAndWriting("metadata_test.wav"); }
+            SUBCASE("flac") { CheckAllMetadataReadingAndWriting("metadata_test.flac"); }
+        }
+
+        SUBCASE("wave with marker and loops") {
+            const fs::path in_filename = TEST_DATA_DIRECTORY "/wave_with_markers_and_loop.wav";
+            const fs::path out_filename = "out_wave_with_markers_and_loop.wav";
+            const fs::path out_flac_filename = "out_flac_with_markers_and_loop.flac";
+            auto f = ReadAudioFile(in_filename);
+            REQUIRE(f);
+            REQUIRE(f->wave_metadata.NumItems() >= 2);
+
+            REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
+            REQUIRE(fs::is_regular_file(out_filename));
+
+            auto out_f = ReadAudioFile(out_filename);
+            REQUIRE(out_f);
+            REQUIRE(out_f->wave_metadata.NumItems() >= 2);
+
+            REQUIRE(WriteAudioFile(out_flac_filename, f.value(), 16));
+            REQUIRE(fs::is_regular_file(out_flac_filename));
+
+            auto out_f2 = ReadAudioFile(out_flac_filename);
+            REQUIRE(out_f2);
+            REQUIRE(out_f2->metadata.loops.size() != 0);
+        }
+
+        SUBCASE("wave with bext") {
+            const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_bext.wav";
+            auto f = ReadAudioFile(in_filename);
+            REQUIRE(f);
+            REQUIRE(f->wave_metadata.NumItems() >= 1);
+        }
+
+        SUBCASE("wave with bpm and time sig") {
+            const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_metadata_80bpm_5-4_time_sig.wav";
+            auto f = ReadAudioFile(in_filename);
+            REQUIRE(f);
+            REQUIRE(f->wave_metadata.NumItems() >= 1);
+        }
+
+        SUBCASE("wave with region and marker") {
+            const fs::path in_filename = TEST_DATA_DIRECTORY "/wav_with_region_and_marker.wav";
+            auto f = ReadAudioFile(in_filename);
+            REQUIRE(f);
+            REQUIRE(f->wave_metadata.NumItems() >= 1);
+        }
+
+        SUBCASE("flac with comments") {
+            const fs::path in_filename = TEST_DATA_DIRECTORY "/flac_with_comments.flac";
+            const fs::path out_filename = "out_flac_with_comments.flac";
+            auto f = ReadAudioFile(in_filename);
+            REQUIRE(f);
+            REQUIRE(f->flac_metadata.size() >= 1);
+            REQUIRE(WriteAudioFile(out_filename, f.value(), 16));
+            REQUIRE(fs::is_regular_file(out_filename));
+            auto out_f = ReadAudioFile(out_filename);
+            REQUIRE(out_f);
+            REQUIRE(out_f->flac_metadata.size() >= 1);
+        }
     }
 }

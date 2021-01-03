@@ -133,8 +133,9 @@ class TestSubcommandProcessor {
 
 template <typename SubcommandType>
 std::optional<AudioData> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioData &buf) {
-    DataAndPath d {buf, "test.wav"};
+                                                     const AudioData &buf,
+                                                     fs::path fake_file_name = "test.wav") {
+    DataAndPath d {buf, fake_file_name};
     tcb::span<DataAndPath> bufs {&d, 1};
     return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, bufs).GetBuf();
 }

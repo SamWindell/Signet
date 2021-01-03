@@ -3,10 +3,12 @@
 #include <regex>
 
 #include "CLI11.hpp"
+#include "doctest.hpp"
 #include <fmt/core.h>
 
 #include "midi_pitches.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
+#include "test_helpers.h"
 
 std::optional<int> GetIntIfValid(std::string_view str) {
     bool is_int = true;
@@ -57,7 +59,7 @@ void CLISetArg(const std::string &arg_description,
     }
 };
 
-const std::string_view g_detected_pitch_options[] = {
+const std::string_view g_auto_detect_pitch_options[] = {
     "auto-detect",
     "auto-detect-octave-plus-1",
     "auto-detect-octave-plus-2",
@@ -68,9 +70,9 @@ const std::string_view g_detected_pitch_options[] = {
 
 std::string GetAllDetectPitchOptions() {
     std::string result {};
-    for (usize i = 0; i < std::size(g_detected_pitch_options); ++i) {
-        result.append(g_detected_pitch_options[i]);
-        if (i != std::size(g_detected_pitch_options) - 1) {
+    for (usize i = 0; i < std::size(g_auto_detect_pitch_options); ++i) {
+        result.append(g_auto_detect_pitch_options[i]);
+        if (i != std::size(g_auto_detect_pitch_options) - 1) {
             result.append(", ");
         }
     }
@@ -78,7 +80,7 @@ std::string GetAllDetectPitchOptions() {
 }
 
 const std::string_view g_regex_capture_argument_description =
-    R"aa(An EMCAScript-style regex pattern containing 1 capture group which is to be used to get the value from the filename of the audio file (not including the extension). For example if the file was called sample_40.wav, you could use the regex pattern "sample_(\d+)" to get the value 40.)aa";
+    R"aa(An ECMAScript-style regex pattern containing 1 capture group which is to be used to get the value from the filename of the audio file (not including the extension). For example if the file was called sample_40.wav, you could use the regex pattern "sample_(\d+)" to get the value 40.)aa";
 
 std::string CLIGetNoteArgumentDescription() {
     return fmt::format(R"aa(This value should be 1 of the following 3 formats:
@@ -116,7 +118,7 @@ CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
                     return;
                 } else {
                     // Check for auto-detect
-                    for (const auto &v : g_detected_pitch_options) {
+                    for (const auto &v : g_auto_detect_pitch_options) {
                         if (str == v) {
                             m_root_auto_detect_name = v;
                             return;
@@ -228,20 +230,24 @@ void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files)
         auto &sampler_mapping = metadata.midi_mapping->sampler_mapping;
 
         auto SetFromFilenameRegexMatch = [&](const std::string &pattern, int &out) {
-            DebugWithNewLine(pattern);
-            DebugWithNewLine(filename);
             const std::regex r {pattern};
             std::smatch pieces_match;
             if (std::regex_match(filename, pieces_match, r)) {
-                assert(pieces_match.size() == 1); // should be validated by the CLI parsing
-                auto o = GetIntIfValid(pieces_match[0].str());
+                assert(pieces_match.size() == 2); // should be validated by the CLI parsing
+                auto o = GetIntIfValid(pieces_match[1].str());
                 if (!o) {
                     ErrorWithNewLine(
-                        "Embed Sampler Info: The given regex pattern {} does not capture an integer in the filename {}. The value will instead be set to an appropriate default value.",
+                        GetName(),
+                        "The given regex pattern {} does not capture an integer in the filename {}. The value will instead be set to an appropriate default value.",
                         pattern, filename);
                 } else {
                     out = o.value();
                 }
+            } else {
+                ErrorWithNewLine(
+                    GetName(),
+                    "The given regex pattern {} does not match the filename {}, no value could be captured",
+                    pattern, filename);
             }
         };
 
@@ -256,17 +262,17 @@ void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files)
                 midi_note = FindClosestMidiPitch(*pitch).midi_note;
             }
 
-            if (m_root_auto_detect_name == "detected") {
+            if (m_root_auto_detect_name == "auto-detect") {
                 metadata.midi_mapping->root_midi_note = midi_note;
-            } else if (m_root_auto_detect_name == "detected-octave-plus-1") {
+            } else if (m_root_auto_detect_name == "auto-detect-octave-plus-1") {
                 metadata.midi_mapping->root_midi_note = std::min(midi_note + 12, 127);
-            } else if (m_root_auto_detect_name == "detected-octave-plus-2") {
+            } else if (m_root_auto_detect_name == "auto-detect-octave-plus-2") {
                 metadata.midi_mapping->root_midi_note = std::min(midi_note + 24, 127);
-            } else if (m_root_auto_detect_name == "detected-octave-minus-1") {
+            } else if (m_root_auto_detect_name == "auto-detect-octave-minus-1") {
                 metadata.midi_mapping->root_midi_note = std::max(midi_note - 12, 0);
-            } else if (m_root_auto_detect_name == "detected-octave-minus-2") {
+            } else if (m_root_auto_detect_name == "auto-detect-octave-minus-2") {
                 metadata.midi_mapping->root_midi_note = std::max(midi_note - 24, 0);
-            } else if (m_root_auto_detect_name == "detected-nearest-to-middle-c") {
+            } else if (m_root_auto_detect_name == "auto-detect-nearest-to-middle-c") {
                 metadata.midi_mapping->root_midi_note = ScaleByOctavesToBeNearestToMiddleC(midi_note);
             }
         }
@@ -347,6 +353,134 @@ void EmbedSamplerInfo::ProcessFolders(const FolderMapType &folders) {
                 sorted_files.back()->GetWritableAudio().metadata.midi_mapping->sampler_mapping->high_note =
                     127;
             }
+        }
+    }
+}
+
+TEST_CASE("EmbedSamplerInfo") {
+    const auto buf = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 440);
+    REQUIRE(!buf.metadata.midi_mapping);
+
+    SUBCASE("requires subcommand") {
+        REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>("embed-sampler-info", buf));
+    }
+
+    SUBCASE("accepts multple subcommands") {
+        REQUIRE(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            "embed-sampler-info root 60 note-range 60 60 velocity-range 60 60", buf));
+    }
+
+    SUBCASE("root note") {
+        SUBCASE("sets integer") {
+            auto out =
+                TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>("embed-sampler-info root 60", buf);
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->root_midi_note == 60);
+        }
+        SUBCASE("sets auto-detect") {
+            auto CheckAutoDetectOption = [&](const std::string_view option, int expected_value) {
+                auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                    fmt::format("embed-sampler-info root {}", option), buf);
+                CHECK(out);
+                CHECK(out->metadata.midi_mapping);
+                CHECK(out->metadata.midi_mapping->root_midi_note == expected_value);
+            };
+            CheckAutoDetectOption("auto-detect", 69);
+            CheckAutoDetectOption("auto-detect-octave-plus-1", 69 + 12);
+            CheckAutoDetectOption("auto-detect-octave-plus-2", 69 + 24);
+            CheckAutoDetectOption("auto-detect-octave-minus-1", 69 - 12);
+            CheckAutoDetectOption("auto-detect-octave-minus-2", 69 - 24);
+            CheckAutoDetectOption("auto-detect-nearest-to-middle-c", 57);
+        }
+        SUBCASE("set from filename") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info root sample_(\\d+)", buf, "sample_60.wav");
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->root_midi_note == 60);
+        }
+    }
+
+    SUBCASE("note range") {
+        SUBCASE("2 args are required unless auto-map") {
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info note-range 61", buf));
+        }
+
+        SUBCASE("sets integer") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info note-range 61 62", buf);
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->low_note == 61);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_note == 62);
+        }
+        SUBCASE("sets from filename") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info note-range sample_(\\d+)_\\d+ sample_\\d+_(\\d+)", buf,
+                "sample_61_62.wav");
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->low_note == 61);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_note == 62);
+        }
+        SUBCASE("unchanged works") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info note-range 61 unchanged", buf);
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->low_note == 61);
+            const MetadataItems::SamplerMapping default_sampler_mapping_vals {};
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_note ==
+                    default_sampler_mapping_vals.high_note);
+        }
+
+        SUBCASE("sets from auto-map") {
+            // TODO
+        }
+    }
+
+    SUBCASE("velocity range") {
+        SUBCASE("2 args are required unless auto-map") {
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info velocity-range 61", buf));
+        }
+
+        SUBCASE("set integer") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info velocity-range 61 62", buf);
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->low_velocity == 61);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_velocity == 62);
+        }
+
+        SUBCASE("sets from filename") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info velocity-range sample_(\\d+)_\\d+ sample_\\d+_(\\d+)", buf,
+                "sample_61_62.wav");
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->low_velocity == 61);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_velocity == 62);
+        }
+
+        SUBCASE("unchanged works") {
+            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                "embed-sampler-info velocity-range 61 unchanged", buf);
+            REQUIRE(out);
+            REQUIRE(out->metadata.midi_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping);
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->low_velocity == 61);
+            const MetadataItems::SamplerMapping default_sampler_mapping_vals {};
+            REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_velocity ==
+                    default_sampler_mapping_vals.high_velocity);
         }
     }
 }

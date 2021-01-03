@@ -756,7 +756,7 @@ class NonSpecificMetadataToWaveMetadata {
                 item.data.labelOrNote.cuePointId = c.id;
                 item.data.labelOrNote.string = AllocateObjects<char>(c.name->size());
                 memcpy(item.data.labelOrNote.string, c.name->data(), c.name->size());
-                item.data.labelOrNote.stringSize = c.name->size();
+                item.data.labelOrNote.stringSize = (u32)c.name->size();
 
                 m_wave_metadata.push_back(item);
             }

@@ -132,7 +132,8 @@ struct Metadata {
     }
 
     template <typename Type>
-    void HandleStartFramesRemovedForType(std::vector<Type> &vector, size_t num_frames_removed) {
+    bool HandleStartFramesRemovedForType(std::vector<Type> &vector, size_t num_frames_removed) {
+        const auto initial_size = vector.size();
         for (auto it = vector.begin(); it != vector.end();) {
             if (it->start_frame < num_frames_removed) {
                 it = vector.erase(it);
@@ -141,10 +142,12 @@ struct Metadata {
                 ++it;
             }
         }
+        return initial_size != vector.size();
     }
 
     template <typename Type>
-    void HandleEndFramesRemovedForType(std::vector<Type> &vector, size_t new_file_size_in_frames) {
+    bool HandleEndFramesRemovedForType(std::vector<Type> &vector, size_t new_file_size_in_frames) {
+        const auto initial_size = vector.size();
         for (auto it = vector.begin(); it != vector.end();) {
             if (it->start_frame + it->num_frames > new_file_size_in_frames) {
                 it = vector.erase(it);
@@ -152,6 +155,7 @@ struct Metadata {
                 ++it;
             }
         }
+        return initial_size != vector.size();
     }
 };
 

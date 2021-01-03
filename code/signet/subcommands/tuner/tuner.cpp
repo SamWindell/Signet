@@ -79,4 +79,37 @@ TEST_CASE("Tuner") {
         REQUIRE(*detected == doctest::Approx(233.08).epsilon(1.0));
         REQUIRE(starting_rms == doctest::Approx(GetRMS(sine.interleaved_samples)).epsilon(0.1));
     }
+
+    SUBCASE("metadata stretches") {
+        AudioData data {};
+        data.num_channels = 1;
+        data.sample_rate = 44100;
+        data.interleaved_samples.resize(10);
+
+        SUBCASE("markers") {
+            data.metadata.markers.push_back({"marker", 5});
+            const auto out = TestHelpers::ProcessBufferWithSubcommand<Tuner>("tune -1200", data);
+            REQUIRE(out);
+            REQUIRE(out->metadata.markers.size() == 1);
+            REQUIRE(out->metadata.markers[0].start_frame == 10);
+        }
+
+        SUBCASE("loops") {
+            data.metadata.loops.push_back({"loop", MetadataItems::LoopType::Forward, 2, 6, 0});
+            const auto out = TestHelpers::ProcessBufferWithSubcommand<Tuner>("tune -1200", data);
+            REQUIRE(out);
+            REQUIRE(out->metadata.loops.size() == 1);
+            REQUIRE(out->metadata.loops[0].start_frame == 4);
+            REQUIRE(out->metadata.loops[0].num_frames == 12);
+        }
+
+        SUBCASE("regions") {
+            data.metadata.regions.push_back({"marker", "region", 2, 6});
+            const auto out = TestHelpers::ProcessBufferWithSubcommand<Tuner>("tune -1200", data);
+            REQUIRE(out);
+            REQUIRE(out->metadata.regions.size() == 1);
+            REQUIRE(out->metadata.regions[0].start_frame == 4);
+            REQUIRE(out->metadata.regions[0].num_frames == 12);
+        }
+    }
 }

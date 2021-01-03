@@ -123,4 +123,86 @@ TEST_CASE("[Trimmer]") {
         REQUIRE(result->NumFrames() == 3);
         REQUIRE(result->interleaved_samples[0] == 2);
     }
+
+    SUBCASE("handles metadata") {
+        AudioData buf;
+        buf.num_channels = 1;
+        buf.sample_rate = 48000;
+        buf.interleaved_samples.resize(10);
+
+        SUBCASE("marker") {
+            SUBCASE("marker is removed if the marker is in the region that was removed") {
+                SUBCASE("start") {
+                    buf.metadata.markers.push_back({"marker1", 0});
+                    const auto out =
+                        TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                    REQUIRE(out);
+                    REQUIRE(out->metadata.markers.size() == 0);
+                }
+                SUBCASE("end") {
+                    buf.metadata.markers.push_back({"marker1", 9});
+                    const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+                    REQUIRE(out);
+                    REQUIRE(out->metadata.markers.size() == 0);
+                }
+            }
+            SUBCASE("marker position moves if start trimmed") {
+                buf.metadata.markers.push_back({"marker1", 2});
+                const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                REQUIRE(out);
+                REQUIRE(out->metadata.markers.size() == 1);
+                REQUIRE(out->metadata.markers[0].start_frame == 1);
+            }
+        }
+
+        SUBCASE("region") {
+            SUBCASE("region is removed if the region is in the bit that was removed") {
+                SUBCASE("start") {
+                    buf.metadata.regions.push_back({"region marker", "region name", 0, 2});
+                    const auto out =
+                        TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                    REQUIRE(out);
+                    REQUIRE(out->metadata.regions.size() == 0);
+                }
+                SUBCASE("end") {
+                    buf.metadata.regions.push_back({"region marker", "region name", 8, 2});
+                    const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+                    REQUIRE(out);
+                    REQUIRE(out->metadata.regions.size() == 0);
+                }
+            }
+            SUBCASE("region position moves if start trimmed") {
+                buf.metadata.regions.push_back({"region marker", "region name", 2, 2});
+                const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                REQUIRE(out);
+                REQUIRE(out->metadata.regions.size() == 1);
+                REQUIRE(out->metadata.regions[0].start_frame == 1);
+            }
+        }
+
+        SUBCASE("loop") {
+            SUBCASE("loop is removed if the loop is in the bit that was removed") {
+                SUBCASE("start") {
+                    buf.metadata.loops.push_back({"loop name", MetadataItems::LoopType::Forward, 0, 2, 0});
+                    const auto out =
+                        TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                    REQUIRE(out);
+                    REQUIRE(out->metadata.loops.size() == 0);
+                }
+                SUBCASE("end") {
+                    buf.metadata.loops.push_back({"loop name", MetadataItems::LoopType::Forward, 8, 2, 0});
+                    const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+                    REQUIRE(out);
+                    REQUIRE(out->metadata.loops.size() == 0);
+                }
+            }
+            SUBCASE("loop position moves if start trimmed") {
+                buf.metadata.loops.push_back({"loop name", MetadataItems::LoopType::Forward, 2, 2, 0});
+                const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                REQUIRE(out);
+                REQUIRE(out->metadata.loops.size() == 1);
+                REQUIRE(out->metadata.loops[0].start_frame == 1);
+            }
+        }
+    }
 }

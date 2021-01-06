@@ -77,6 +77,18 @@ add_library(
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS DRWAV_MAX_SMPL_LOOPS=16)
+target_precompile_headers(
+    common
+    PRIVATE
+    "code/third_party_libs/filesystem.hpp"
+    "code/third_party_libs/CLI11.hpp"
+    "code/third_party_libs/json.hpp"
+    <string>
+    <map>
+    <optional>
+    <vector>
+    <functional>
+    <array>)
 
 if (CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(common PUBLIC SIGNET_DEBUG)

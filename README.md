@@ -1,3 +1,5 @@
+![Build Status](https://github.com/SamWindell/Signet/workflows/CMake/badge.svg)
+
 # Signet
 ## Command-line program for editing audio files, and assisting sample library development (still a work-in-progress)
 

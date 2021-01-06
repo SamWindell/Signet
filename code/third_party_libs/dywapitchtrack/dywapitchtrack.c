@@ -1,20 +1,20 @@
 /* dywapitchtrack.c
-
+ 
  Dynamic Wavelet Algorithm Pitch Tracking library
  Released under the MIT open source licence
-
+  
  Copyright (c) 2010 Antoine Schmitt
-
+ 
  Permission is hereby granted, free of charge, to any person obtaining a copy
  of this software and associated documentation files (the "Software"), to deal
  in the Software without restriction, including without limitation the rights
  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  copies of the Software, and to permit persons to whom the Software is
  furnished to do so, subject to the following conditions:
-
+ 
  The above copyright notice and this permission notice shall be included in
  all copies or substantial portions of the Software.
-
+ 
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -64,7 +64,7 @@ int _bitcount(int value) {
 // closest power of 2 above or equal
 int _ceil_power2(int value) {
 	if (_power2p(value)) return value;
-
+	
 	if (value == 1) return 2;
 	int j, i = _bitcount(value);
 	int res = 1;
@@ -108,31 +108,31 @@ typedef struct _minmax {
 
 double _dywapitch_computeWaveletPitch(double * samples, int startsample, int samplecount) {
 	double pitchF = 0.0;
-
+	
 	int i, j;
 	double si, si1;
-
+	
 	// must be a power of 2
 	samplecount = _floor_power2(samplecount);
-
+	
 	double *sam = (double *)malloc(sizeof(double)*samplecount);
 	memcpy(sam, samples + startsample, sizeof(double)*samplecount);
 	int curSamNb = samplecount;
-
+	
 	int *distances = (int *)malloc(sizeof(int)*samplecount);
 	int *mins = (int *)malloc(sizeof(int)*samplecount);
 	int *maxs = (int *)malloc(sizeof(int)*samplecount);
 	int nbMins, nbMaxs;
-
+	
 	// algorithm parameters
 	int maxFLWTlevels = 6;
 	double maxF = 3000.;
 	int differenceLevelsN = 3;
 	double maximaThresholdRatio = 0.75;
-
-	double ampltitudeThreshold;
+	
+	double ampltitudeThreshold;  
 	double theDC = 0.0;
-
+	
 	{ // compute ampltitudeThreshold and theDC
 		//first compute the DC and maxAMplitude
 		double maxValue = -DBL_MAX;
@@ -147,30 +147,30 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 		maxValue = maxValue - theDC;
 		minValue = minValue - theDC;
 		double amplitudeMax = (maxValue > -minValue ? maxValue : -minValue);
-
+		
 		ampltitudeThreshold = amplitudeMax*maximaThresholdRatio;
 		//asLog("dywapitch theDC=%f ampltitudeThreshold=%f\n", theDC, ampltitudeThreshold);
-
+		
 	}
-
+	
 	// levels, start without downsampling..
 	int curLevel = 0;
 	double curModeDistance = -1.;
 	int delta;
-
+	
 	while(1) {
-
+		
 		// delta
 		delta = 44100./(_2power(curLevel)*maxF);
 		//("dywapitch doing level=%ld delta=%ld\n", curLevel, delta);
-
+		
 		if (curSamNb < 2) goto cleanup;
-
+		
 		// compute the first maximums and minumums after zero-crossing
 		// store if greater than the min threshold
 		// and if at a greater distance than delta
 		double dv, previousDV = -1000;
-		nbMins = nbMaxs = 0;
+		nbMins = nbMaxs = 0;   
 		int lastMinIndex = -1000000;
 		int lastmaxIndex = -1000000;
 		int findMax = 0;
@@ -178,16 +178,16 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 		for (i = 1; i < curSamNb; i++) {
 			si = sam[i] - theDC;
 			si1 = sam[i-1] - theDC;
-
+			
 			if (si1 <= 0 && si > 0) {findMax = 1; findMin = 0; }
 			if (si1 >= 0 && si < 0) {findMin = 1; findMax = 0; }
-
+			
 			// min or max ?
 			dv = si - si1;
-
+			
 			if (previousDV > -1000) {
-
-				if (findMin && previousDV < 0 && dv >= 0) {
+				
+				if (findMin && previousDV < 0 && dv >= 0) { 
 					// minimum
 					if (fabs(si1) >= ampltitudeThreshold) {
 						if (i - 1 > lastMinIndex + delta) {
@@ -205,7 +205,7 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 						//--
 					}
 				}
-
+				
 				if (findMax && previousDV > 0 && dv <= 0) {
 					// maximum
 					if (fabs(si1) >= ampltitudeThreshold) {
@@ -223,19 +223,19 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 					}
 				}
 			}
-
+			
 			previousDV = dv;
 		}
-
+		
 		if (nbMins == 0 && nbMaxs == 0) {
 			// no best distance !
 			//asLog("dywapitch no mins nor maxs, exiting\n");
-
+			
 			// if DEBUGG then put "no mins nor maxs, exiting"
 			goto cleanup;
 		}
 		//if DEBUGG then put count(maxs)&&"maxs &"&&count(mins)&&"mins"
-
+		
 		// maxs = [5, 20, 100,...]
 		// compute distances
 		int d;
@@ -258,7 +258,7 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 				}
 			}
 		}
-
+		
 		// find best summed distance
 		int bestDistance = -1;
 		int bestValue = -1;
@@ -272,14 +272,14 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 			if (summed == bestValue) {
 				if (i == 2*bestDistance)
 					bestDistance = i;
-
+				
 			} else if (summed > bestValue) {
 				bestValue = summed;
 				bestDistance = i;
 			}
 		}
 		//asLog("dywapitch bestDistance=%ld\n", bestDistance);
-
+		
 		// averaging
 		double distAvg = 0.0;
 		double nbDists = 0;
@@ -295,7 +295,7 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 		// this is our mode distance !
 		distAvg /= nbDists;
 		//asLog("dywapitch distAvg=%f\n", distAvg);
-
+		
 		// continue the levels ?
 		if (curModeDistance > -1.) {
 			double similarity = fabs(distAvg*2 - curModeDistance);
@@ -308,17 +308,17 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 			}
 			//if DEBUGG then put "similarity="&similarity&&"delta="&delta&&"not"
 		}
-
+		
 		// not similar, continue next level
 		curModeDistance = distAvg;
-
+		
 		curLevel = curLevel + 1;
 		if (curLevel >= maxFLWTlevels) {
 			// put "max levels reached, exiting"
  			//asLog("dywapitch max levels reached, exiting\n");
 			goto cleanup;
 		}
-
+		
 		// downsample
 		if (curSamNb < 2) {
  			//asLog("dywapitch not enough samples, exiting\n");
@@ -329,14 +329,14 @@ double _dywapitch_computeWaveletPitch(double * samples, int startsample, int sam
 		}
 		curSamNb /= 2;
 	}
-
+	
 	///
 cleanup:
 	free(distances);
 	free(mins);
 	free(maxs);
 	free(sam);
-
+	
 	return pitchF;
 }
 
@@ -345,50 +345,50 @@ cleanup:
 // ***********************************
 
 /***
-It states:
+It states: 
  - a pitch cannot change much all of a sudden (20%) (impossible humanly,
- so if such a situation happens, consider that it is a mistake and drop it.
+ so if such a situation happens, consider that it is a mistake and drop it. 
  - a pitch cannot double or be divided by 2 all of a sudden : it is an
- algorithm side-effect : divide it or double it by 2.
+ algorithm side-effect : divide it or double it by 2. 
  - a lonely voiced pitch cannot happen, nor can a sudden drop in the middle
- of a voiced segment. Smooth the plot.
+ of a voiced segment. Smooth the plot. 
 ***/
 
 double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
-
+	
 	// equivalence
 	if (pitch == 0.0) pitch = -1.0;
-
+	
 	//
 	double estimatedPitch = -1;
 	double acceptedError = 0.2f;
 	int maxConfidence = 5;
-
+	
 	if (pitch != -1) {
 		// I have a pitch here
-
+		
 		if (pitchtracker->_prevPitch == -1) {
 			// no previous
 			estimatedPitch = pitch;
 			pitchtracker->_prevPitch = pitch;
 			pitchtracker->_pitchConfidence = 1;
-
-		} else if (fabs(pitchtracker->_prevPitch - pitch)/pitch < acceptedError) {
+			
+		} else if (abs(pitchtracker->_prevPitch - pitch)/pitch < acceptedError) {
 			// similar : remember and increment pitch
 			pitchtracker->_prevPitch = pitch;
 			estimatedPitch = pitch;
 			pitchtracker->_pitchConfidence = min(maxConfidence, pitchtracker->_pitchConfidence + 1); // maximum 3
-
-		} else if ((pitchtracker->_pitchConfidence >= maxConfidence-2) && fabs(pitchtracker->_prevPitch - 2.*pitch)/(2.*pitch) < acceptedError) {
+			
+		} else if ((pitchtracker->_pitchConfidence >= maxConfidence-2) && abs(pitchtracker->_prevPitch - 2.*pitch)/(2.*pitch) < acceptedError) {
 			// close to half the last pitch, which is trusted
 			estimatedPitch = 2.*pitch;
 			pitchtracker->_prevPitch = estimatedPitch;
-
-		} else if ((pitchtracker->_pitchConfidence >= maxConfidence-2) && fabs(pitchtracker->_prevPitch - 0.5*pitch)/(0.5*pitch) < acceptedError) {
+			
+		} else if ((pitchtracker->_pitchConfidence >= maxConfidence-2) && abs(pitchtracker->_prevPitch - 0.5*pitch)/(0.5*pitch) < acceptedError) {
 			// close to twice the last pitch, which is trusted
 			estimatedPitch = 0.5*pitch;
 			pitchtracker->_prevPitch = estimatedPitch;
-
+			
 		} else {
 			// nothing like this : very different value
 			if (pitchtracker->_pitchConfidence >= 1) {
@@ -402,7 +402,7 @@ double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
 				pitchtracker->_pitchConfidence = 1;
 			}
 		}
-
+		
 	} else {
 		// no pitch now
 		if (pitchtracker->_prevPitch != -1) {
@@ -418,7 +418,7 @@ double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
 			}
 		}
 	}
-
+	
 	// put "_pitchConfidence="&pitchtracker->_pitchConfidence
 	if (pitchtracker->_pitchConfidence >= 1) {
 		// ok
@@ -426,10 +426,10 @@ double _dywapitch_dynamicprocess(dywapitchtracker *pitchtracker, double pitch) {
 	} else {
 		pitch = -1;
 	}
-
+	
 	// equivalence
 	if (pitch == -1) pitch = 0.0;
-
+	
 	return pitch;
 }
 

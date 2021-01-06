@@ -27,7 +27,7 @@ struct SamplerMapping {
     }
 
     bool operator==(const SamplerMapping &other) const {
-        return std::memcmp(this, &other, sizeof(this)) == 0;
+        return std::memcmp(this, &other, sizeof(*this)) == 0;
     }
 };
 

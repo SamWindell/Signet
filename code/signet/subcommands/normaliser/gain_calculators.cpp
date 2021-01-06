@@ -20,6 +20,7 @@ void NormaliseToTarget(std::vector<double> &samples, const double target_amp) {
 }
 
 double GetRMS(const tcb::span<double> samples) {
+    if (!samples.size()) return 0;
     double result = 0;
     for (const auto s : samples) {
         result += s * s;

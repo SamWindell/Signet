@@ -125,3 +125,6 @@ endif ()
 # Tests
 add_executable(tests code/tests/tests_main.cpp)
 target_link_libraries(tests PRIVATE common)
+
+enable_testing()
+add_test(NAME tests COMMAND tests)

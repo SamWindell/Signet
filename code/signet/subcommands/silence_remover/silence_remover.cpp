@@ -16,7 +16,7 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
                           "however this threshold can be changed with the --threshold option.");
 
     std::map<std::string, Region> region_name_dictionary;
-    for (const auto e : magic_enum::enum_entries<Region>()) {
+    for (const auto &e : magic_enum::enum_entries<Region>()) {
         region_name_dictionary[std::string(e.second)] = e.first;
     }
     silence_remover
@@ -102,7 +102,7 @@ void SilenceRemover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
 
         if (m_region == Region::End || m_region == Region::Both) {
             const auto new_size = loud_region_end * audio.num_channels;
-            if (!audio.interleaved_samples.size() != new_size) {
+            if (audio.interleaved_samples.size() != new_size) {
                 f.GetWritableAudio().interleaved_samples.resize(new_size);
                 f.GetWritableAudio().FramesWereRemovedFromEnd();
             }

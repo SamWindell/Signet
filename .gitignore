@@ -4,3 +4,4 @@ build/
 *.reapeaks
 tests_config.h
 .vscode/c_cpp_properties.json
+.vscode/settings.json

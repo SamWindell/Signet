@@ -21,7 +21,7 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     fade->require_subcommand();
 
     std::map<std::string, Shape> shape_name_dictionary;
-    for (const auto e : magic_enum::enum_entries<Shape>()) {
+    for (const auto &e : magic_enum::enum_entries<Shape>()) {
         shape_name_dictionary[std::string(e.second)] = e.first;
     }
 
@@ -206,7 +206,7 @@ TEST_CASE("[Fader]") {
             TestArgs("fade out 200smp " + shape_str, 0, 100);
         };
 
-        for (const auto n : GetShapeNames()) {
+        for (const auto &n : GetShapeNames()) {
             TestSuite(n);
         }
     }

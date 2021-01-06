@@ -4,7 +4,7 @@ namespace RenameSubstitution {
 
 std::string GetFullInfo() {
     std::string result = "\n\n";
-    for (const auto v : g_vars) {
+    for (const auto &v : g_vars) {
         result += v.name;
         result += "\n";
         result += v.desc;
@@ -16,7 +16,7 @@ std::string GetFullInfo() {
 
 std::string GetVariableNames() {
     std::string result {};
-    for (const auto v : g_vars) {
+    for (const auto &v : g_vars) {
         result += v.name;
         result += "\n";
     }

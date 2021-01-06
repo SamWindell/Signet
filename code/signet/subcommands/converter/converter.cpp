@@ -27,7 +27,7 @@ CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
         ->check(CLI::IsMember({8, 16, 20, 24, 32, 64}));
 
     std::map<std::string, AudioFileFormat> file_format_name_dictionary;
-    for (const auto e : magic_enum::enum_entries<AudioFileFormat>()) {
+    for (const auto &e : magic_enum::enum_entries<AudioFileFormat>()) {
         file_format_name_dictionary[std::string(e.second)] = e.first;
     }
 

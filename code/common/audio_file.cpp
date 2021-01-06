@@ -682,19 +682,17 @@ class NonSpecificMetadataToWaveMetadata {
   private:
     char *AllocateAndCopyString(const char *data, size_t size) {
         if (!size) return nullptr;
-        auto mem = std::shared_ptr<char[]>(new char[size + 1]);
-        memcpy(mem.get(), data, size);
-        mem.get()[size] = '\0';
+        std::shared_ptr<std::string> mem(new std::string(data, size));
         m_allocations.push_back(mem);
-        return mem.get();
+        return mem.get()->data();
     };
 
     template <typename Type>
     Type *AllocateObjects(size_t num_objects) {
         if (!num_objects) return nullptr;
-        auto mem = std::shared_ptr<Type[]>(new Type[num_objects]);
+        std::shared_ptr<std::vector<Type>> mem(new std::vector<Type>(num_objects));
         m_allocations.push_back(mem);
-        return mem.get();
+        return mem.get()->data();
     }
 
     u32 FramePosToSampleBytes(size_t frame_pos) {

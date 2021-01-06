@@ -7,31 +7,31 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(
     third_party_libs STATIC
     code/third_party_libs/dywapitchtrack/dywapitchtrack.c
-    code/third_party_libs/flac/src/bitmath.c
-    code/third_party_libs/flac/src/bitreader.c
-    code/third_party_libs/flac/src/bitwriter.c
-    code/third_party_libs/flac/src/cpu.c
-    code/third_party_libs/flac/src/crc.c
-    code/third_party_libs/flac/src/fixed.c
-    code/third_party_libs/flac/src/float.c
-    code/third_party_libs/flac/src/format.c
-    code/third_party_libs/flac/src/lpc.c
-    code/third_party_libs/flac/src/md5.c
-    code/third_party_libs/flac/src/memory.c
-    code/third_party_libs/flac/src/metadata_object.c
-    code/third_party_libs/flac/src/stream_decoder.c
-    code/third_party_libs/flac/src/stream_encoder.c
-    code/third_party_libs/flac/src/stream_encoder_framing.c
-    code/third_party_libs/flac/src/window.c
+    code/third_party_libs/FLAC/src/bitmath.c
+    code/third_party_libs/FLAC/src/bitreader.c
+    code/third_party_libs/FLAC/src/bitwriter.c
+    code/third_party_libs/FLAC/src/cpu.c
+    code/third_party_libs/FLAC/src/crc.c
+    code/third_party_libs/FLAC/src/fixed.c
+    code/third_party_libs/FLAC/src/float.c
+    code/third_party_libs/FLAC/src/format.c
+    code/third_party_libs/FLAC/src/lpc.c
+    code/third_party_libs/FLAC/src/md5.c
+    code/third_party_libs/FLAC/src/memory.c
+    code/third_party_libs/FLAC/src/metadata_object.c
+    code/third_party_libs/FLAC/src/stream_decoder.c
+    code/third_party_libs/FLAC/src/stream_encoder.c
+    code/third_party_libs/FLAC/src/stream_encoder_framing.c
+    code/third_party_libs/FLAC/src/window.c
     code/third_party_libs/r8brain-resampler/r8bbase.cpp)
 
 if (WIN32)
-    target_sources(third_party_libs PRIVATE code/third_party_libs/flac/src/win_utf8_io.c)
+    target_sources(third_party_libs PRIVATE code/third_party_libs/FLAC/src/win_utf8_io.c)
 else (APPLE)
     target_compile_definitions(third_party_libs PRIVATE HAVE_LROUND)
 endif ()
 
-target_include_directories(third_party_libs PUBLIC code/third_party_libs/flac/src/include
+target_include_directories(third_party_libs PUBLIC code/third_party_libs/FLAC/src/include
                                                    code/third_party_libs)
 target_compile_definitions(third_party_libs PUBLIC FLAC__NO_DLL)
 

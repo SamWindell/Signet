@@ -50,7 +50,7 @@ class AudioDuration {
     }
 
     static std::optional<Unit> GetUnit(const std::string &str) {
-        for (const auto u : available_units) {
+        for (const auto &u : available_units) {
             if (EndsWith(str, u.first)) {
                 return u.second;
             }
@@ -60,7 +60,7 @@ class AudioDuration {
 
     static std::string GetListOfUnits() {
         std::string result;
-        for (const auto u : available_units) {
+        for (const auto &u : available_units) {
             result.append(u.first);
             result.append(" ");
         }

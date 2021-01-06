@@ -79,7 +79,7 @@ bool SignetBackup::LoadBackup() {
         return false;
     }
 
-    for (const std::string &f : m_database["files_created"]) {
+    for (const std::string f : m_database["files_created"]) {
         MessageWithNewLine("Backup", "Deleting file created by Signet {}", f);
         try {
             fs::remove(f);

@@ -62,8 +62,11 @@ FlacDecodeLengthCallback(const FLAC__StreamDecoder *decoder, FLAC__uint64 *strea
     auto &context = *((FlacFileDataContext *)client_data);
 
     struct stat filestats;
-
+#if _WIN32
     if (fstat(_fileno(context.file), &filestats) != 0)
+#else
+    if (fstat(fileno(context.file), &filestats) != 0)
+#endif
         return FLAC__STREAM_DECODER_LENGTH_STATUS_ERROR;
     else {
         *stream_length = (FLAC__uint64)filestats.st_size;
@@ -156,7 +159,6 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
 void FlacStreamDecodeErrorCallback(const FLAC__StreamDecoder *decoder,
                                    FLAC__StreamDecoderErrorStatus status,
                                    void *client_data) {
-    auto &context = *((FlacFileDataContext *)client_data);
     ErrorWithNewLine("Flac", "error triggered: {}", FLAC__StreamDecoderErrorStatusString[status]);
 }
 

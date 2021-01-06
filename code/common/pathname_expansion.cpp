@@ -28,7 +28,7 @@ void ForEachFileInDirectory(const std::string_view directory,
 }
 
 const bool IsPathExcluded(const fs::path &path, const std::vector<std::string_view> &exclude_patterns) {
-    for (const auto exclude : exclude_patterns) {
+    for (const auto &exclude : exclude_patterns) {
         if (WildcardMatch(exclude, path.generic_string())) {
             return true;
         }
@@ -105,7 +105,7 @@ static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view 
         }
     };
 
-    for (const auto f : possible_folders) {
+    for (const auto &f : possible_folders) {
         if (last_file_section.find("**") != std::string_view::npos) {
             ForEachFileInDirectory<fs::recursive_directory_iterator>(f, CheckAndRegisterFile);
         } else if (last_file_section.find("*") != std::string_view::npos) {

@@ -87,7 +87,8 @@ std::optional<double> DetectSinglePitch(const AudioData &audio) {
         for (auto &chunk : chunks) {
             if ((max_rms - min_rms) == 0) continue;
             const auto rms_relative = (chunk.rms - min_rms) / (max_rms - min_rms);
-            if (rms_relative < 0 || rms_relative > 1) continue;
+            REQUIRE(rms_relative >= 0);
+            REQUIRE(rms_relative <= 1);
             constexpr auto multiplier_for_loudest_chunk = 1.5;
             chunk.suitability *=
                 1 + (std::cos(half_pi - (rms_relative * half_pi)) * multiplier_for_loudest_chunk);

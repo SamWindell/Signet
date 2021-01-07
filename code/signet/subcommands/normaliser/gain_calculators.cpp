@@ -26,6 +26,7 @@ double GetRMS(const tcb::span<double> samples) {
         result += s * s;
     }
     result /= samples.size();
+    REQUIRE(result >= 0);
     return std::sqrt(result);
 }
 

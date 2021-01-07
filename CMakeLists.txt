@@ -86,6 +86,8 @@ target_precompile_headers(
     <string>
     <map>
     <optional>
+    <algorithm>
+    <iostream>
     <vector>
     <functional>
     <array>)
@@ -116,7 +118,7 @@ if (WIN32)
     target_compile_options(common PUBLIC /diagnostics:column ${FULL_PATH_OF_SOURCE_CODE}
                                          ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
 else ()
-    target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
+    target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall -ftime-trace)
 endif ()
 target_link_libraries(common PUBLIC third_party_libs)
 

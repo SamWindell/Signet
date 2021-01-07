@@ -53,7 +53,7 @@ std::optional<double> DetectSinglePitch(const AudioData &audio) {
         if (audio.sample_rate != 44100) {
             detected_pitch *= static_cast<double>(audio.sample_rate) / 44100.0;
         }
-        chunks.push_back({detected_pitch, GetRMS({mono_signal.data() + frame, (usize)chunk_size})});
+        chunks.push_back({detected_pitch, GetRMS({mono_signal.data() + frame, (usize)chunk_size}), 0});
     }
 
     for (auto &chunk : chunks) {
@@ -80,13 +80,19 @@ std::optional<double> DetectSinglePitch(const AudioData &audio) {
         double max_rms = 0;
         double min_rms = DBL_MAX;
         for (auto &chunk : chunks) {
+            REQUIRE(chunk.rms >= 0);
             if (chunk.rms < min_rms) min_rms = chunk.rms;
             if (chunk.rms > max_rms) max_rms = chunk.rms;
         }
+        REQUIRE(max_rms >= 0);
+        REQUIRE(min_rms >= 0);
 
         for (auto &chunk : chunks) {
             if ((max_rms - min_rms) == 0) continue;
             const auto rms_relative = (chunk.rms - min_rms) / (max_rms - min_rms);
+            CAPTURE(max_rms);
+            CAPTURE(min_rms);
+            CAPTURE(chunk.rms);
             REQUIRE(rms_relative >= 0);
             REQUIRE(rms_relative <= 1);
             constexpr auto multiplier_for_loudest_chunk = 1.5;

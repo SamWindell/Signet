@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cfloat>
 
+#include "doctest.hpp"
 #include "span.hpp"
 
 #include "audio_file.h"

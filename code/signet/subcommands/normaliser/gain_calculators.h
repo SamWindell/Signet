@@ -42,6 +42,7 @@ class RMSGainCalculator : public NormalisationGainCalculator {
     }
 
     double GetLargestRegisteredMagnitude() const override {
+        if (!m_num_frames) return 0;
         double max_rms = 0;
         for (const auto sum_of_squares : m_sum_of_squares_channels) {
             const auto rms = std::sqrt((1.0 / (double)m_num_frames) * sum_of_squares);

@@ -18,7 +18,7 @@ CLI::App *SampleInfoPrinter::CreateSubcommandCLI(CLI::App &app) {
 
 void SampleInfoPrinter::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     for (auto &f : files) {
-        std::string result;
+        std::string info_text;
         if (!f.GetAudio().metadata.IsEmpty()) {
             std::stringstream ss {};
             {
@@ -30,17 +30,17 @@ void SampleInfoPrinter::ProcessFiles(const tcb::span<EditTrackedAudioFile> files
                                      e.what());
                 }
             }
-            result += ss.str() + "\n";
+            info_text += ss.str() + "\n";
         } else {
-            result += "Contains no metadata that Signet understands\n";
+            info_text += "Contains no metadata that Signet understands\n";
         }
 
-        result += fmt::format("Channels: {}\n", f.GetAudio().num_channels);
-        result += fmt::format("Sample Rate: {}\n", f.GetAudio().sample_rate);
-        result += fmt::format("Bit-depth: {}\n", f.GetAudio().bits_per_sample);
-        result += fmt::format("RMS: {:.5f}\n", GetRMS(f.GetAudio().interleaved_samples));
+        info_text += fmt::format("Channels: {}\n", f.GetAudio().num_channels);
+        info_text += fmt::format("Sample Rate: {}\n", f.GetAudio().sample_rate);
+        info_text += fmt::format("Bit-depth: {}\n", f.GetAudio().bits_per_sample);
+        info_text += fmt::format("RMS: {:.5f}\n", GetRMS(f.GetAudio().interleaved_samples));
 
-        if (EndsWith(result, "\n")) result.resize(result.size() - 1);
-        MessageWithNewLine(GetName(), "Info for file {}\n{}", f.GetPath(), result);
+        if (EndsWith(info_text, "\n")) info_text.resize(info_text.size() - 1);
+        MessageWithNewLine(GetName(), "Info for file {}\n{}", f.GetPath(), info_text);
     }
 }

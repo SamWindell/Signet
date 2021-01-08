@@ -85,6 +85,7 @@ class PeakGainCalculator : public NormalisationGainCalculator {
             max_magnitude = std::max(max_magnitude, magnitude);
         }
         m_max_magnitude = std::max(m_max_magnitude, max_magnitude);
+        REQUIRE(m_max_magnitude >= 0);
         return true;
     }
 
@@ -100,7 +101,7 @@ class PeakGainCalculator : public NormalisationGainCalculator {
     void Reset() override { m_max_magnitude = 0; }
 
   private:
-    double m_max_magnitude;
+    double m_max_magnitude {};
 };
 
 void NormaliseToTarget(AudioData &audio, const double target_amp);

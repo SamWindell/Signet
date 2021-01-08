@@ -478,7 +478,6 @@ void DebugPrintAllMetadata(const WaveMetadata &metadata) {
 
 std::optional<AudioData> ReadAudioFile(const fs::path &path) {
     MessageWithNewLine("Signet", "Reading file {}", GetJustFilenameWithNoExtension(path));
-    DebugWithNewLine("Signet", "Reading file {}", GetJustFilenameWithNoExtension(path));
     const auto file = OpenFile(path, "rb");
     if (!file) return {};
 
@@ -488,7 +487,6 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         std::vector<float> f32_buf {};
         drwav wav;
 
-        DebugWithNewLine("=================");
         if (!drwav_init_ex_with_metadata(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0,
                                          nullptr, (u64)drwav_metadata_type_all)) {
             WarningWithNewLine("Wav", "could not init the WAV file {}", path);
@@ -502,7 +500,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         if (wav.numMetadata) {
             const auto num_metadata = wav.numMetadata; // drwav_take_ownership_of_metadata clears it
             result.wave_metadata.Assign(drwav_take_ownership_of_metadata(&wav), num_metadata);
-            DebugPrintAllMetadata(result.wave_metadata);
+            // DebugPrintAllMetadata(result.wave_metadata);
             WaveMetadataToNonSpecificMetadata converter(result.wave_metadata, result);
             result.metadata = converter.Convert();
         }

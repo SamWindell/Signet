@@ -5,7 +5,7 @@
 #include <type_traits>
 
 void NormaliseToTarget(AudioData &audio, const double target_amp) {
-    PeakGainCalculator calc;
+    PeakGainCalculator calc {};
     calc.RegisterBufferMagnitudes(audio);
     const auto gain = calc.GetGain(target_amp);
     audio.MultiplyByScalar(gain);

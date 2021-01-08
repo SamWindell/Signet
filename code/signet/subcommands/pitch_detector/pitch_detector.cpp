@@ -87,14 +87,14 @@ std::optional<double> DetectSinglePitch(const AudioData &audio) {
         REQUIRE(max_rms >= 0);
         REQUIRE(min_rms >= 0);
 
-        MessageWithNewLine("Debug", "max_rms: {}", max_rms);
-        MessageWithNewLine("Debug", "min_rms: {}", min_rms);
-        MessageWithNewLine("Debug", "num chunks: {}", chunks.size());
+        DebugWithNewLine("max_rms: {}", max_rms);
+        DebugWithNewLine("min_rms: {}", min_rms);
+        DebugWithNewLine("num chunks: {}", chunks.size());
         for (auto &chunk : chunks) {
             if ((max_rms - min_rms) == 0) continue;
             const auto rms_relative = (chunk.rms - min_rms) / (max_rms - min_rms);
 
-            MessageWithNewLine("Debug", "chunk.rms: {}", chunk.rms);
+            DebugWithNewLine("chunk.rms: {}", chunk.rms);
             REQUIRE(rms_relative >= 0);
             REQUIRE(rms_relative <= 1);
             constexpr auto multiplier_for_loudest_chunk = 1.5;

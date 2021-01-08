@@ -91,6 +91,7 @@ class PeakGainCalculator : public NormalisationGainCalculator {
     double GetLargestRegisteredMagnitude() const override { return m_max_magnitude; }
 
     double GetGain(double target_max_magnitude) const override {
+        if (!m_max_magnitude) return 0;
         return target_max_magnitude / m_max_magnitude;
     }
 

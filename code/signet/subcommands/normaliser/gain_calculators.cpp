@@ -12,7 +12,7 @@ void NormaliseToTarget(AudioData &audio, const double target_amp) {
 }
 
 void NormaliseToTarget(std::vector<double> &samples, const double target_amp) {
-    AudioData audio;
+    AudioData audio {};
     audio.interleaved_samples = std::move(samples);
     audio.num_channels = 1;
     NormaliseToTarget(audio, target_amp);

@@ -131,6 +131,10 @@ struct Metadata {
                 CEREAL_NVP(regions));
     }
 
+    bool IsEmpty() const {
+        return !(midi_mapping || timing_info || loops.size() || markers.size() || regions.size());
+    }
+
     template <typename Type>
     bool HandleStartFramesRemovedForType(std::vector<Type> &vector, size_t num_frames_removed) {
         const auto initial_size = vector.size();

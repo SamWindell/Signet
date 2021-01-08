@@ -19,7 +19,7 @@ void NormaliseToTarget(std::vector<double> &samples, const double target_amp) {
     samples = std::move(audio.interleaved_samples);
 }
 
-double GetRMS(const tcb::span<double> samples) {
+double GetRMS(const tcb::span<const double> samples) {
     if (!samples.size()) return 0;
     double result = 0;
     for (const auto s : samples) {

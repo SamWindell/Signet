@@ -108,4 +108,4 @@ class PeakGainCalculator : public NormalisationGainCalculator {
 
 void NormaliseToTarget(AudioData &audio, const double target_amp);
 void NormaliseToTarget(std::vector<double> &samples, const double target_amp);
-double GetRMS(const tcb::span<double> samples);
+double GetRMS(const tcb::span<const double> samples);

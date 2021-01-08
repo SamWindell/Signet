@@ -14,7 +14,7 @@
 #include "subcommands/filters/filters.h"
 #include "subcommands/folderiser/folderiser.h"
 #include "subcommands/gainer/gainer.h"
-#include "subcommands/metadata_printer/metadata_printer.h"
+#include "subcommands/info_printer/info_printer.h"
 #include "subcommands/normaliser/normaliser.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "subcommands/renamer/renamer.h"
@@ -35,7 +35,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<Gainer>());
     m_subcommands.push_back(std::make_unique<Highpass>());
     m_subcommands.push_back(std::make_unique<Lowpass>());
-    m_subcommands.push_back(std::make_unique<MetadataPrinter>());
+    m_subcommands.push_back(std::make_unique<SampleInfoPrinter>());
     m_subcommands.push_back(std::make_unique<Normaliser>());
     m_subcommands.push_back(std::make_unique<PitchDetector>());
     m_subcommands.push_back(std::make_unique<Renamer>());

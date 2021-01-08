@@ -2,9 +2,9 @@
 
 #include "subcommand.h"
 
-class MetadataPrinter : public Subcommand {
+class SampleInfoPrinter : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
-    std::string GetName() const override { return "MetadataPrinter"; }
+    std::string GetName() const override { return "SampleInfoPrinter"; }
 };

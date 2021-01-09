@@ -80,17 +80,17 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");
 
-    app.add_option_function<std::string>(
-           "input-files",
-           [&](const std::string &input) {
-               m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
-           },
-           R"aa(The audio files to process. This is a file, directory or glob pattern. To use multiple, separate each one with a comma. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files from the current directory.)aa")
-        ->required();
+    auto input_files_option = app.add_option_function<std::string>(
+        "input-files",
+        [&](const std::string &input) {
+            m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
+        },
+        R"aa(The audio files to process. This is a file, directory or glob pattern. To use multiple, separate each one with a comma. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files from the current directory.)aa");
 
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {
         auto s = subcommand->CreateSubcommandCLI(app);
+        s->needs(input_files_option);
         s->final_callback([&] {
             struct FileEditState {
                 int num_audio_edits, num_path_edits;

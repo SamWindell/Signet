@@ -163,11 +163,12 @@ std::string WrapText(const std::string_view text, const unsigned width, const us
     return result;
 }
 
-std::vector<std::string_view> Split(std::string_view str, const std::string_view delim) {
+std::vector<std::string_view>
+Split(std::string_view str, const std::string_view delim, bool include_empties) {
     std::vector<std::string_view> result;
     size_t pos = 0;
     while ((pos = str.find(delim)) != std::string_view::npos) {
-        if (const auto section = str.substr(0, pos); section.size()) {
+        if (const auto section = str.substr(0, pos); section.size() || include_empties) {
             result.push_back(section);
         }
         str.remove_prefix(pos + delim.size());

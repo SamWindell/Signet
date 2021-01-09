@@ -52,7 +52,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
-    app.formatter(std::make_shared<WrappedFormatter>());
+    app.formatter(std::make_shared<SignetCLIHelpFormatter>());
 
     app.add_flag_callback(
         "--undo",
@@ -63,6 +63,78 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             throw CLI::Success();
         },
         "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.");
+
+    app.add_subcommand("make-docs")->final_callback([&]() {
+        // std::string r = ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::All));
+        app.clear();
+
+        std::ofstream os("doc.md");
+
+        auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
+            for (auto l : Split(t, "\n", true)) {
+                const std::string_view headings[] {
+                    "`Usage:`", "`Description:`", "`Options:`", "`Subcommands:`", "`Positionals:`",
+                    "Usage:",   "Description:",   "Options:",   "Subcommands:",   "Positionals:"};
+
+                if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
+                    break;
+                }
+
+                bool remove_grave_accent = false;
+                for (const auto &h : headings) {
+                    if (h == l) {
+                        os << "#### ";
+                        remove_grave_accent = true;
+                    } else if (EndsWith(l, h)) {
+                        os << "##### ";
+                        remove_grave_accent = true;
+                    }
+                }
+
+                while (l.size() && l.front() == ' ') {
+                    l.remove_prefix(1);
+                }
+
+                std::string str {l};
+                if (remove_grave_accent) {
+                    for (auto it = str.begin(); it != str.end();) {
+                        if (*it == '`') {
+                            it = str.erase(it);
+                        } else {
+                            ++it;
+                        }
+                    }
+                    l = str;
+                }
+                Replace(str, "``", "");
+                if (StartsWith(str, "<") && EndsWith(str, ">")) {
+                    os << "`" << str << "`\n";
+                } else {
+                    os << str << '\n';
+                }
+            }
+        };
+
+        os << "## Usage\n";
+        FormatHelpTextToStream(ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::Normal),
+                                                        ProcessFormatTextMode::MarkdownCode),
+                               true);
+
+        os << "## Subcommands Usage\n";
+        for (auto s : app.get_subcommands({})) {
+            auto name = s->get_name();
+            os << fmt::format("- [{}](#{})\n", name, name);
+        }
+
+        for (auto s : app.get_subcommands({})) {
+            os << "### " << s->get_name() << "\n";
+            std::string r = ProcessFormattedHelpText(s->help("", CLI::AppFormatMode::All),
+                                                     ProcessFormatTextMode::MarkdownCode);
+            FormatHelpTextToStream(r, false);
+        }
+
+        throw CLI::Success();
+    });
 
     app.add_flag_callback(
         "--clear-backup",
@@ -129,9 +201,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             std::cout << "ERROR:\n";
             return app.exit(e);
         } else {
-            std::stringstream ss;
-            const auto result = app.exit(e, ss);
-            PrintSignetCLI(ss.str());
+            std::stringstream help_text_stream;
+            const auto result = app.exit(e, help_text_stream);
+            std::cout << ProcessFormattedHelpText(help_text_stream.str());
             return result;
         }
     }

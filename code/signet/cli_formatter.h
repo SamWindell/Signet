@@ -1,22 +1,26 @@
 #pragma once
 #include "CLI11.hpp"
+#include "fmt/color.h"
 #include "rang.hpp"
 
+// We put these ascii patterns into the formatted text. At the end we can parse the whole block of formatted
+// text and remove these patterns for something meaningful (ANSI escape sequences for terminal colours, for
+// example).
 static constexpr auto fmt_divider = '\033';
-
 static constexpr char fmt_bold[] = {fmt_divider, '\001', '\0'};
 static constexpr char fmt_yellow[] = {fmt_divider, '\002', '\0'};
 static constexpr char fmt_cyan[] = {fmt_divider, '\003', '\0'};
 static constexpr char fmt_green[] = {fmt_divider, '\004', '\0'};
 
-class WrappedFormatter : public CLI::Formatter {
+class SignetCLIHelpFormatter : public CLI::Formatter {
   public:
     static constexpr int wrap_size = 75;
 
     inline std::string make_usage(const CLI::App *app, std::string name) const override {
         std::stringstream out;
 
-        out << fmt_bold << get_label("Usage") << ":\n" << fmt_divider << (name.empty() ? "" : "  ") << name;
+        out << fmt_bold << get_label("Usage") << ":" << fmt_divider << "\n"
+            << (name.empty() ? "" : "  ") << name;
 
         std::vector<std::string> groups = app->get_groups();
 
@@ -63,7 +67,7 @@ class WrappedFormatter : public CLI::Formatter {
     make_group(std::string group, bool is_positional, std::vector<const CLI::Option *> opts) const override {
         std::stringstream out;
 
-        out << fmt_bold << "\n" << group << ":\n" << fmt_divider;
+        out << "\n" << fmt_bold << group << ":" << fmt_divider << "\n";
         for (const auto opt : opts) {
             out << make_option(opt, is_positional);
         }
@@ -96,7 +100,7 @@ class WrappedFormatter : public CLI::Formatter {
 
         // For each group, filter out and print subcommands
         for (const std::string &group : subcmd_groups_seen) {
-            out << fmt_bold << "\n" << group << ":\n" << fmt_divider;
+            out << fmt::format("\n{}{}:{}\n", fmt_bold, group, fmt_divider);
             auto subcommands_group = app->get_subcommands([&group](const CLI::App *sub_app) {
                 return CLI::detail::to_lower(sub_app->get_group()) == CLI::detail::to_lower(group);
             });
@@ -117,7 +121,7 @@ class WrappedFormatter : public CLI::Formatter {
     std::string make_subcommand(const CLI::App *sub) const override {
         std::stringstream out;
         out << std::setw(static_cast<int>(2)) << "";
-        out << fmt_yellow + sub->get_name() + "\n" + fmt_divider;
+        out << fmt_yellow + sub->get_name() + fmt_divider + "\n";
 
         const auto desc = WrapText(sub->get_description(), wrap_size - 4);
         out << std::setw(static_cast<int>(4)) << "";
@@ -137,7 +141,7 @@ class WrappedFormatter : public CLI::Formatter {
         out << std::setw(static_cast<int>(2)) << "";
         out << (is_positional ? fmt_cyan : fmt_green);
         out << make_option_name(opt, is_positional) + make_option_opts(opt);
-        out << "\033\n";
+        out << fmt_divider << "\n";
 
         const auto desc = WrapText(make_option_desc(opt), wrap_size - 4);
         out << std::setw(static_cast<int>(4)) << "";
@@ -176,7 +180,7 @@ class WrappedFormatter : public CLI::Formatter {
         } else if (min_options > 0) {
             desc += " \n[At least " + std::to_string(min_options) + " of the following options are required]";
         }
-        std::string result = fmt_bold + std::string("Description:\n  ") + fmt_divider;
+        std::string result = fmt_bold + std::string("Description:") + fmt_divider + std::string("\n  ");
         auto body = (!desc.empty()) ? WrapText(desc, wrap_size - 2, 2) + "\n\n" : std::string {};
         return result + body;
     }
@@ -206,33 +210,41 @@ class WrappedFormatter : public CLI::Formatter {
 
 static void PrintSignetHeading() {
     std::cout << rang::style::bold << "Signet\n" << rang::style::reset;
-    std::array<char, WrappedFormatter::wrap_size> divider {};
+    std::array<char, SignetCLIHelpFormatter::wrap_size> divider {};
     std::memset(divider.data(), '=', divider.size() - 1);
     std::cout << rang::fg::gray << divider.data() << "\n\n" << rang::fg::reset;
 }
 
-static void PrintSignetCLI(const std::string &str) {
-    auto sections = Split(str, "\033");
+enum class ProcessFormatTextMode { AnsiColours, MarkdownCode };
+
+static std::string ProcessFormattedHelpText(const std::string &str,
+                                            ProcessFormatTextMode mode = ProcessFormatTextMode::AnsiColours) {
+    std::string result;
+    auto sections = Split(str, {&fmt_divider, 1});
     for (auto s : sections) {
         char c = s[0];
         bool keep_char = false;
-        switch (c) {
-            case fmt_bold[1]: std::cout << rang::style::bold; break;
-            case fmt_yellow[1]: std::cout << rang::style::bold << rang::fg::yellow; break;
-            case fmt_cyan[1]: std::cout << rang::style::bold << rang::fg::cyan; break;
-            case fmt_green[1]: std::cout << rang::style::bold << rang::fg::green; break;
-            default: keep_char = true; break;
-        }
-        if (!keep_char) s.remove_prefix(1);
 
-        std::cout << s;
-
-        switch (c) {
-            case fmt_bold[1]: std::cout << rang::style::reset; break;
-            case fmt_yellow[1]: std::cout << rang::style::reset << rang::fg::reset; break;
-            case fmt_cyan[1]: std::cout << rang::style::reset << rang::fg::reset; break;
-            case fmt_green[1]: std::cout << rang::style::reset << rang::fg::reset; break;
-            default: break;
+        if (mode == ProcessFormatTextMode::AnsiColours) {
+            fmt::text_style style;
+            switch (c) {
+                case fmt_bold[1]: style = fmt::emphasis::bold; break;
+                case fmt_yellow[1]: style = fg(fmt::color::yellow) | fmt::emphasis::bold; break;
+                case fmt_cyan[1]: style = fg(fmt::color::cyan) | fmt::emphasis::bold; break;
+                case fmt_green[1]: style = fg(fmt::color::green) | fmt::emphasis::bold; break;
+                default: keep_char = true; break;
+            }
+            if (!keep_char) s.remove_prefix(1);
+            result += fmt::format(style, "{}", s);
+        } else if (mode == ProcessFormatTextMode::MarkdownCode) {
+            bool is_styled = c == fmt_bold[1] || c == fmt_yellow[1] || c == fmt_cyan[1] || c == fmt_green[1];
+            if (is_styled) {
+                s.remove_prefix(1);
+                if (s.size()) result += fmt::format("`{}`", s);
+            } else {
+                result += s;
+            }
         }
     }
+    return result;
 }

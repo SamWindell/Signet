@@ -7,10 +7,10 @@ was primarily designed for people who make sample libraries, but its
 features can be useful for any type of bulk audio processing.
 
 #### Usage:
-signet `[OPTIONS] [input-files] SUBCOMMAND`
+signet `[OPTIONS] [input-files...] SUBCOMMAND`
 
 #### Positionals:
-`input-files TEXT`
+`input-files TEXT ...`
 The audio files to process. This is a file, directory or glob pattern.
 To use multiple, separate each one with a comma. You can exclude a
 pattern by beginning it with a dash. e.g. "-*.wav" would exclude all
@@ -70,7 +70,12 @@ Creates a markdown file containing the full CLI - based on running
 signet --help.
 
 #### Usage:
-make-docs `[OPTIONS]`
+make-docs `[OPTIONS] output-file`
+
+#### Positionals:
+`output-file TEXT REQUIRED`
+The filepath for the generated markdown file.
+
 
 #### Options:
 `-h,--help`

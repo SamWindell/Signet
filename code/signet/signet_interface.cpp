@@ -53,6 +53,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all subcommands");
     app.formatter(std::make_shared<SignetCLIHelpFormatter>());
+    app.name("signet");
 
     app.add_flag_callback(
         "--undo",
@@ -64,14 +65,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.");
 
-    app.add_subcommand("make-docs",
-                       "Creates a markdown file containing the full CLI - based on running signet --help.")
-        ->final_callback([&]() {
-            // std::string r = ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::All));
+    {
+        fs::path make_docs_filepath {};
+        auto make_docs = app.add_subcommand(
+            "make-docs", "Creates a markdown file containing the full CLI - based on running signet --help.");
+        make_docs
+            ->add_option("output-file", make_docs_filepath, "The filepath for the generated markdown file.")
+            ->required();
+        make_docs->final_callback([&]() {
+            // Clear anything that was parsed, we want to fetch all of the subcommands, not just ones that
+            // were parsed.
             app.clear();
 
-            std::ofstream os("doc.md");
-
+            std::ofstream os(make_docs_filepath);
             auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
                 for (auto l : Split(t, "\n", true)) {
                     const std::string_view headings[] {
@@ -137,6 +143,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
             throw CLI::Success();
         });
+    }
 
     app.add_flag_callback(
         "--clear-backup",

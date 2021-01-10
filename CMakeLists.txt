@@ -135,6 +135,10 @@ if (WIN32)
         APPEND_STRING
         PROPERTY LINK_FLAGS " /MANIFESTUAC:NO")
 endif ()
+add_custom_command(
+    TARGET signet
+    POST_BUILD
+    COMMAND signet make-docs ${PROJECT_SOURCE_DIR}/docs/usage.md)
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)

@@ -24,6 +24,10 @@ Adds a fade-in of 1 second to filename.wav
 
 ```signet filename.wav fade in 1s```
 
+Auto-tunes all the audio files in the directory 'untuned-files' to their nearest musical pitch
+
+```signet untuned-files auto-tune```
+
 Normalises (to a common gain) all .wav files in the current directory to -3dB
 
 ```signet *.wav norm -3```

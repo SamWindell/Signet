@@ -59,6 +59,7 @@ add_library(
     code/signet/subcommands/folderiser/folderiser.cpp
     code/signet/subcommands/gainer/gainer.cpp
     code/signet/subcommands/info_printer/info_printer.cpp
+    code/signet/subcommands/mover/mover.cpp
     code/signet/subcommands/normaliser/gain_calculators.cpp
     code/signet/subcommands/normaliser/normaliser.cpp
     code/signet/subcommands/pitch_detector/pitch_detector.cpp

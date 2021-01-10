@@ -11,10 +11,14 @@ signet `[OPTIONS] [input-files...] SUBCOMMAND`
 
 #### Positionals:
 `input-files TEXT ...`
-The audio files to process. This is a file, directory or glob pattern.
-To use multiple, separate each one with a comma. You can exclude a
-pattern by beginning it with a dash. e.g. "-*.wav" would exclude all
-.wav files from the current directory.
+The audio files to process. You can specify more than one of these.
+Each input-file you specify has to be a file, directory or a glob
+pattern. You can exclude a pattern by beginning it with a dash. e.g.
+"-\*.wav" would exclude all .wav files that are in the current
+directory. If you specify a directory, all files within it will be
+considered input-files, but subdirectories will not be searched. You
+can use the --recursive flag to make signet search all subdirectories
+too.
 
 
 #### Options:
@@ -56,6 +60,7 @@ When the input is a directory, scan for files in it recursively
 - [highpass](#highpass)
 - [lowpass](#lowpass)
 - [print-info](#print-info)
+- [move](#move)
 - [norm](#norm)
 - [detect-pitch](#detect-pitch)
 - [rename](#rename)
@@ -434,6 +439,26 @@ the embedded metadata, sample-rate and RMS.
 
 #### Usage:
 print-info `[OPTIONS]`
+
+#### Options:
+`-h,--help`
+Print this help message and exit
+
+`--help-all`
+Print help message for all subcommands
+
+
+## move
+#### Description:
+Moves all input files to a given folder.
+
+#### Usage:
+move `[OPTIONS] [destination-folder]`
+
+#### Positionals:
+`destination-folder TEXT`
+The folder to put all of the input files in.
+
 
 #### Options:
 `-h,--help`

@@ -65,6 +65,7 @@ When the input is a directory, scan for files in it recursively
 - [detect-pitch](#detect-pitch)
 - [rename](#rename)
 - [sample-blender](#sample-blender)
+- [seamless-loop](#seamless-loop)
 - [silence-remove](#silence-remove)
 - [trim](#trim)
 - [tune](#tune)
@@ -703,6 +704,28 @@ contain either the substitution variable <root-num> or <root-note>
 which will be replaced by the root note of the generated file.
 <root-num> is replaced by the MIDI note number, and <root-name> is
 replaced by the note name, such as C3.
+
+
+#### Options:
+`-h,--help`
+Print this help message and exit
+
+`--help-all`
+Print help message for all subcommands
+
+
+## seamless-loop
+#### Description:
+Turns the files(s) into seamless loops by crossfading a given percentage
+of audio from the start of the file to the end of the file. Due to this
+overlap, the resulting file is shorter.
+
+#### Usage:
+seamless-loop `[OPTIONS] [crossfade-percent]`
+
+#### Positionals:
+`crossfade-percent FLOAT:INT in [0 - 100]`
+The size of the crossfade region as a percent of the whole file.
 
 
 #### Options:

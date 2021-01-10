@@ -12,6 +12,9 @@ class Fader final : public Subcommand {
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
     void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
 
+    static void
+    PerformFade(AudioData &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape);
+
   private:
     Shape m_fade_out_shape = Shape::Sine;
     Shape m_fade_in_shape = Shape::Sine;

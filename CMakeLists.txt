@@ -68,6 +68,7 @@ add_library(
     code/signet/subcommands/renamer/rename_substitutions.cpp
     code/signet/subcommands/renamer/note_to_midi.cpp
     code/signet/subcommands/sample_blender/sample_blender.cpp
+    code/signet/subcommands/seamless_looper/seamless_looper.cpp
     code/signet/subcommands/silence_remover/silence_remover.cpp
     code/signet/subcommands/trimmer/trimmer.cpp
     code/signet/subcommands/tuner/tuner.cpp

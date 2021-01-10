@@ -82,8 +82,10 @@ static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 siz
     return 0;
 }
 
-static void
-PerformFade(AudioData &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape) {
+void Fader::PerformFade(AudioData &audio,
+                        const s64 silent_frame,
+                        const s64 fullvol_frame,
+                        const Fader::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
     const auto size = std::abs(fullvol_frame - silent_frame);
 
@@ -133,7 +135,7 @@ TEST_CASE("[Fader]") {
             for (const auto &shape : magic_enum::enum_values<Fader::Shape>()) {
                 CAPTURE(silent_frame);
                 CAPTURE(fullvol_frame);
-                PerformFade(buf, silent_frame, fullvol_frame, shape);
+                Fader::PerformFade(buf, silent_frame, fullvol_frame, shape);
                 REQUIRE(buf.interleaved_samples[silent_frame] == 0.0);
                 REQUIRE(buf.interleaved_samples[fullvol_frame] == 1.0);
                 for (s64 i = std::min(silent_frame, fullvol_frame) + 1;

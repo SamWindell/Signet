@@ -20,6 +20,7 @@
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "subcommands/renamer/renamer.h"
 #include "subcommands/sample_blender/sample_blender.h"
+#include "subcommands/seamless_looper/seamless_looper.h"
 #include "subcommands/silence_remover/silence_remover.h"
 #include "subcommands/trimmer/trimmer.h"
 #include "subcommands/tuner/tuner.h"
@@ -42,6 +43,7 @@ SignetInterface::SignetInterface() {
     m_subcommands.push_back(std::make_unique<PitchDetector>());
     m_subcommands.push_back(std::make_unique<Renamer>());
     m_subcommands.push_back(std::make_unique<SampleBlender>());
+    m_subcommands.push_back(std::make_unique<SeamlessLooper>());
     m_subcommands.push_back(std::make_unique<SilenceRemover>());
     m_subcommands.push_back(std::make_unique<Trimmer>());
     m_subcommands.push_back(std::make_unique<Tuner>());

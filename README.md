@@ -53,9 +53,13 @@ Convert all audio files in the folder "my_folder" (not recursively) to a sample 
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
 
 ```signet --help```
+
 ```signet --help-all```
+
 ```signet auto-tune --help```
+
 ```signet fade --help-all```
+
 ```signet convert file-format --help```
 
 ### Input files

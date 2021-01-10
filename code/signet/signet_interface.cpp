@@ -166,7 +166,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         [&](const std::vector<std::string> &input) {
             m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
         },
-        R"aa(The audio files to process. This is a file, directory or glob pattern. To use multiple, separate each one with a comma. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files from the current directory.)aa");
+        R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
 
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {

@@ -18,7 +18,7 @@ This command can be used to bulk rename a set of files. It also has the ability 
 
 All options for this subcommand relate to just the name of the file - not the folder or the file extension.
 
-Any text added via this command can contain special substitution variables; these will be replaced by values specified in this list: )aa" +
+Any text added via this command can contain special substitution variables; these will be replaced by values specified in this list:)aa" +
                                           RenameSubstitution::GetFullInfo());
     renamer->require_subcommand();
 

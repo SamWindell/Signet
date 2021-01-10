@@ -159,7 +159,7 @@ CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
                 CLISetArg("MIDI low note number", args[0], 0, m_low_note_number, m_low_note_regex_pattern);
                 CLISetArg("MIDI high note number", args[1], 0, m_high_note_number, m_high_note_regex_pattern);
             },
-            R"aa(This value is either 'auto-map' or 2 separate values to set the low and high note range. 
+            R"aa(This value is either 'auto-map' or 2 separate values to set the low and high note range.
 
 EXAMPLES
 
@@ -173,12 +173,12 @@ Sets the low note to MIDI note 40 and the high note to 62.
 Leaves the low note unchanged (if no value exists already it will be set to 0), and sets the high note to 127.
 
 'note-range "sample_(\d+)_\d+_\d+" "sample_\d+_\d+_(\d+)"'
-Sets the low value from the name of the file by pattern-matching the given regex pattern to it, and taking the value of the given capture group (with is the bit inside the brackets). The high value is set from the filename too, but a different regex pattern is matched against. 
+Sets the low value from the name of the file by pattern-matching the given regex pattern to it, and taking the value of the given capture group (with is the bit inside the brackets). The high value is set from the filename too, but a different regex pattern is matched against.
 
 
 DESCRIPTION
 
-If it's auto-map, then the low and high note will be set by assessing the root note of every file in the same folder and calculating an appropriate value. 
+If it's auto-map, then the low and high note will be set by assessing the root note of every file in the same folder and calculating an appropriate value.
 
 If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. The first of these 2 arguments represents the low note, and the second represents the high note. The 3 possible formats are as follows: (1) a MIDI note number, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 0 for the low note or 127 for the high note.)aa")
         ->expected(1, 2)
@@ -196,7 +196,7 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
                 CLISetArg("Velocity low number", args[0], 1, m_low_velo_number, m_low_velo_regex_pattern);
                 CLISetArg("Velocity high number", args[1], 1, m_high_velo_number, m_high_velo_regex_pattern);
             },
-            R"aa(2 values to represent the low and high velocity mapping. 
+            R"aa(2 values to represent the low and high velocity mapping.
 
 EXAMPLES
 

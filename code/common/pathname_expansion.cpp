@@ -167,32 +167,31 @@ void FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
 std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::vector<std::string> &parts,
                                                            bool recursive_directory_search,
                                                            std::string *error) {
-    std::vector<std::string> include_parts;
-    std::vector<std::string> exclude_paths;
+    std::vector<std::string> include_parts {};
+    std::vector<std::string> exclude_paths {};
     GetAllCommaDelimitedSections(parts, include_parts, exclude_paths);
 
     FilePathSet set {};
     for (const auto &include_part : include_parts) {
-        if (include_part.find('*') != std::string_view::npos) {
+        if (include_part.find('*') != std::string::npos) {
             MessageWithNewLine("Signet", "Searching for audio files using the pattern {}", include_part);
             const auto matching_paths = GetAudioFilePathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
             set.m_num_wildcard_parts++;
-        } else if (fs::is_directory(std::string(include_part))) {
+        } else if (fs::is_directory(include_part)) {
             MessageWithNewLine("Signet", "Searching for audio files {} in the directory {}",
                                recursive_directory_search ? "recursively" : "non-recursively", include_part);
             const auto matching_paths =
                 GetAudioFilePathsInDirectory(include_part, recursive_directory_search);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
             set.m_num_directory_parts++;
-        } else if (fs::is_regular_file(std::string(include_part))) {
+        } else if (fs::is_regular_file(include_part)) {
             fs::path path {include_part};
             set.AddNonExcludedPaths({&path, 1}, exclude_paths);
             set.m_num_file_parts++;
         } else {
             if (error) {
-                *error = "The input part " + std::string(include_part) +
-                         " is neither a file, directory, or pattern";
+                *error = "The input part " + include_part + " is neither a file, directory, or pattern";
             }
             return {};
         }
@@ -246,7 +245,7 @@ TEST_CASE("Pathname Expansion") {
     CreateFile("sandbox/processed/file.wav");
     CreateFile("sandbox/processed/file.flac");
 
-    const auto CheckMatches = [](const std::vector<std::string> parts,
+    const auto CheckMatches = [](const std::vector<std::string> &parts,
                                  const std::initializer_list<const std::string> expected_matches) {
         std::string parse_error;
         const auto matches = FilePathSet::CreateFromPatterns(parts, false, &parse_error);

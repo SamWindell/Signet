@@ -117,6 +117,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                         l = str;
                     }
                     Replace(str, "``", "");
+                    Replace(str, "*", "\\*");
                     if (StartsWith(str, "<") && EndsWith(str, ">")) {
                         os << "`" << str << "`\n";
                     } else {

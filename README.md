@@ -13,7 +13,6 @@ Signet is not exclusively useful for sample library development though. The edit
 
 ## Limitations
 - Currently only supports reading and writing WAV and FLAC files.
-- Any metadata in the file is discarded - such as loop markers in a WAV file.
 
 ## Building
 To get Signet, you currently have to build it from the source code. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.

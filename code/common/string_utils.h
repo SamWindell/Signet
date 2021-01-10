@@ -14,7 +14,7 @@ bool Contains(std::string_view haystack, std::string_view needle);
 bool WildcardMatch(std::string_view pattern, std::string_view name);
 
 bool RegexReplace(std::string &str, std::string pattern, std::string replacement);
-bool Replace(std::string &str, const std::string &a, const std::string &b);
+bool Replace(std::string &str, std::string_view a, std::string_view b);
 bool Replace(std::string &str, char a, char b);
 bool Remove(std::string &str, char c);
 

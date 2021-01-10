@@ -30,11 +30,12 @@ bool Replace(std::string &str, const char a, const char b) {
     return changed;
 }
 
-bool Replace(std::string &str, const std::string &a, const std::string &b) {
+bool Replace(std::string &str, std::string_view a, std::string_view b) {
     bool replaced = false;
-    usize pos;
-    while ((pos = str.find(a.data(), 0, a.size())) != std::string::npos) {
+    usize pos = 0;
+    while ((pos = str.find(a.data(), pos, a.size())) != std::string::npos) {
         str.replace(pos, a.size(), b.data(), b.size());
+        pos += b.size();
         replaced = true;
     }
     return replaced;
@@ -207,6 +208,10 @@ TEST_CASE("String Utils") {
         s = "file_c-1_C4.wav";
         REQUIRE(Replace(s, "c-1", "0"));
         REQUIRE(s == "file_0_C4.wav");
+
+        s = "foo * * *";
+        REQUIRE(Replace(s, "*", "\\*"));
+        REQUIRE(s == "foo \\* \\* \\*");
     }
 
     {

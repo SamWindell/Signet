@@ -27,7 +27,7 @@ void ForEachFileInDirectory(const std::string_view directory,
     }
 }
 
-const bool IsPathExcluded(const fs::path &path, const std::vector<std::string_view> &exclude_patterns) {
+const bool IsPathExcluded(const fs::path &path, const std::vector<std::string> &exclude_patterns) {
     for (const auto &exclude : exclude_patterns) {
         if (WildcardMatch(exclude, path.generic_string())) {
             return true;
@@ -132,9 +132,9 @@ static std::vector<fs::path> GetAudioFilePathsInDirectory(const std::string_view
     return result;
 }
 
-static void GetAllCommaDelimitedSections(std::string_view s,
-                                         std::vector<std::string_view> &include_parts,
-                                         std::vector<std::string_view> &exclude_parts) {
+static void GetAllCommaDelimitedSections(const std::vector<std::string> parts,
+                                         std::vector<std::string> &include_parts,
+                                         std::vector<std::string> &exclude_parts) {
     const auto RegisterSection = [&](std::string_view section) {
         if (section.size() >= 2 && (section[0] == '"' || section[0] == '\'') &&
             (section.back() == '"' || section.back() == '\'')) {
@@ -144,22 +144,19 @@ static void GetAllCommaDelimitedSections(std::string_view s,
 
         if (section[0] == '-') {
             section.remove_prefix(1);
-            exclude_parts.push_back(section);
+            exclude_parts.push_back(std::string(section));
         } else {
-            include_parts.push_back(section);
+            include_parts.push_back(std::string(section));
         }
     };
 
-    size_t pos = 0;
-    while ((pos = s.find(',')) != std::string::npos) {
-        RegisterSection(s.substr(0, pos));
-        s.remove_prefix(pos + 1);
+    for (const auto &p : parts) {
+        RegisterSection(p);
     }
-    RegisterSection(s);
 }
 
 void FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
-                                      const std::vector<std::string_view> &exclude_patterns) {
+                                      const std::vector<std::string> &exclude_patterns) {
     for (const auto &path : paths) {
         if (!IsPathExcluded(path, exclude_patterns)) {
             Add(path);
@@ -167,12 +164,12 @@ void FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
     }
 }
 
-std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::string_view comma_delimed_parts,
+std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::vector<std::string> &parts,
                                                            bool recursive_directory_search,
                                                            std::string *error) {
-    std::vector<std::string_view> include_parts;
-    std::vector<std::string_view> exclude_paths;
-    GetAllCommaDelimitedSections(comma_delimed_parts, include_parts, exclude_paths);
+    std::vector<std::string> include_parts;
+    std::vector<std::string> exclude_paths;
+    GetAllCommaDelimitedSections(parts, include_parts, exclude_paths);
 
     FilePathSet set {};
     for (const auto &include_part : include_parts) {
@@ -249,12 +246,12 @@ TEST_CASE("Pathname Expansion") {
     CreateFile("sandbox/processed/file.wav");
     CreateFile("sandbox/processed/file.flac");
 
-    const auto CheckMatches = [](const std::string pattern,
+    const auto CheckMatches = [](const std::vector<std::string> parts,
                                  const std::initializer_list<const std::string> expected_matches) {
         std::string parse_error;
-        const auto matches = FilePathSet::CreateFromPatterns(pattern, false, &parse_error);
+        const auto matches = FilePathSet::CreateFromPatterns(parts, false, &parse_error);
         CAPTURE(parse_error);
-        CAPTURE(pattern);
+        CAPTURE(parts);
         REQUIRE(matches);
 
         std::vector<std::string> canonical_matches;
@@ -276,38 +273,15 @@ TEST_CASE("Pathname Expansion") {
     };
 
     SUBCASE("all wavs in a folder") {
-        CheckMatches("sandbox/*.wav",
+        CheckMatches({"sandbox/*.wav"},
                      {"sandbox/file1.wav", "sandbox/file2.wav", "sandbox/file3.wav", "sandbox/foo.wav"});
     }
     SUBCASE("all wavs in a folder recursively") {
-        CheckMatches("sandbox/**.wav", {
-                                           "sandbox/file1.wav",
-                                           "sandbox/file2.wav",
-                                           "sandbox/file3.wav",
-                                           "sandbox/foo.wav",
-                                           "sandbox/unprocessed-piano/hello.wav",
-                                           "sandbox/unprocessed-piano/there.wav",
-                                           "sandbox/unprocessed-keys/copies/session1/file.wav",
-                                           "sandbox/unprocessed-piano/copies/session1/file.wav",
-                                           "sandbox/processed/file.wav",
-                                       });
-    }
-    SUBCASE("two non recursive wildcards") {
-        CheckMatches("sandbox/*/*.wav",
-                     {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav",
-                      "sandbox/processed/file.wav"});
-    }
-    SUBCASE("two complicated non recursive wildcards") {
-        CheckMatches("sandbox/unprocessed-*/*.wav",
-                     {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav"});
-    }
-    SUBCASE("three complicated non recursive wildcards") {
-        CheckMatches("sandbox/unprocessed-*/*/session*/*.wav",
-                     {"sandbox/unprocessed-piano/copies/session1/file.wav",
-                      "sandbox/unprocessed-keys/copies/session1/file.wav"});
-    }
-    SUBCASE("recursive in the middle") {
-        CheckMatches("sandbox/**/*.wav", {
+        CheckMatches({"sandbox/**.wav"}, {
+                                             "sandbox/file1.wav",
+                                             "sandbox/file2.wav",
+                                             "sandbox/file3.wav",
+                                             "sandbox/foo.wav",
                                              "sandbox/unprocessed-piano/hello.wav",
                                              "sandbox/unprocessed-piano/there.wav",
                                              "sandbox/unprocessed-keys/copies/session1/file.wav",
@@ -315,15 +289,38 @@ TEST_CASE("Pathname Expansion") {
                                              "sandbox/processed/file.wav",
                                          });
     }
+    SUBCASE("two non recursive wildcards") {
+        CheckMatches({"sandbox/*/*.wav"},
+                     {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav",
+                      "sandbox/processed/file.wav"});
+    }
+    SUBCASE("two complicated non recursive wildcards") {
+        CheckMatches({"sandbox/unprocessed-*/*.wav"},
+                     {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav"});
+    }
+    SUBCASE("three complicated non recursive wildcards") {
+        CheckMatches({"sandbox/unprocessed-*/*/session*/*.wav"},
+                     {"sandbox/unprocessed-piano/copies/session1/file.wav",
+                      "sandbox/unprocessed-keys/copies/session1/file.wav"});
+    }
+    SUBCASE("recursive in the middle") {
+        CheckMatches({"sandbox/**/*.wav"}, {
+                                               "sandbox/unprocessed-piano/hello.wav",
+                                               "sandbox/unprocessed-piano/there.wav",
+                                               "sandbox/unprocessed-keys/copies/session1/file.wav",
+                                               "sandbox/unprocessed-piano/copies/session1/file.wav",
+                                               "sandbox/processed/file.wav",
+                                           });
+    }
     SUBCASE("two recursive in the middle") {
-        CheckMatches("sandbox/**/**/*.wav", {
-                                                "sandbox/unprocessed-keys/copies/session1/file.wav",
-                                                "sandbox/unprocessed-piano/copies/session1/file.wav",
-                                            });
+        CheckMatches({"sandbox/**/**/*.wav"}, {
+                                                  "sandbox/unprocessed-keys/copies/session1/file.wav",
+                                                  "sandbox/unprocessed-piano/copies/session1/file.wav",
+                                              });
     }
 
     SUBCASE("canonical two recursive in the middle") {
-        CheckMatches(fs::canonical("sandbox").generic_string() + "/**/**/*.wav",
+        CheckMatches({fs::canonical("sandbox").generic_string() + "/**/**/*.wav"},
                      {
                          "sandbox/unprocessed-keys/copies/session1/file.wav",
                          "sandbox/unprocessed-piano/copies/session1/file.wav",
@@ -331,7 +328,7 @@ TEST_CASE("Pathname Expansion") {
     }
 
     SUBCASE("all wavs in a folder rescursively with absolute path") {
-        CheckMatches(BUILD_DIRECTORY "/sandbox/**.wav",
+        CheckMatches({BUILD_DIRECTORY "/sandbox/**.wav"},
                      {
                          "sandbox/file1.wav",
                          "sandbox/file2.wav",
@@ -345,24 +342,26 @@ TEST_CASE("Pathname Expansion") {
                      });
     }
     SUBCASE("all files in a folder recursively excluding wavs") {
-        CheckMatches("sandbox/**.*,-sandbox/**.wav", {
-                                                         "sandbox/unprocessed-piano/copies/foo/file.flac",
-                                                         "sandbox/processed/file.flac",
-                                                     });
+        CheckMatches({"sandbox/**.*", "-sandbox/**.wav"},
+                     {
+                         "sandbox/unprocessed-piano/copies/foo/file.flac",
+                         "sandbox/processed/file.flac",
+                     });
     }
     SUBCASE("all files in a folder recursively excluding wavs only in the top dir") {
-        CheckMatches("sandbox/**.*,-sandbox/*.wav", {
-                                                        "sandbox/unprocessed-piano/copies/foo/file.flac",
-                                                        "sandbox/processed/file.flac",
-                                                        "sandbox/unprocessed-piano/hello.wav",
-                                                        "sandbox/unprocessed-piano/there.wav",
-                                                        "sandbox/unprocessed-keys/copies/session1/file.wav",
-                                                        "sandbox/unprocessed-piano/copies/session1/file.wav",
-                                                        "sandbox/processed/file.wav",
-                                                    });
+        CheckMatches({"sandbox/**.*", "-sandbox/*.wav"},
+                     {
+                         "sandbox/unprocessed-piano/copies/foo/file.flac",
+                         "sandbox/processed/file.flac",
+                         "sandbox/unprocessed-piano/hello.wav",
+                         "sandbox/unprocessed-piano/there.wav",
+                         "sandbox/unprocessed-keys/copies/session1/file.wav",
+                         "sandbox/unprocessed-piano/copies/session1/file.wav",
+                         "sandbox/processed/file.wav",
+                     });
     }
     SUBCASE("two non recursive wildcards excluding 1 dir") {
-        CheckMatches("sandbox/*/*.wav,-sandbox/processed/*",
+        CheckMatches({"sandbox/*/*.wav", "-sandbox/processed/*"},
                      {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav"});
     }
 }

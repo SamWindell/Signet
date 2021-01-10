@@ -154,9 +154,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");
 
-    auto input_files_option = app.add_option_function<std::string>(
+    auto input_files_option = app.add_option_function<std::vector<std::string>>(
         "input-files",
-        [&](const std::string &input) {
+        [&](const std::vector<std::string> &input) {
             m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
         },
         R"aa(The audio files to process. This is a file, directory or glob pattern. To use multiple, separate each one with a comma. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files from the current directory.)aa");

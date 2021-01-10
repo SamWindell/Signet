@@ -30,11 +30,11 @@ Normalises (to a common gain) all .wav files in the current directory to -3dB
 
 Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
 
-```signet filename1.wav,filename2.flac norm -1```
+```signet filename1.wav filename2.flac norm -1```
 
 Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav.
 
-```signet "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms```
+```signet "sampler/session*/**.wav" "-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms```
 
 Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
 
@@ -62,7 +62,7 @@ Care has been taken to ensure the help text is comprehensive and understandable.
 ```signet convert file-format --help```
 
 ### Input files
-You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. Each comma separated section can be one of 3 types:
+You must first specify the input file(s) criteria. Can can specify more than one of these input files criteria. Each one must be one of these 3 types:
 
 - A single file such as `file.wav`.
 - A directory such as `sounds/unprocessed`. In this case Signet will search for all audio files in that directory and process them all. You can specify the option `--recursive` to make this also search subfolders.

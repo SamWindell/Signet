@@ -6,18 +6,21 @@
 #include "backup.h"
 #include "common.h"
 
-InputAudioFiles::InputAudioFiles(const std::string &pathnames_comma_delimed,
+InputAudioFiles::InputAudioFiles(const std::vector<std::string> &path_items,
                                  const bool recursive_directory_search) {
     std::string parse_error;
     const auto all_matched_filenames =
-        FilePathSet::CreateFromPatterns(pathnames_comma_delimed, recursive_directory_search, &parse_error);
+        FilePathSet::CreateFromPatterns(path_items, recursive_directory_search, &parse_error);
     if (!all_matched_filenames) {
         throw CLI::ValidationError("Input files", parse_error);
     }
 
     if (all_matched_filenames->Size() == 0) {
-        throw CLI::ValidationError("Input files",
-                                   "there are no files that match the pattern " + pathnames_comma_delimed);
+        std::string error {"there are no files that match the pattern "};
+        for (const auto &i : path_items) {
+            error += i + " ";
+        }
+        throw CLI::ValidationError("Input files", error);
     }
 
     m_is_single_file = all_matched_filenames->IsSingleFile();

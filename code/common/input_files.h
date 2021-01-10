@@ -8,7 +8,7 @@ class SignetBackup;
 class InputAudioFiles {
   public:
     InputAudioFiles() {}
-    InputAudioFiles(const std::string &pathnames_comma_delimed, const bool recursive_directory_search);
+    InputAudioFiles(const std::vector<std::string> &path_items, const bool recursive_directory_search);
 
     bool IsSingleFile() const { return m_is_single_file; }
     std::vector<EditTrackedAudioFile> &GetAllFiles() { return m_all_files; }

@@ -12,10 +12,10 @@
 
 class FilePathSet {
   public:
-    // Creates a FilePathSet from a comma separated list of glob patterns, filenames, or directories.
+    // Creates a FilePathSet from a vector of glob patterns, filenames, or directories.
     // Each part can start with a - to signify that the result should exclude anything that matches it.
-    // e.g. *.wav,file.flac,-foo*
-    static std::optional<FilePathSet> CreateFromPatterns(const std::string_view comma_delimed_parts,
+    // e.g. ["*.wav", "file.flac", "-foo*"]
+    static std::optional<FilePathSet> CreateFromPatterns(const std::vector<std::string> &parts,
                                                          bool recursive_directory_search,
                                                          std::string *error = nullptr);
 
@@ -33,7 +33,7 @@ class FilePathSet {
   private:
     FilePathSet() {}
     void AddNonExcludedPaths(const tcb::span<const fs::path> paths,
-                             const std::vector<std::string_view> &exclude_patterns);
+                             const std::vector<std::string> &exclude_patterns);
     void Add(const fs::path &path) { m_paths.insert(fs::canonical(path)); }
     void Add(const std::vector<fs::path> &paths) {
         for (const auto &p : paths) {

@@ -20,6 +20,31 @@ To get Signet, you currently have to build it from the source code. However, thi
 
 A C++17 compiler is required. Tested with MSVC 16.5.1 and Apple Clang 11.0.0.
 
+## Examples
+Adds a fade-in of 1 second to filename.wav
+
+```signet filename.wav fade in 1s```
+
+Normalises (to a common gain) all .wav files in the current directory to -3dB
+
+```signet *.wav norm -3```
+
+Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
+
+```signet filename1.wav,filename2.flac norm -1```
+
+Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav.
+
+```signet "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms```
+
+Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
+
+```signet one-shots/**/.* rename (.*)-a <1>-b```
+
+Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24.
+
+```signet my_folder convert sample-rate 44100 bit-depth 24```
+
 ## Usage Overview
 
 [Usage page](docs/usage.md)
@@ -27,10 +52,11 @@ A C++17 compiler is required. Tested with MSVC 16.5.1 and Apple Clang 11.0.0.
 ### Display help text
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
 
-`signet --help`
-`signet --help-all`
-`signet file.wav fade --help`
-`signet file.wav fade in --help`
+```signet --help```
+```signet --help-all```
+```signet auto-tune --help```
+```signet fade --help-all```
+```signet convert file-format --help```
 
 ### Input files
 You must first specify the input file(s). This is a single argument, but you can pass in multiple inputs by comma-separating them. Each comma separated section can be one of 3 types:
@@ -58,27 +84,3 @@ Each subcommand has its own set of arguments; these are shown by adding `--help`
 
 You can use multiple subcommands in the same call by simply specifying them one after the other. The effects of each subcommand will be applied to the file(s) in the order that they appear.
 
-## Examples
-Adds a fade-in of 1 second to filename.wav
-
-`signet filename.wav fade in 1s`
-
-Normalises (to a common gain) all .wav files in the current directory to -3dB
-
-`signet *.wav norm -3`
-
-Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
-
-`signet filename1.wav,filename2.flac norm -1`
-
-Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with -unprocessed.wav.
-
-`signet "sampler/session*/**.wav,-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms`
-
-Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
-
-`signet one-shots/**/.* rename (.*)-a <1>-b`
-
-Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24.
-
-`signet my_folder convert sample-rate 44100 bit-depth 24`

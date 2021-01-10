@@ -1,4 +1,4 @@
-## Usage
+# Usage
 #### Description:
 Signet is a command-line program designed for bulk editing audio files.
 It has commands for converting, editing, renaming and moving WAV and
@@ -7,7 +7,7 @@ was primarily designed for people who make sample libraries, but its
 features can be useful for any type of bulk audio processing.
 
 #### Usage:
-G:\work\signet\build\signet.exe `[OPTIONS] [input-files] SUBCOMMAND`
+signet `[OPTIONS] [input-files] SUBCOMMAND`
 
 #### Positionals:
 `input-files TEXT`
@@ -45,7 +45,7 @@ Disable all messages
 When the input is a directory, scan for files in it recursively
 
 
-## Subcommands
+# Subcommands Usage
 - [make-docs](#make-docs)
 - [auto-tune](#auto-tune)
 - [convert](#convert)
@@ -64,9 +64,12 @@ When the input is a directory, scan for files in it recursively
 - [trim](#trim)
 - [tune](#tune)
 - [zcross-offset](#zcross-offset)
-### make-docs
+## make-docs
 #### Description:
-##### Usage:
+Creates a markdown file containing the full CLI - based on running
+signet --help.
+
+#### Usage:
 make-docs `[OPTIONS]`
 
 #### Options:
@@ -77,7 +80,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### auto-tune
+## auto-tune
 #### Description:
 Auto-tune: tunes the file(s) to their nearest detected musical pitch.
 For example, a file with a detected pitch of 450Hz will be tuned to
@@ -94,7 +97,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### convert
+## convert
 #### Description:
 Converter: converts the file format, bit-depth or sample rate. Features
 a high quality resampling algorithm. This subcommand has subcommands; it
@@ -138,7 +141,7 @@ Change the file format.
 The output file format.
 
 
-### embed-sampler-info
+## embed-sampler-info
 #### Description:
 Sample Info Embed: embeds sampler metadata into the audio file(s), such
 as the root note, the velocity mapping range and the note mapping range.
@@ -198,7 +201,7 @@ Embed the low and high notes.
 ##### Positionals:
 `Note range value(s) TEXT REQUIRED`
 This value is either 'auto-map' or 2 separate values to set the low
-and high note range. 
+and high note range.
 
 EXAMPLES
 
@@ -217,14 +220,14 @@ Sets the low value from the name of the file by pattern-matching the
 given regex pattern to it, and taking the value of the given capture
 group (with is the bit inside the brackets). The high value is set
 from the filename too, but a different regex pattern is matched
-against. 
+against.
 
 
 DESCRIPTION
 
 If it's auto-map, then the low and high note will be set by assessing
 the root note of every file in the same folder and calculating an
-appropriate value. 
+appropriate value.
 
 If not 'auto-map' then each of the 2 arguments can be 1 of 3 different
 formats. The first of these 2 arguments represents the low note, and
@@ -246,7 +249,7 @@ sample should play in. The whole MIDI velocity range is between 1 and
 
 ##### Positionals:
 `Low and high velocity values TEXT x 2 REQUIRED`
-2 values to represent the low and high velocity mapping. 
+2 values to represent the low and high velocity mapping.
 
 EXAMPLES
 
@@ -276,7 +279,7 @@ embedded in the file; if there is no value already present, it's set
 to 1 for the low velocity or 127 for the high velocity.
 
 
-### fade
+## fade
 #### Description:
 Fader: adds a fade-in to the start and/or a fade-out to the end of the
 file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one
@@ -324,7 +327,7 @@ sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 The shape of the fade-out curve. The default is the 'sine' shape.
 
 
-### folderise
+## folderise
 #### Description:
 Folderiser: moves files into folders based on their names. This is done
 by specifying a regex pattern to match the name against. The folder in
@@ -357,7 +360,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### gain
+## gain
 #### Description:
 Gainer: changes the volume of the file(s).
 
@@ -379,7 +382,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### highpass
+## highpass
 #### Description:
 Highpass: removes frequencies below the given cutoff.
 
@@ -399,7 +402,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### lowpass
+## lowpass
 #### Description:
 Lowpass: removes frequencies above the given cutoff.
 
@@ -419,7 +422,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### print-info
+## print-info
 #### Description:
 SampleInfoPrinter: prints information about the audio file(s), such as
 the embedded metadata, sample-rate and RMS.
@@ -435,7 +438,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### norm
+## norm
 #### Description:
 Normaliser: sets the peak amplitude to a certain level. When this is
 used on multiple files, each file is attenuated by the same amount. You
@@ -469,7 +472,7 @@ The mix of the normalised signal, where 100% means normalised exactly
 to the target, and 0% means no change.
 
 
-### detect-pitch
+## detect-pitch
 #### Description:
 Pitch-detector: prints out the detected pitch of the file(s).
 
@@ -484,7 +487,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### rename
+## rename
 #### Description:
 File Renamer: various commands for renaming files.
 
@@ -497,7 +500,7 @@ All options for this subcommand relate to just the name of the file -
 not the folder or the file extension.
 
 Any text added via this command can contain special substitution
-variables; these will be replaced by values specified in this list: 
+variables; these will be replaced by values specified in this list:
 
 `<counter>`
 A unique number starting from zero. The ordering of these numbers is
@@ -643,7 +646,7 @@ this new name. To do this, add the regex group index in the
 angle-brackets (such as <1>).
 
 
-### sample-blender
+## sample-blender
 #### Description:
 Multi-sample Sample Blender: creates samples in between other samples
 that are different pitches. It takes 2 samples and generates a set of
@@ -680,7 +683,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### silence-remove
+## silence-remove
 #### Description:
 Silence-remover: removes silence from the start or end of the file(s).
 Silence is considered anything under -90dB, however this threshold can
@@ -706,7 +709,7 @@ The threshold in decibels to which anything under it should be
 considered silence.
 
 
-### trim
+## trim
 #### Description:
 Trimmer: removes the start or end of the file(s). This subcommand has
 itself 2 subcommands, 'start' and 'end'; one of which must be specified.
@@ -751,7 +754,7 @@ the sample. Examples of audio durations are: 5s, 12.5%, 250ms or
 42909smp.
 
 
-### tune
+## tune
 #### Description:
 Tuner: changes the tune the file(s) by stretching or shrinking them.
 Uses a high quality resampling algorithm.
@@ -772,7 +775,7 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-### zcross-offset
+## zcross-offset
 #### Description:
 Zero-crossing Offsetter: offsets the start of an audio file to the
 nearest zero-crossing (or the closest thing to a zero crossing). You can

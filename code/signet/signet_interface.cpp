@@ -64,77 +64,79 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.");
 
-    app.add_subcommand("make-docs")->final_callback([&]() {
-        // std::string r = ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::All));
-        app.clear();
+    app.add_subcommand("make-docs",
+                       "Creates a markdown file containing the full CLI - based on running signet --help.")
+        ->final_callback([&]() {
+            // std::string r = ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::All));
+            app.clear();
 
-        std::ofstream os("doc.md");
+            std::ofstream os("doc.md");
 
-        auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
-            for (auto l : Split(t, "\n", true)) {
-                const std::string_view headings[] {
-                    "`Usage:`", "`Description:`", "`Options:`", "`Subcommands:`", "`Positionals:`",
-                    "Usage:",   "Description:",   "Options:",   "Subcommands:",   "Positionals:"};
+            auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
+                for (auto l : Split(t, "\n", true)) {
+                    const std::string_view headings[] {
+                        "`Usage:`", "`Description:`", "`Options:`", "`Subcommands:`", "`Positionals:`",
+                        "Usage:",   "Description:",   "Options:",   "Subcommands:",   "Positionals:"};
 
-                if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
-                    break;
-                }
-
-                bool remove_grave_accent = false;
-                for (const auto &h : headings) {
-                    if (h == l) {
-                        os << "#### ";
-                        remove_grave_accent = true;
-                    } else if (EndsWith(l, h)) {
-                        os << "##### ";
-                        remove_grave_accent = true;
+                    if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
+                        break;
                     }
-                }
 
-                while (l.size() && l.front() == ' ') {
-                    l.remove_prefix(1);
-                }
-
-                std::string str {l};
-                if (remove_grave_accent) {
-                    for (auto it = str.begin(); it != str.end();) {
-                        if (*it == '`') {
-                            it = str.erase(it);
-                        } else {
-                            ++it;
+                    bool remove_grave_accent = false;
+                    for (const auto &h : headings) {
+                        if (h == l) {
+                            os << "#### ";
+                            remove_grave_accent = true;
+                        } else if (EndsWith(l, h)) {
+                            os << "##### ";
+                            remove_grave_accent = true;
                         }
                     }
-                    l = str;
+
+                    while (l.size() && l.front() == ' ') {
+                        l.remove_prefix(1);
+                    }
+
+                    std::string str {l};
+                    if (remove_grave_accent) {
+                        for (auto it = str.begin(); it != str.end();) {
+                            if (*it == '`') {
+                                it = str.erase(it);
+                            } else {
+                                ++it;
+                            }
+                        }
+                        l = str;
+                    }
+                    Replace(str, "``", "");
+                    if (StartsWith(str, "<") && EndsWith(str, ">")) {
+                        os << "`" << str << "`\n";
+                    } else {
+                        os << str << '\n';
+                    }
                 }
-                Replace(str, "``", "");
-                if (StartsWith(str, "<") && EndsWith(str, ">")) {
-                    os << "`" << str << "`\n";
-                } else {
-                    os << str << '\n';
-                }
+            };
+
+            os << "# Usage\n";
+            FormatHelpTextToStream(ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::Normal),
+                                                            ProcessFormatTextMode::MarkdownCode),
+                                   true);
+
+            os << "# Subcommands Usage\n";
+            for (auto s : app.get_subcommands({})) {
+                auto name = s->get_name();
+                os << fmt::format("- [{}](#{})\n", name, name);
             }
-        };
 
-        os << "## Usage\n";
-        FormatHelpTextToStream(ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::Normal),
-                                                        ProcessFormatTextMode::MarkdownCode),
-                               true);
+            for (auto s : app.get_subcommands({})) {
+                os << "## " << s->get_name() << "\n";
+                std::string r = ProcessFormattedHelpText(s->help("", CLI::AppFormatMode::All),
+                                                         ProcessFormatTextMode::MarkdownCode);
+                FormatHelpTextToStream(r, false);
+            }
 
-        os << "## Subcommands Usage\n";
-        for (auto s : app.get_subcommands({})) {
-            auto name = s->get_name();
-            os << fmt::format("- [{}](#{})\n", name, name);
-        }
-
-        for (auto s : app.get_subcommands({})) {
-            os << "### " << s->get_name() << "\n";
-            std::string r = ProcessFormattedHelpText(s->help("", CLI::AppFormatMode::All),
-                                                     ProcessFormatTextMode::MarkdownCode);
-            FormatHelpTextToStream(r, false);
-        }
-
-        throw CLI::Success();
-    });
+            throw CLI::Success();
+        });
 
     app.add_flag_callback(
         "--clear-backup",

@@ -1,4 +1,4 @@
-#include "input_files.h"
+#include "audio_files.h"
 
 #include "CLI11.hpp"
 #include "doctest.hpp"
@@ -6,8 +6,7 @@
 #include "backup.h"
 #include "common.h"
 
-InputAudioFiles::InputAudioFiles(const std::vector<std::string> &path_items,
-                                 const bool recursive_directory_search) {
+AudioFiles::AudioFiles(const std::vector<std::string> &path_items, const bool recursive_directory_search) {
     std::string parse_error;
     const auto all_matched_filenames =
         FilePathSet::CreateFromPatterns(path_items, recursive_directory_search, &parse_error);
@@ -23,11 +22,26 @@ InputAudioFiles::InputAudioFiles(const std::vector<std::string> &path_items,
         throw CLI::ValidationError("Input files", error);
     }
 
-    m_is_single_file = all_matched_filenames->IsSingleFile();
     ReadAllAudioFiles(*all_matched_filenames);
 }
 
-void InputAudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
+AudioFiles::AudioFiles(const tcb::span<EditTrackedAudioFile> files) {
+    m_all_files.assign(files.begin(), files.end());
+    CreateFoldersDataStructure();
+}
+
+void AudioFiles::CreateFoldersDataStructure() {
+    for (auto &f : m_all_files) {
+        fs::path parent = ".";
+        if (f.GetPath().has_parent_path()) parent = f.GetPath().parent_path();
+        if (m_folders.find(parent) == m_folders.end()) {
+            m_folders.insert({parent, {}});
+        }
+        m_folders[parent].push_back(&f);
+    }
+}
+
+void AudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
     for (const auto &path : paths) {
         if (!IsAudioFileReadable(path)) continue;
         std::error_code ec;
@@ -41,20 +55,13 @@ void InputAudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
             m_all_files.push_back(proximate);
         }
     }
-    for (auto &f : m_all_files) {
-        fs::path parent = ".";
-        if (f.GetPath().has_parent_path()) parent = f.GetPath().parent_path();
-        if (m_folders.find(parent) == m_folders.end()) {
-            m_folders.insert({parent, {}});
-        }
-        m_folders[parent].push_back(&f);
-    }
+    CreateFoldersDataStructure();
 }
 
-bool InputAudioFiles::WouldWritingAllFilesCreateConflicts() {
+bool AudioFiles::WouldWritingAllFilesCreateConflicts() {
     std::set<fs::path> files_set;
     bool file_conflicts = false;
-    for (const auto &f : GetAllFiles()) {
+    for (const auto &f : m_all_files) {
         if (files_set.find(f.GetPath()) != files_set.end()) {
             ErrorWithNewLine("Signet", "filepath {} would have the same filename as another file",
                              f.GetPath());
@@ -76,13 +83,13 @@ static fs::path PathWithNewExtension(fs::path path, AudioFileFormat format) {
     return path;
 }
 
-bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
+bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
     if (WouldWritingAllFilesCreateConflicts()) {
         return false;
     }
 
     bool error_occurred = false;
-    for (auto &file : GetAllFiles()) {
+    for (auto &file : m_all_files) {
         const bool file_data_changed = file.AudioChanged();
         const bool file_renamed = file.FilepathChanged();
         const bool file_format_changed = file.FormatChanged();
@@ -90,7 +97,7 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
         if (file_renamed) {
             if (!file_data_changed && !file_format_changed) {
                 // only renamed
-                if (!backup.MoveFile(file.original_path, file.GetPath())) {
+                if (!backup.MoveFile(file.OriginalPath(), file.GetPath())) {
                     error_occurred = true;
                     break;
                 }
@@ -102,7 +109,7 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
                     error_occurred = true;
                     break;
                 }
-                if (!backup.DeleteFile(file.original_path)) {
+                if (!backup.DeleteFile(file.OriginalPath())) {
                     error_occurred = true;
                     break;
                 }
@@ -112,27 +119,27 @@ bool InputAudioFiles::WriteAllAudioFiles(SignetBackup &backup) {
                     error_occurred = true;
                     break;
                 }
-                if (!backup.DeleteFile(file.original_path)) {
+                if (!backup.DeleteFile(file.OriginalPath())) {
                     error_occurred = true;
                     break;
                 }
             }
         } else {
-            REQUIRE(file.GetPath() == file.original_path);
+            REQUIRE(file.GetPath() == file.OriginalPath());
             if ((file_format_changed && !file_data_changed) || (file_format_changed && file_data_changed)) {
                 // only new format
-                if (!backup.CreateFile(PathWithNewExtension(file.original_path, file.GetAudio().format),
+                if (!backup.CreateFile(PathWithNewExtension(file.OriginalPath(), file.GetAudio().format),
                                        file.GetAudio(), false)) {
                     error_occurred = true;
                     break;
                 }
-                if (!backup.DeleteFile(file.original_path)) {
+                if (!backup.DeleteFile(file.OriginalPath())) {
                     error_occurred = true;
                     break;
                 }
             } else if (!file_format_changed && file_data_changed) {
                 // only new data
-                if (!backup.OverwriteFile(file.original_path, file.GetAudio())) {
+                if (!backup.OverwriteFile(file.OriginalPath(), file.GetAudio())) {
                     error_occurred = true;
                     break;
                 }

@@ -5,7 +5,7 @@
 class SilenceRemover final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
+    void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "SilenceRemover"; }
 
   private:

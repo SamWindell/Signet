@@ -5,7 +5,7 @@
 
 #include "doctest.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "test_helpers.h"
 #include "tests_config.h"

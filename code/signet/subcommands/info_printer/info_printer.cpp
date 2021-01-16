@@ -16,7 +16,7 @@ CLI::App *SampleInfoPrinter::CreateSubcommandCLI(CLI::App &app) {
     return printer;
 }
 
-void SampleInfoPrinter::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void SampleInfoPrinter::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         std::string info_text;
         if (!f.GetAudio().metadata.IsEmpty()) {

@@ -7,7 +7,7 @@
 #include "span.hpp"
 
 #include "audio_duration.h"
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "signet_interface.h"
 
@@ -21,7 +21,7 @@ class ZeroCrossingOffsetter final : public Subcommand {
                                                   const AudioDuration &search_size,
                                                   const bool append_skipped_frames_on_end);
 
-    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override {
+    void ProcessFiles(AudioFiles &files) override {
         for (auto &f : files) {
             auto &audio = f.GetAudio();
             if (audio.IsEmpty()) continue;

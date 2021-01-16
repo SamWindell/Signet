@@ -4,9 +4,9 @@
 #include "CLI11.hpp"
 #include "doctest.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
+#include "audio_files.h"
 #include "backup.h"
-#include "input_files.h"
 #include "string_utils.h"
 #include "subcommand.h"
 
@@ -72,7 +72,7 @@ class TestSubcommandProcessor {
 
     std::vector<std::optional<AudioData>> GetBufs() {
         std::vector<std::optional<AudioData>> result;
-        for (auto &f : m_files) {
+        for (auto &f : *m_files) {
             if (f.AudioChanged())
                 result.push_back(f.GetAudio());
             else
@@ -83,7 +83,7 @@ class TestSubcommandProcessor {
 
     std::vector<std::optional<std::string>> GetFilenames() {
         std::vector<std::optional<std::string>> result;
-        for (auto &f : m_files) {
+        for (auto &f : *m_files) {
             if (f.FilepathChanged())
                 result.push_back(GetJustFilenameWithNoExtension(f.GetPath()));
             else
@@ -94,7 +94,7 @@ class TestSubcommandProcessor {
 
     std::vector<std::optional<std::string>> GetPaths() {
         std::vector<std::optional<std::string>> result;
-        for (auto &f : m_files) {
+        for (auto &f : *m_files) {
             if (f.FilepathChanged())
                 result.push_back(f.GetPath().generic_string());
             else
@@ -104,37 +104,33 @@ class TestSubcommandProcessor {
     }
 
     std::optional<AudioData> GetBuf() {
-        REQUIRE(m_files.size() == 1);
+        REQUIRE(m_files->Size() == 1);
         return GetBufs()[0];
     }
     std::optional<std::string> GetFilename() {
-        REQUIRE(m_files.size() == 1);
+        REQUIRE(m_files->Size() == 1);
         return GetFilenames()[0];
     }
     std::optional<std::string> GetPath() {
-        REQUIRE(m_files.size() == 1);
+        REQUIRE(m_files->Size() == 1);
         return GetPaths()[0];
     }
 
   private:
-    TestSubcommandProcessor(Subcommand &subcommand, const tcb::span<DataAndPath> files) {
-        for (auto &f : files) {
-            m_files.push_back(f.path);
-            m_files.back().LoadAudioData(f.data);
+    TestSubcommandProcessor(Subcommand &subcommand, const tcb::span<DataAndPath> files_and_data) {
+        std::vector<EditTrackedAudioFile> files;
+        for (auto &fd : files_and_data) {
+            files.push_back(fd.path);
+            files.back().SetAudioData(fd.data);
         }
-        FolderMapType folder_map;
-        std::vector<EditTrackedAudioFile *> file_ptrs;
-        for (auto &f : m_files)
-            file_ptrs.push_back(&f);
-        folder_map["fake_folder_name"] = file_ptrs;
+        m_files.emplace(files);
 
-        subcommand.ProcessFiles(m_files);
-        subcommand.ProcessFolders(folder_map);
+        subcommand.ProcessFiles(*m_files);
         SignetBackup backup;
-        subcommand.GenerateFiles(m_files, backup);
+        subcommand.GenerateFiles(*m_files, backup);
     }
 
-    std::vector<EditTrackedAudioFile> m_files;
+    std::optional<AudioFiles> m_files;
 };
 
 template <typename SubcommandType>

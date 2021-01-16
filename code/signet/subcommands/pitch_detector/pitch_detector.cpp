@@ -4,9 +4,9 @@
 #include "doctest.hpp"
 #include "dywapitchtrack/dywapitchtrack.h"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
+#include "audio_files.h"
 #include "common.h"
-#include "input_files.h"
 #include "midi_pitches.h"
 #include "subcommands/normaliser/gain_calculators.h"
 #include "subcommands/tuner/tuner.h"
@@ -157,7 +157,7 @@ std::optional<double> PitchDetector::DetectPitch(const AudioData &audio) {
     return GetFreqWithCentDifference(*most_suitable->detected_pitch, -most_suitable->cents);
 }
 
-void PitchDetector::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void PitchDetector::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         const auto pitch = DetectPitch(f.GetAudio());
         if (pitch) {
@@ -167,8 +167,8 @@ void PitchDetector::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
             snprintf(cents_diff.data(), cents_diff.size(), "%.1f",
                      GetCentsDifference(closest_musical_note.pitch, *pitch));
 
-            MessageWithNewLine(GetName(), "{} detected pitch {} Hz ({} cents from {}, MIDI {})", f.filename,
-                               *pitch, cents_diff.data(), closest_musical_note.name,
+            MessageWithNewLine(GetName(), "{} detected pitch {} Hz ({} cents from {}, MIDI {})",
+                               f.OriginalFilename(), *pitch, cents_diff.data(), closest_musical_note.name,
                                closest_musical_note.midi_note);
         } else {
             MessageWithNewLine(GetName(), "No pitch could be found");

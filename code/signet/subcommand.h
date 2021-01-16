@@ -1,12 +1,9 @@
 #pragma once
-#include <optional>
-#include <vector>
+#include <string>
 
 #include "CLI11_Fwd.hpp"
-#include "filesystem.hpp"
-#include "span.hpp"
 
-#include "edit_tracked_audio_file.h"
+#include "audio_files.h"
 
 class SignetBackup;
 
@@ -16,7 +13,6 @@ class Subcommand {
     virtual CLI::App *CreateSubcommandCLI(CLI::App &app) = 0;
     virtual std::string GetName() const = 0;
 
-    virtual void GenerateFiles(const tcb::span<EditTrackedAudioFile> files, SignetBackup &backup) {}
-    virtual void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {}
-    virtual void ProcessFolders(const FolderMapType &folders) {}
+    virtual void GenerateFiles(AudioFiles &files, SignetBackup &backup) {}
+    virtual void ProcessFiles(AudioFiles &files) {}
 };

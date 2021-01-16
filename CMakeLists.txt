@@ -44,11 +44,11 @@ target_link_libraries(third_party_libs PUBLIC cereal fmt::fmt)
 add_library(
     common OBJECT
     code/common/audio_duration.cpp
-    code/common/audio_file.cpp
+    code/common/audio_file_io.cpp
+    code/common/audio_files.cpp
     code/common/backup.cpp
     code/common/filter.cpp
     code/common/common.cpp
-    code/common/input_files.cpp
     code/common/midi_pitches.cpp
     code/common/pathname_expansion.cpp
     code/common/string_utils.cpp

@@ -26,10 +26,6 @@ class FilePathSet {
     auto begin() const { return m_paths.begin(); }
     auto end() const { return m_paths.end(); }
 
-    bool IsSingleFile() const {
-        return m_num_file_parts == 1 && m_num_directory_parts == 0 && m_num_wildcard_parts == 0;
-    }
-
   private:
     FilePathSet() {}
     void AddNonExcludedPaths(const tcb::span<const fs::path> paths,

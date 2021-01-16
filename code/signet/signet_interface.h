@@ -5,11 +5,11 @@
 #include "doctest.hpp"
 #include "json.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
+#include "audio_files.h"
 #include "backup.h"
 #include "common.h"
 #include "filesystem.hpp"
-#include "input_files.h"
 #include "subcommand.h"
 
 namespace SignetResult {
@@ -31,6 +31,6 @@ class SignetInterface final {
     std::vector<std::unique_ptr<Subcommand>> m_subcommands {};
     SignetBackup m_backup {};
 
-    InputAudioFiles m_input_audio_files {};
+    AudioFiles m_input_audio_files {};
     bool m_recursive_directory_search {};
 };

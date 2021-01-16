@@ -5,7 +5,7 @@
 #include "doctest.hpp"
 #include "rang.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "cli_formatter.h"
 #include "subcommands/auto_tuner/auto_tuner.h"
 #include "subcommands/converter/converter.h"
@@ -169,7 +169,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     auto input_files_option = app.add_option_function<std::vector<std::string>>(
         "input-files",
         [&](const std::vector<std::string> &input) {
-            m_input_audio_files = InputAudioFiles(input, m_recursive_directory_search);
+            m_input_audio_files = AudioFiles(input, m_recursive_directory_search);
         },
         R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
 
@@ -182,21 +182,20 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 int num_audio_edits, num_path_edits;
             };
             std::vector<FileEditState> initial_file_edit_state;
-            initial_file_edit_state.reserve(m_input_audio_files.NumFiles());
-            for (const auto &f : m_input_audio_files.GetAllFiles()) {
+            initial_file_edit_state.reserve(m_input_audio_files.Size());
+            for (const auto &f : m_input_audio_files) {
                 initial_file_edit_state.push_back({f.NumTimesAudioChanged(), f.NumTimesPathChanged()});
             }
 
             MessageWithNewLine(subcommand->GetName(), "Starting processing");
-            subcommand->ProcessFiles(m_input_audio_files.GetAllFiles());
-            subcommand->ProcessFolders(m_input_audio_files.GetAllFolders());
-            subcommand->GenerateFiles(m_input_audio_files.GetAllFiles(), m_backup);
+            subcommand->ProcessFiles(m_input_audio_files);
+            subcommand->GenerateFiles(m_input_audio_files, m_backup);
 
             int num_audio_edits = 0;
             int num_path_edits = 0;
-            assert(initial_file_edit_state.size() == m_input_audio_files.NumFiles());
+            assert(initial_file_edit_state.size() == m_input_audio_files.Size());
             for (usize i = 0; i < initial_file_edit_state.size(); ++i) {
-                const auto &f = m_input_audio_files.GetAllFiles()[i];
+                const auto &f = m_input_audio_files[i];
                 if (initial_file_edit_state[i].num_audio_edits != f.NumTimesAudioChanged()) ++num_audio_edits;
                 if (initial_file_edit_state[i].num_path_edits != f.NumTimesPathChanged()) ++num_path_edits;
             }
@@ -225,12 +224,12 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
 
     if (m_input_audio_files.GetNumFilesProcessed()) {
-        if (!m_input_audio_files.WriteAllAudioFiles(m_backup)) {
+        if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(m_backup)) {
             return SignetResult::FailedToWriteFiles;
         }
     }
 
-    if (m_input_audio_files.NumFiles() == 0) {
+    if (m_input_audio_files.Size() == 0) {
         return SignetResult::NoFilesMatchingInput;
     } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
         return SignetResult::NoFilesWereProcessed;

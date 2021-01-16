@@ -1,6 +1,6 @@
 #include "trimmer.h"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "test_helpers.h"
 
@@ -25,7 +25,7 @@ CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
     return trimmer;
 }
 
-void Trimmer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Trimmer::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetAudio();
         if (audio.IsEmpty()) continue;

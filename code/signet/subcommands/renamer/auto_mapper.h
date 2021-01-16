@@ -8,7 +8,7 @@
 #include "filesystem.hpp"
 #include "span.hpp"
 
-#include "edit_tracked_audio_file.h"
+#include "audio_files.h"
 
 class AutomapFolder {
   public:
@@ -72,7 +72,7 @@ class AutomapFolder {
 class AutoMapper {
   public:
     void CreateCLI(CLI::App &renamer);
-    void InitialiseProcessing(const tcb::span<EditTrackedAudioFile> files);
+    void InitialiseProcessing(AudioFiles &files);
     bool Rename(const EditTrackedAudioFile &file, std::string &filename);
 
   private:

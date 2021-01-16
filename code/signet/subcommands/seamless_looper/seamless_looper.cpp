@@ -15,7 +15,7 @@ CLI::App *SeamlessLooper::CreateSubcommandCLI(CLI::App &app) {
     return looper;
 }
 
-void SeamlessLooper::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void SeamlessLooper::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         const auto num_frames = f.GetAudio().NumFrames();
         const auto num_xfade_frames = usize(num_frames * (m_crossfade_percent / 100.0));

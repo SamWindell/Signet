@@ -6,7 +6,7 @@
 #include "doctest.hpp"
 #include "span.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 
 class NormalisationGainCalculator {

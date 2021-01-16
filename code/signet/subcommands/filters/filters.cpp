@@ -2,11 +2,11 @@
 
 #include "CLI11.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "filter.h"
 
-void FilterProcessFiles(const tcb::span<EditTrackedAudioFile> files,
+void FilterProcessFiles(AudioFiles &files,
                         const Filter::RBJType type,
                         const double cutoff,
                         const double Q,
@@ -39,7 +39,7 @@ CLI::App *Highpass::CreateSubcommandCLI(CLI::App &app) {
     return hp;
 }
 
-void Highpass::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Highpass::ProcessFiles(AudioFiles &files) {
     FilterProcessFiles(files, Filter::RBJType::HighPass, m_cutoff, Filter::default_q_factor, 0);
 }
 
@@ -53,6 +53,6 @@ CLI::App *Lowpass::CreateSubcommandCLI(CLI::App &app) {
     return lp;
 }
 
-void Lowpass::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Lowpass::ProcessFiles(AudioFiles &files) {
     FilterProcessFiles(files, Filter::RBJType::LowPass, m_cutoff, Filter::default_q_factor, 0);
 }

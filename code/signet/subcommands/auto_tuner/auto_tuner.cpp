@@ -3,9 +3,9 @@
 #include "CLI11.hpp"
 #include "doctest.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
-#include "input_files.h"
+#include "audio_files.h"
 #include "midi_pitches.h"
 #include "subcommands/pitch_detector/pitch_detector.h"
 #include "subcommands/tuner/tuner.h"
@@ -17,7 +17,7 @@ CLI::App *AutoTuner::CreateSubcommandCLI(CLI::App &app) {
     return auto_tuner;
 }
 
-void AutoTuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void AutoTuner::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         if (const auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
             const auto closest_musical_note = FindClosestMidiPitch(*pitch);

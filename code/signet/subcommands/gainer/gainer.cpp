@@ -51,7 +51,7 @@ CLI::App *Gainer::CreateSubcommandCLI(CLI::App &app) {
     return gainer;
 }
 
-void Gainer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Gainer::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (audio.IsEmpty()) continue;

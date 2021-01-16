@@ -67,7 +67,7 @@ void Converter::ConvertSampleRate(std::vector<double> &buffer,
     buffer = result_interleaved_samples;
 }
 
-void Converter::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Converter::ProcessFiles(AudioFiles &files) {
     m_files_can_be_converted = true;
     if (m_bit_depth) {
         if (!m_file_format) {

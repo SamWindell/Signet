@@ -2,7 +2,7 @@
 
 #include <regex>
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "midi_pitches.h"
 #include "string_utils.h"
@@ -44,7 +44,7 @@ CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
     return folderiser;
 }
 
-void Folderiser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Folderiser::ProcessFiles(AudioFiles &files) {
     int num_matches = 0;
     for (auto &f : files) {
         const auto filename = GetJustFilenameWithNoExtension(f.GetPath());

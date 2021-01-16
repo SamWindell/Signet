@@ -1,12 +1,12 @@
 #pragma once
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "signet_interface.h"
 
 class Converter final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
+    void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "Converter"; }
 
     static void ConvertSampleRate(std::vector<double> &buffer,

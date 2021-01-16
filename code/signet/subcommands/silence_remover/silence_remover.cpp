@@ -2,7 +2,7 @@
 
 #include "magic_enum.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "test_helpers.h"
 #include "types.h"
@@ -31,7 +31,7 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     return silence_remover;
 }
 
-void SilenceRemover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void SilenceRemover::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetAudio();
         usize loud_region_start = 0;

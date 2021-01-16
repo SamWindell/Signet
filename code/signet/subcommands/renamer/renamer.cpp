@@ -2,7 +2,7 @@
 
 #include <regex>
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "midi_pitches.h"
 #include "rename_substitutions.h"
@@ -54,7 +54,7 @@ Any text added via this command can contain special substitution variables; thes
     return renamer;
 }
 
-void Renamer::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Renamer::ProcessFiles(AudioFiles &files) {
     m_auto_mapper.InitialiseProcessing(files);
 
     for (auto &f : files) {

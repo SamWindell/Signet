@@ -3,13 +3,13 @@
 #include "CLI11.hpp"
 #include "filesystem.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "subcommand.h"
 
 class SampleBlender : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void GenerateFiles(const tcb::span<EditTrackedAudioFile> files, SignetBackup &backup) override;
+    void GenerateFiles(AudioFiles &files, SignetBackup &backup) override;
     std::string GetName() const override { return "SampleBlender"; }
 
   private:

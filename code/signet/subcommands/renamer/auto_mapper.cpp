@@ -80,7 +80,7 @@ void AutoMapper::ConstructAllAutomappings() {
     }
 }
 
-void AutoMapper::InitialiseProcessing(const tcb::span<EditTrackedAudioFile> files) {
+void AutoMapper::InitialiseProcessing(AudioFiles &files) {
     if (m_automap_pattern) {
         for (auto &f : files) {
             AddToFolderMap(f.GetPath());

@@ -218,7 +218,7 @@ DESCRIPTION
     return embedder;
 }
 
-void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void EmbedSamplerInfo::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
         auto &metadata = f.GetWritableAudio().metadata;
@@ -304,12 +304,10 @@ void EmbedSamplerInfo::ProcessFiles(const tcb::span<EditTrackedAudioFile> files)
             SetFromFilenameRegexMatch(m_high_velo_regex_pattern.value(), sampler_mapping->high_velocity);
         }
     }
-}
 
-void EmbedSamplerInfo::ProcessFolders(const FolderMapType &folders) {
     if (m_note_range_auto_map) {
-        for (auto &[parent_path, files] : folders) {
-            auto sorted_files = files;
+        for (auto &[parent_path, files_in_folder] : files.Folders()) {
+            auto sorted_files = files_in_folder;
             std::sort(sorted_files.begin(), sorted_files.end(), [](const auto &a, const auto &b) {
                 return a->GetAudio().metadata.midi_mapping->root_midi_note <
                        b->GetAudio().metadata.midi_mapping->root_midi_note;

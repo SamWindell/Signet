@@ -22,7 +22,7 @@ void Tuner::ChangePitch(AudioData &audio, const double cents) {
     audio.AudioDataWasStretched(multiplier);
 }
 
-void Tuner::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Tuner::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         MessageWithNewLine(GetName(), "Tuning sample by {} cents", m_tune_cents);
         ChangePitch(f.GetWritableAudio(), m_tune_cents);

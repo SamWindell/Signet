@@ -3,7 +3,7 @@
 #include "doctest.hpp"
 #include "magic_enum.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "common.h"
 #include "test_helpers.h"
 
@@ -98,7 +98,7 @@ void Fader::PerformFade(AudioData &audio,
     }
 }
 
-void Fader::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Fader::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (m_fade_in_duration) {

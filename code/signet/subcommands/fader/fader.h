@@ -10,7 +10,7 @@ class Fader final : public Subcommand {
 
     std::string GetName() const override { return "Fader"; }
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
+    void ProcessFiles(AudioFiles &files) override;
 
     static void
     PerformFade(AudioData &audio, const s64 silent_frame, const s64 fullvol_frame, const Fader::Shape shape);

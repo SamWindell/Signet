@@ -5,10 +5,9 @@
 
 #include "filesystem.hpp"
 
-#include "audio_file.h"
+#include "audio_file_io.h"
 #include "backup.h"
 #include "common.h"
-#include "input_files.h"
 #include "midi_pitches.h"
 #include "pathname_expansion.h"
 #include "string_utils.h"
@@ -84,7 +83,7 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFil
     }
 }
 
-void SampleBlender::GenerateFiles(const tcb::span<EditTrackedAudioFile> input_files, SignetBackup &backup) {
+void SampleBlender::GenerateFiles(AudioFiles &input_files, SignetBackup &backup) {
     std::unordered_map<std::string, std::vector<BaseBlendFile>> base_file_folders;
     for (auto &p : input_files) {
         const std::regex r {m_regex};

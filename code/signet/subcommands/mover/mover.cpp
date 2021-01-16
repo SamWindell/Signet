@@ -9,7 +9,7 @@ CLI::App *Mover::CreateSubcommandCLI(CLI::App &app) {
     return mover;
 }
 
-void Mover::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Mover::ProcessFiles(AudioFiles &files) {
     std::vector<fs::path> dest_paths {};
     for (auto &f : files) {
         const auto p = m_destination_dir / f.GetPath().filename();

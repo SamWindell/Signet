@@ -12,7 +12,7 @@ void FilterProcessFiles(const tcb::span<EditTrackedAudioFile> files,
 class Highpass final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
+    void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "Highpass"; }
 
   private:
@@ -22,7 +22,7 @@ class Highpass final : public Subcommand {
 class Lowpass final : public Subcommand {
   public:
     CLI::App *CreateSubcommandCLI(CLI::App &app) override;
-    void ProcessFiles(const tcb::span<EditTrackedAudioFile> files) override;
+    void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "Lowpass"; }
 
   private:

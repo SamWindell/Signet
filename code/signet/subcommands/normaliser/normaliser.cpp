@@ -29,7 +29,7 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     return norm;
 }
 
-void Normaliser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
+void Normaliser::ProcessFiles(AudioFiles &files) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {
@@ -37,7 +37,7 @@ void Normaliser::ProcessFiles(const tcb::span<EditTrackedAudioFile> files) {
     }
 
     m_using_common_gain = false;
-    if (files.size() > 1 && !m_normalise_independently) {
+    if (files.Size() > 1 && !m_normalise_independently) {
         m_using_common_gain = true;
         for (auto &f : files) {
             if (!ReadFileForCommonGain(f.GetAudio())) {

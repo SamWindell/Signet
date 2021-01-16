@@ -35,12 +35,7 @@ void AutoMapper::CreateCLI(CLI::App &renamer) {
         ->required();
 }
 
-fs::path GetParent(const fs::path &path) {
-    if (path.has_parent_path()) return path.parent_path();
-    return ".";
-}
-
-void AutoMapper::AddToFolderMap(const fs::path &path) {
+void AutoMapper::AddToFolderMap(const fs::path &folder, const fs::path &path) {
     REQUIRE(m_automap_pattern);
     const std::string filename = GetJustFilenameWithNoExtension(path);
     std::smatch pieces_match;
@@ -68,8 +63,7 @@ void AutoMapper::AddToFolderMap(const fs::path &path) {
                                filename);
         } else {
             MessageWithNewLine("Auto-map", "automap found root note {} in filename {}", root_note, path);
-            const auto parent = GetParent(path);
-            m_folder_map[parent].AddFile(path, root_note, pieces_match);
+            m_folder_map[folder].AddFile(path, root_note, pieces_match);
         }
     }
 }
@@ -82,17 +76,19 @@ void AutoMapper::ConstructAllAutomappings() {
 
 void AutoMapper::InitialiseProcessing(AudioFiles &files) {
     if (m_automap_pattern) {
-        for (auto &f : files) {
-            AddToFolderMap(f.GetPath());
+        for (auto [folder, folder_files] : files.Folders()) {
+            for (auto &f : folder_files) {
+                AddToFolderMap(folder, f->GetPath());
+            }
         }
         ConstructAllAutomappings();
     }
 }
 
-bool AutoMapper::Rename(const EditTrackedAudioFile &f, std::string &filename) {
+bool AutoMapper::Rename(const EditTrackedAudioFile &f, const fs::path &folder, std::string &filename) {
     if (m_automap_pattern) {
-        auto &folder = m_folder_map[GetParent(f.GetPath())];
-        if (const auto file = folder.GetFile(f.GetPath())) {
+        auto &automap_folder = m_folder_map[folder];
+        if (const auto file = automap_folder.GetFile(f.GetPath())) {
             auto new_name = *m_automap_out;
             Replace(new_name, "<lo>", std::to_string(file->low));
             Replace(new_name, "<hi>", std::to_string(file->high));

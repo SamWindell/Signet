@@ -84,27 +84,30 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFil
 }
 
 void SampleBlender::GenerateFiles(AudioFiles &input_files, SignetBackup &backup) {
-    std::unordered_map<std::string, std::vector<BaseBlendFile>> base_file_folders;
-    for (auto &p : input_files) {
-        const std::regex r {m_regex};
-        std::smatch pieces_match;
-        const auto name = GetJustFilenameWithNoExtension(p.GetPath());
+    std::map<fs::path, std::vector<BaseBlendFile>> base_file_folders;
+    for (auto [folder, files] : input_files.Folders()) {
+        for (auto &f : files) {
+            const std::regex r {m_regex};
+            std::smatch pieces_match;
+            const auto name = GetJustFilenameWithNoExtension(f->GetPath());
 
-        if (std::regex_match(name, pieces_match, r)) {
-            if (pieces_match.size() != 2) {
-                ErrorWithNewLine(GetName(),
-                                 "Expected exactly 1 regex group to be captured to represent the root note");
-                return;
-            }
-            const auto root_note = std::stoi(pieces_match[1]);
-            if (root_note < 0 || root_note > 127) {
-                WarningWithNewLine(
-                    "SampleBlender: root note of file {} is not in the range 0-127 so cannot be processed",
-                    name);
-            } else {
-                auto &vec = base_file_folders[p.GetPath().parent_path().generic_string()];
-                vec.emplace_back(&p, root_note);
-                MessageWithNewLine(GetName(), "found file {} with root note {}", p.GetPath(), root_note);
+            if (std::regex_match(name, pieces_match, r)) {
+                if (pieces_match.size() != 2) {
+                    ErrorWithNewLine(
+                        GetName(),
+                        "Expected exactly 1 regex group to be captured to represent the root note");
+                    return;
+                }
+                const auto root_note = std::stoi(pieces_match[1]);
+                if (root_note < 0 || root_note > 127) {
+                    WarningWithNewLine(
+                        GetName(), "Root note of file {} is not in the range 0-127 so cannot be processed",
+                        name);
+                } else {
+                    auto &vec = base_file_folders[folder];
+                    vec.emplace_back(f, root_note);
+                    MessageWithNewLine(GetName(), "Found file {} with root note {}", f->GetPath(), root_note);
+                }
             }
         }
     }

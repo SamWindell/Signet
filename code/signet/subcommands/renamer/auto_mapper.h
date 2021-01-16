@@ -73,10 +73,10 @@ class AutoMapper {
   public:
     void CreateCLI(CLI::App &renamer);
     void InitialiseProcessing(AudioFiles &files);
-    bool Rename(const EditTrackedAudioFile &file, std::string &filename);
+    bool Rename(const EditTrackedAudioFile &file, const fs::path &folder, std::string &filename);
 
   private:
-    void AddToFolderMap(const fs::path &path);
+    void AddToFolderMap(const fs::path &folder, const fs::path &path);
     void ConstructAllAutomappings();
 
     std::map<fs::path, AutomapFolder> m_folder_map;

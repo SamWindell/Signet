@@ -57,123 +57,121 @@ Any text added via this command can contain special substitution variables; thes
 void Renamer::ProcessFiles(AudioFiles &files) {
     m_auto_mapper.InitialiseProcessing(files);
 
-    for (auto &f : files) {
-        std::string filename = GetJustFilenameWithNoExtension(f.GetPath());
-        bool renamed = false;
+    for (auto [folder, folder_files] : files.Folders()) {
+        for (auto &f : folder_files) {
+            std::string filename = GetJustFilenameWithNoExtension(f->GetPath());
+            bool renamed = false;
 
-        renamed = m_auto_mapper.Rename(f, filename) | renamed;
+            renamed = m_auto_mapper.Rename(*f, folder, filename) | renamed;
 
-        if (m_regex_pattern) {
-            const std::regex r {*m_regex_pattern};
-            std::smatch pieces_match;
-            if (std::regex_match(filename, pieces_match, r)) {
-                auto replacement = m_regex_replacement;
-                for (size_t i = 0; i < pieces_match.size(); ++i) {
-                    const std::ssub_match sub_match = pieces_match[i];
-                    const std::string piece = sub_match.str();
-                    Replace(replacement, PutNumberInAngleBracket(i), piece);
+            if (m_regex_pattern) {
+                const std::regex r {*m_regex_pattern};
+                std::smatch pieces_match;
+                if (std::regex_match(filename, pieces_match, r)) {
+                    auto replacement = m_regex_replacement;
+                    for (size_t i = 0; i < pieces_match.size(); ++i) {
+                        const std::ssub_match sub_match = pieces_match[i];
+                        const std::string piece = sub_match.str();
+                        Replace(replacement, PutNumberInAngleBracket(i), piece);
+                    }
+                    filename = replacement;
+                    renamed = true;
                 }
-                filename = replacement;
+            }
+
+            if (m_prefix) {
+                filename = *m_prefix + filename;
                 renamed = true;
             }
-        }
-
-        if (m_prefix) {
-            filename = *m_prefix + filename;
-            renamed = true;
-        }
-        if (m_suffix) {
-            filename = filename + *m_suffix;
-            renamed = true;
-        }
-
-        renamed = m_note_to_midi_processor.Rename(f, filename) | renamed;
-
-        if (renamed) {
-            if (Contains(filename, "<counter>") || Contains(filename, "<alpha-counter>")) {
-                Replace(filename, "<counter>", std::to_string(m_counter));
-                if (const auto alpha_counter = Get3CharAlphaIdentifier(m_counter)) {
-                    Replace(filename, "<alpha-counter>", *alpha_counter);
-                } else {
-                    Replace(filename, "<alpha-counter>", std::to_string(m_counter));
-                }
-                m_counter++;
+            if (m_suffix) {
+                filename = filename + *m_suffix;
+                renamed = true;
             }
-            if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
-                Contains(filename, "<detected-note>") ||
-                Contains(filename, "<detected-midi-note-octave-plus-1>") ||
-                Contains(filename, "<detected-midi-note-octave-plus-2>") ||
-                Contains(filename, "<detected-midi-note-octave-minus-1>") ||
-                Contains(filename, "<detected-midi-note-octave-minus-2>") ||
-                Contains(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>")) {
-                if (const auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
-                    const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
-                    Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
-                    Replace(filename, "<detected-midi-note>", std::to_string(closest_musical_note.midi_note));
-                    Replace(filename, "<detected-midi-note-octave-plus-1>",
-                            std::to_string(closest_musical_note.midi_note + 12));
-                    Replace(filename, "<detected-midi-note-octave-minus-1>",
-                            std::to_string(closest_musical_note.midi_note - 12));
-                    Replace(filename, "<detected-midi-note-octave-plus-2>",
-                            std::to_string(closest_musical_note.midi_note + 24));
-                    Replace(filename, "<detected-midi-note-octave-minus-2>",
-                            std::to_string(closest_musical_note.midi_note - 24));
-                    Replace(filename, "<detected-note>", closest_musical_note.name);
-                    Replace(
-                        filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>",
-                        std::to_string(ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note)));
-                } else {
-                    WarningWithNewLine(
-                        GetName(),
-                        "One of the detected pitch variables was used in the file name, but we could not find any pitch in the audio. All detected pitch variables will be replaced with nothing.");
-                    Replace(filename, "<detected-pitch>", "");
-                    Replace(filename, "<detected-midi-note>", "");
-                    Replace(filename, "<detected-midi-note-octave-plus-1>", "");
-                    Replace(filename, "<detected-midi-note-octave-minus-1>", "");
-                    Replace(filename, "<detected-midi-note-octave-plus-2>", "");
-                    Replace(filename, "<detected-midi-note-octave-minus-2>", "");
-                    Replace(filename, "<detected-note>", "");
+            renamed = m_note_to_midi_processor.Rename(*f, filename) | renamed;
+
+            if (renamed) {
+                if (Contains(filename, "<counter>") || Contains(filename, "<alpha-counter>")) {
+                    Replace(filename, "<counter>", std::to_string(m_counter));
+                    if (const auto alpha_counter = Get3CharAlphaIdentifier(m_counter)) {
+                        Replace(filename, "<alpha-counter>", *alpha_counter);
+                    } else {
+                        Replace(filename, "<alpha-counter>", std::to_string(m_counter));
+                    }
+                    m_counter++;
                 }
-            }
-            if (Contains(filename, "<parent-folder>") || Contains(filename, "<parent-folder-snake>") ||
-                Contains(filename, "<parent-folder-camel>")) {
-                bool replaced = false;
-                if (f.GetPath().has_parent_path()) {
-                    const auto parent_folder = f.GetPath().parent_path().filename();
-                    if (parent_folder != ".") {
-                        const auto folder = parent_folder.generic_string();
-                        Replace(filename, "<parent-folder>", folder);
-                        Replace(filename, "<parent-folder-snake>", ToSnakeCase(folder));
-                        Replace(filename, "<parent-folder-camel>", ToCamelCase(folder));
-                        replaced = true;
+                if (Contains(filename, "<detected-pitch>") || Contains(filename, "<detected-midi-note>") ||
+                    Contains(filename, "<detected-note>") ||
+                    Contains(filename, "<detected-midi-note-octave-plus-1>") ||
+                    Contains(filename, "<detected-midi-note-octave-plus-2>") ||
+                    Contains(filename, "<detected-midi-note-octave-minus-1>") ||
+                    Contains(filename, "<detected-midi-note-octave-minus-2>") ||
+                    Contains(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>")) {
+                    if (const auto pitch = PitchDetector::DetectPitch(f->GetAudio())) {
+                        const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+
+                        Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
+                        Replace(filename, "<detected-midi-note>",
+                                std::to_string(closest_musical_note.midi_note));
+                        Replace(filename, "<detected-midi-note-octave-plus-1>",
+                                std::to_string(closest_musical_note.midi_note + 12));
+                        Replace(filename, "<detected-midi-note-octave-minus-1>",
+                                std::to_string(closest_musical_note.midi_note - 12));
+                        Replace(filename, "<detected-midi-note-octave-plus-2>",
+                                std::to_string(closest_musical_note.midi_note + 24));
+                        Replace(filename, "<detected-midi-note-octave-minus-2>",
+                                std::to_string(closest_musical_note.midi_note - 24));
+                        Replace(filename, "<detected-note>", closest_musical_note.name);
+                        Replace(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>",
+                                std::to_string(
+                                    ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note)));
+                    } else {
+                        WarningWithNewLine(
+                            GetName(),
+                            "One of the detected pitch variables was used in the file name, but we could not find any pitch in the audio. All detected pitch variables will be replaced with nothing.");
+                        Replace(filename, "<detected-pitch>", "");
+                        Replace(filename, "<detected-midi-note>", "");
+                        Replace(filename, "<detected-midi-note-octave-plus-1>", "");
+                        Replace(filename, "<detected-midi-note-octave-minus-1>", "");
+                        Replace(filename, "<detected-midi-note-octave-plus-2>", "");
+                        Replace(filename, "<detected-midi-note-octave-minus-2>", "");
+                        Replace(filename, "<detected-note>", "");
                     }
                 }
-                if (!replaced) {
-                    WarningWithNewLine(
-                        GetName(),
-                        "The file does not have a parent path, but the variable <parent-folder> was used. This will just be replaced by nothing.");
-                    Replace(filename, "<parent-folder>", "");
+                if (Contains(filename, "<parent-folder>") || Contains(filename, "<parent-folder-snake>") ||
+                    Contains(filename, "<parent-folder-camel>")) {
+                    if (folder != ".") {
+                        Replace(filename, "<parent-folder>", folder.filename().generic_string());
+                        Replace(filename, "<parent-folder-snake>",
+                                ToSnakeCase(folder.filename().generic_string()));
+                        Replace(filename, "<parent-folder-camel>",
+                                ToCamelCase(folder.filename().generic_string()));
+                    } else {
+                        WarningWithNewLine(
+                            GetName(),
+                            "The file does not have a parent path, but the variable <parent-folder> was used. This will just be replaced by nothing.");
+                        Replace(filename, "<parent-folder>", "");
+                    }
+                }
+
+                const std::regex re {"<\\w+>"};
+                auto var_begin = std::sregex_iterator(filename.begin(), filename.end(), re);
+                auto var_end = std::sregex_iterator();
+                for (std::sregex_iterator i = var_begin; i != var_end; ++i) {
+                    ErrorWithNewLine(GetName(),
+                                     "{} is not a valid substitution variable. Available options are: \n{}",
+                                     i->str(), RenameSubstitution::GetVariableNames());
+                    renamed = false;
                 }
             }
 
-            const std::regex re {"<\\w+>"};
-            auto var_begin = std::sregex_iterator(filename.begin(), filename.end(), re);
-            auto var_end = std::sregex_iterator();
-            for (std::sregex_iterator i = var_begin; i != var_end; ++i) {
-                ErrorWithNewLine(GetName(),
-                                 "{} is not a valid substitution variable. Available options are: \n{}",
-                                 i->str(), RenameSubstitution::GetVariableNames());
-                renamed = false;
+            if (renamed) {
+                auto path = f->GetPath();
+                const auto ext = path.extension();
+                path.replace_filename(filename);
+                path.replace_extension(ext);
+                f->SetPath(path);
             }
-        }
-
-        if (renamed) {
-            auto path = f.GetPath();
-            const auto ext = path.extension();
-            path.replace_filename(filename);
-            path.replace_extension(ext);
-            f.SetPath(path);
         }
     }
 }

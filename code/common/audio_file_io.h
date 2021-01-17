@@ -11,5 +11,5 @@ bool WriteAudioFile(const fs::path &filename,
                     const std::optional<unsigned> new_bits_per_sample = {});
 
 bool CanFileBeConvertedToBitDepth(AudioFileFormat file, unsigned bit_depth);
-bool IsAudioFileReadable(const fs::path &path);
+bool IsPathReadableAudioFile(const fs::path &path);
 std::string GetLowercaseExtension(AudioFileFormat file);

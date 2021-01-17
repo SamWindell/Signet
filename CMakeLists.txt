@@ -50,7 +50,7 @@ add_library(
     code/common/filter.cpp
     code/common/common.cpp
     code/common/midi_pitches.cpp
-    code/common/pathname_expansion.cpp
+    code/common/filepath_set.cpp
     code/common/string_utils.cpp
     code/signet/signet_interface.cpp
     code/signet/subcommands/auto_tuner/auto_tuner.cpp

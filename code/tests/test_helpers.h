@@ -84,7 +84,7 @@ class TestSubcommandProcessor {
     std::vector<std::optional<std::string>> GetFilenames() {
         std::vector<std::optional<std::string>> result;
         for (auto &f : *m_files) {
-            if (f.FilepathChanged())
+            if (f.PathChanged())
                 result.push_back(GetJustFilenameWithNoExtension(f.GetPath()));
             else
                 result.push_back({});
@@ -95,7 +95,7 @@ class TestSubcommandProcessor {
     std::vector<std::optional<std::string>> GetPaths() {
         std::vector<std::optional<std::string>> result;
         for (auto &f : *m_files) {
-            if (f.FilepathChanged())
+            if (f.PathChanged())
                 result.push_back(f.GetPath().generic_string());
             else
                 result.push_back({});

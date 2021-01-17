@@ -2,7 +2,6 @@
 #include <map>
 
 #include "edit_tracked_audio_file.h"
-#include "pathname_expansion.h"
 #include "types.h"
 
 class SignetBackup;
@@ -10,7 +9,11 @@ class SignetBackup;
 class AudioFiles {
   public:
     AudioFiles() {}
+
+    // Passes path_items to FilepathSet to construct the list of audio files
     AudioFiles(const std::vector<std::string> &path_items, const bool recursive_directory_search);
+
+    // Simply copies the EditTrackedAudioFile
     AudioFiles(const tcb::span<EditTrackedAudioFile> files);
 
     //
@@ -36,7 +39,7 @@ class AudioFiles {
     int GetNumFilesProcessed() const {
         int n = 0;
         for (const auto &f : m_all_files) {
-            if (f.AudioChanged() || f.FilepathChanged() || f.FormatChanged()) {
+            if (f.AudioChanged() || f.PathChanged() || f.FormatChanged()) {
                 n++;
             }
         }
@@ -44,7 +47,7 @@ class AudioFiles {
     }
 
   private:
-    void ReadAllAudioFiles(const FilePathSet &paths);
+    void ReadAllAudioFiles(const FilepathSet &paths);
     bool WouldWritingAllFilesCreateConflicts();
     void CreateFoldersDataStructure();
 

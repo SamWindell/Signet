@@ -5,16 +5,17 @@
 
 #include "backup.h"
 #include "common.h"
+#include "filepath_set.h"
 
 AudioFiles::AudioFiles(const std::vector<std::string> &path_items, const bool recursive_directory_search) {
     std::string parse_error;
-    const auto all_matched_filenames =
-        FilePathSet::CreateFromPatterns(path_items, recursive_directory_search, &parse_error);
-    if (!all_matched_filenames) {
+    const auto all_matched_filepaths =
+        FilepathSet::CreateFromPatterns(path_items, recursive_directory_search, &parse_error);
+    if (!all_matched_filepaths) {
         throw CLI::ValidationError("Input files", parse_error);
     }
 
-    if (all_matched_filenames->Size() == 0) {
+    if (all_matched_filepaths->Size() == 0) {
         std::string error {"there are no files that match the pattern "};
         for (const auto &i : path_items) {
             error += i + " ";
@@ -22,7 +23,7 @@ AudioFiles::AudioFiles(const std::vector<std::string> &path_items, const bool re
         throw CLI::ValidationError("Input files", error);
     }
 
-    ReadAllAudioFiles(*all_matched_filenames);
+    ReadAllAudioFiles(*all_matched_filepaths);
 }
 
 AudioFiles::AudioFiles(const tcb::span<EditTrackedAudioFile> files) {
@@ -41,9 +42,9 @@ void AudioFiles::CreateFoldersDataStructure() {
     }
 }
 
-void AudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
+void AudioFiles::ReadAllAudioFiles(const FilepathSet &paths) {
     for (const auto &path : paths) {
-        if (!IsAudioFileReadable(path)) continue;
+        if (!IsPathReadableAudioFile(path)) continue;
         std::error_code ec;
         const auto proximate = fs::proximate(path);
         if (ec) {
@@ -55,6 +56,7 @@ void AudioFiles::ReadAllAudioFiles(const FilePathSet &paths) {
             m_all_files.push_back(proximate);
         }
     }
+    MessageWithNewLine("Signet", "Found {} matching files", m_all_files.size());
     CreateFoldersDataStructure();
 }
 
@@ -91,7 +93,7 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
     bool error_occurred = false;
     for (auto &file : m_all_files) {
         const bool file_data_changed = file.AudioChanged();
-        const bool file_renamed = file.FilepathChanged();
+        const bool file_renamed = file.PathChanged();
         const bool file_format_changed = file.FormatChanged();
 
         if (file_renamed) {

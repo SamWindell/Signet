@@ -1,4 +1,5 @@
 #pragma once
+
 #include "audio_file_io.h"
 #include "common.h"
 #include "string_utils.h"
@@ -32,7 +33,7 @@ struct EditTrackedAudioFile {
     }
 
     bool AudioChanged() const { return m_file_edited && m_file_valid; }
-    bool FilepathChanged() const { return m_path_edited; }
+    bool PathChanged() const { return m_path_edited; }
     bool FormatChanged() const { return m_file_loaded && m_original_file_format != m_data.format; }
 
     void SetAudioData(const AudioData &data) {

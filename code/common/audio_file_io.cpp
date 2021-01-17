@@ -44,7 +44,7 @@ std::string GetLowercaseExtension(AudioFileFormat format) {
     return result;
 }
 
-bool IsAudioFileReadable(const fs::path &path) {
+bool IsPathReadableAudioFile(const fs::path &path) {
     if (StartsWith(path.filename().generic_string(), ".")) return false;
     const auto ext = path.extension();
     return ext == ".wav" || ext == ".flac";

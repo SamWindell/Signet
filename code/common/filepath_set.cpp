@@ -1,4 +1,4 @@
-#include "pathname_expansion.h"
+#include "filepath_set.h"
 
 #include "doctest.hpp"
 
@@ -17,9 +17,9 @@ static void ForEachFileInDirectory(const std::string_view directory,
     }
 }
 
-void ForEachFileInDirectory(const std::string_view directory,
-                            const bool recursively,
-                            const std::function<void(const fs::path &)> callback) {
+static void ForEachFileInDirectory(const std::string_view directory,
+                                   const bool recursively,
+                                   const std::function<void(const fs::path &)> callback) {
     if (recursively) {
         ForEachFileInDirectory<fs::recursive_directory_iterator>(directory, callback);
     } else {
@@ -36,9 +36,7 @@ const bool IsPathExcluded(const fs::path &path, const std::vector<std::string> &
     return false;
 }
 
-static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view pattern) {
-    namespace fs = fs;
-
+static std::vector<fs::path> GetFilepathsThatMatchPattern(std::string_view pattern) {
     std::string generic_pattern {pattern};
     Replace(generic_pattern, '\\', '/');
     pattern = generic_pattern;
@@ -97,11 +95,11 @@ static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view 
 
     const std::string_view last_file_section = pattern.substr(prev_pos);
 
-    std::vector<fs::path> result;
+    std::vector<fs::path> matching_filepaths;
     const auto CheckAndRegisterFile = [&](auto path) {
         const auto generic = path.generic_string();
         if (WildcardMatch(pattern, generic)) {
-            result.push_back(path);
+            matching_filepaths.push_back(path);
         }
     };
 
@@ -117,19 +115,18 @@ static std::vector<fs::path> GetAudioFilePathsThatMatchPattern(std::string_view 
         }
     }
 
-    return result;
+    return matching_filepaths;
 }
 
-static std::vector<fs::path> GetAudioFilePathsInDirectory(const std::string_view dir,
-                                                          const bool recursively) {
-    std::vector<fs::path> result;
+static std::vector<fs::path> GetAllFilepathsInDirectory(const std::string_view dir, const bool recursively) {
+    std::vector<fs::path> filepaths;
     const auto parent_directory = fs::path(std::string(dir));
-    ForEachFileInDirectory(dir, recursively, [&](const auto path) {
-        if (parent_directory.compare(path) < 0) {
-            result.push_back(path);
+    ForEachFileInDirectory(dir, recursively, [&](const auto filepath) {
+        if (parent_directory.compare(filepath) < 0) {
+            filepaths.push_back(filepath);
         }
     });
-    return result;
+    return filepaths;
 }
 
 static void GetAllCommaDelimitedSections(const std::vector<std::string> parts,
@@ -155,7 +152,7 @@ static void GetAllCommaDelimitedSections(const std::vector<std::string> parts,
     }
 }
 
-void FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
+void FilepathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
                                       const std::vector<std::string> &exclude_patterns) {
     for (const auto &path : paths) {
         if (!IsPathExcluded(path, exclude_patterns)) {
@@ -164,31 +161,27 @@ void FilePathSet::AddNonExcludedPaths(const tcb::span<const fs::path> paths,
     }
 }
 
-std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::vector<std::string> &parts,
+std::optional<FilepathSet> FilepathSet::CreateFromPatterns(const std::vector<std::string> &parts,
                                                            bool recursive_directory_search,
                                                            std::string *error) {
     std::vector<std::string> include_parts {};
     std::vector<std::string> exclude_paths {};
     GetAllCommaDelimitedSections(parts, include_parts, exclude_paths);
 
-    FilePathSet set {};
+    FilepathSet set {};
     for (const auto &include_part : include_parts) {
         if (include_part.find('*') != std::string::npos) {
-            MessageWithNewLine("Signet", "Searching for audio files using the pattern {}", include_part);
-            const auto matching_paths = GetAudioFilePathsThatMatchPattern(include_part);
+            MessageWithNewLine("Signet", "Searching for files using the pattern {}", include_part);
+            const auto matching_paths = GetFilepathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
-            set.m_num_wildcard_parts++;
         } else if (fs::is_directory(include_part)) {
-            MessageWithNewLine("Signet", "Searching for audio files {} in the directory {}",
+            MessageWithNewLine("Signet", "Searching for files {} in the directory {}",
                                recursive_directory_search ? "recursively" : "non-recursively", include_part);
-            const auto matching_paths =
-                GetAudioFilePathsInDirectory(include_part, recursive_directory_search);
+            const auto matching_paths = GetAllFilepathsInDirectory(include_part, recursive_directory_search);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
-            set.m_num_directory_parts++;
         } else if (fs::is_regular_file(include_part)) {
             fs::path path {include_part};
             set.AddNonExcludedPaths({&path, 1}, exclude_paths);
-            set.m_num_file_parts++;
         } else {
             if (error) {
                 *error = "The input part " + include_part + " is neither a file, directory, or pattern";
@@ -196,7 +189,6 @@ std::optional<FilePathSet> FilePathSet::CreateFromPatterns(const std::vector<std
             return {};
         }
     }
-    MessageWithNewLine("Signet", "Found {} matching audio files", set.Size());
     if (!recursive_directory_search && include_parts.size() == 1 &&
         fs::is_directory(std::string(include_parts[0]))) {
         MessageWithNewLine(
@@ -248,7 +240,7 @@ TEST_CASE("Pathname Expansion") {
     const auto CheckMatches = [](const std::vector<std::string> &parts,
                                  const std::initializer_list<const std::string> expected_matches) {
         std::string parse_error;
-        const auto matches = FilePathSet::CreateFromPatterns(parts, false, &parse_error);
+        const auto matches = FilepathSet::CreateFromPatterns(parts, false, &parse_error);
         CAPTURE(parse_error);
         CAPTURE(parts);
         REQUIRE(matches);

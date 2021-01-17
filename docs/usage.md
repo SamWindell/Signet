@@ -64,9 +64,9 @@ When the input is a directory, scan for files in it recursively
 - [norm](#norm)
 - [detect-pitch](#detect-pitch)
 - [rename](#rename)
-- [sample-blender](#sample-blender)
+- [sample-blend](#sample-blend)
 - [seamless-loop](#seamless-loop)
-- [silence-remove](#silence-remove)
+- [remove-silence](#remove-silence)
 - [trim](#trim)
 - [tune](#tune)
 - [zcross-offset](#zcross-offset)
@@ -677,7 +677,7 @@ this new name. To do this, add the regex group index in the
 angle-brackets (such as <1>).
 
 
-## sample-blender
+## sample-blend
 #### Description:
 Multi-sample Sample Blender: creates samples in between other samples
 that are different pitches. It takes 2 samples and generates a set of
@@ -689,7 +689,7 @@ be used to create an instrument that sounds like it was sampled at
 smaller intervals.
 
 #### Usage:
-sample-blender `[OPTIONS] root_note_regex semitone-interval out-filename`
+sample-blend `[OPTIONS] root_note_regex semitone-interval out-filename`
 
 #### Positionals:
 `root_note_regex TEXT REQUIRED`
@@ -736,14 +736,14 @@ Print this help message and exit
 Print help message for all subcommands
 
 
-## silence-remove
+## remove-silence
 #### Description:
 Silence-remover: removes silence from the start or end of the file(s).
 Silence is considered anything under -90dB, however this threshold can
 be changed with the --threshold option.
 
 #### Usage:
-silence-remove `[OPTIONS] [start-or-end]`
+remove-silence `[OPTIONS] [start-or-end]`
 
 #### Positionals:
 `start-or-end ENUM:value in {Both->2,End->1,Start->0} OR {2,1,0}`

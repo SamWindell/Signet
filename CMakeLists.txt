@@ -53,27 +53,27 @@ add_library(
     code/common/filepath_set.cpp
     code/common/string_utils.cpp
     code/signet/signet_interface.cpp
-    code/signet/subcommands/auto_tuner/auto_tuner.cpp
-    code/signet/subcommands/converter/converter.cpp
-    code/signet/subcommands/fader/fader.cpp
-    code/signet/subcommands/folderiser/folderiser.cpp
-    code/signet/subcommands/gainer/gainer.cpp
-    code/signet/subcommands/info_printer/info_printer.cpp
-    code/signet/subcommands/mover/mover.cpp
-    code/signet/subcommands/normaliser/gain_calculators.cpp
-    code/signet/subcommands/normaliser/normaliser.cpp
-    code/signet/subcommands/pitch_detector/pitch_detector.cpp
-    code/signet/subcommands/renamer/renamer.cpp
-    code/signet/subcommands/renamer/auto_mapper.cpp
-    code/signet/subcommands/renamer/rename_substitutions.cpp
-    code/signet/subcommands/renamer/note_to_midi.cpp
-    code/signet/subcommands/sample_blender/sample_blender.cpp
-    code/signet/subcommands/seamless_looper/seamless_looper.cpp
-    code/signet/subcommands/silence_remover/silence_remover.cpp
-    code/signet/subcommands/trimmer/trimmer.cpp
-    code/signet/subcommands/tuner/tuner.cpp
-    code/signet/subcommands/filters/filters.cpp
-    code/signet/subcommands/zcross_offsetter/zcross_offsetter.cpp
+    code/signet/subcommands/auto_tune/auto_tune.cpp
+    code/signet/subcommands/convert/convert.cpp
+    code/signet/subcommands/fade/fade.cpp
+    code/signet/subcommands/folderise/folderise.cpp
+    code/signet/subcommands/gain/gain.cpp
+    code/signet/subcommands/print_info/print_info.cpp
+    code/signet/subcommands/move/move.cpp
+    code/signet/subcommands/normalise/gain_calculators.cpp
+    code/signet/subcommands/normalise/normalise.cpp
+    code/signet/subcommands/detect_pitch/detect_pitch.cpp
+    code/signet/subcommands/rename/rename.cpp
+    code/signet/subcommands/rename/auto_mapper.cpp
+    code/signet/subcommands/rename/rename_substitutions.cpp
+    code/signet/subcommands/rename/note_to_midi.cpp
+    code/signet/subcommands/sample_blend/sample_blend.cpp
+    code/signet/subcommands/seamless_loop/seamless_loop.cpp
+    code/signet/subcommands/remove_silence/remove_silence.cpp
+    code/signet/subcommands/trim/trim.cpp
+    code/signet/subcommands/tune/tune.cpp
+    code/signet/subcommands/filter/filters.cpp
+    code/signet/subcommands/zcross_offset/zcross_offset.cpp
     code/signet/subcommands/embed_sampler_info/embed_sampler_info.cpp
     code/tests/test_helpers.cpp)
 

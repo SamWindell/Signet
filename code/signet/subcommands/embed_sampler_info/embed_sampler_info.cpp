@@ -7,7 +7,7 @@
 #include <fmt/core.h>
 
 #include "midi_pitches.h"
-#include "subcommands/pitch_detector/pitch_detector.h"
+#include "subcommands/detect_pitch/detect_pitch.h"
 #include "test_helpers.h"
 
 std::optional<int> GetIntIfValid(std::string_view str) {

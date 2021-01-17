@@ -7,29 +7,29 @@
 
 #include "audio_file_io.h"
 #include "cli_formatter.h"
-#include "subcommands/auto_tuner/auto_tuner.h"
-#include "subcommands/converter/converter.h"
+#include "subcommands/auto_tune/auto_tune.h"
+#include "subcommands/convert/convert.h"
+#include "subcommands/detect_pitch/detect_pitch.h"
 #include "subcommands/embed_sampler_info/embed_sampler_info.h"
-#include "subcommands/fader/fader.h"
-#include "subcommands/filters/filters.h"
-#include "subcommands/folderiser/folderiser.h"
-#include "subcommands/gainer/gainer.h"
-#include "subcommands/info_printer/info_printer.h"
-#include "subcommands/mover/mover.h"
-#include "subcommands/normaliser/normaliser.h"
-#include "subcommands/pitch_detector/pitch_detector.h"
-#include "subcommands/renamer/renamer.h"
-#include "subcommands/sample_blender/sample_blender.h"
-#include "subcommands/seamless_looper/seamless_looper.h"
-#include "subcommands/silence_remover/silence_remover.h"
-#include "subcommands/trimmer/trimmer.h"
-#include "subcommands/tuner/tuner.h"
-#include "subcommands/zcross_offsetter/zcross_offsetter.h"
+#include "subcommands/fade/fade.h"
+#include "subcommands/filter/filters.h"
+#include "subcommands/folderise/folderise.h"
+#include "subcommands/gain/gain.h"
+#include "subcommands/move/move.h"
+#include "subcommands/normalise/normalise.h"
+#include "subcommands/print_info/print_info.h"
+#include "subcommands/remove_silence/remove_silence.h"
+#include "subcommands/rename/rename.h"
+#include "subcommands/sample_blend/sample_blend.h"
+#include "subcommands/seamless_loop/seamless_loop.h"
+#include "subcommands/trim/trim.h"
+#include "subcommands/tune/tune.h"
+#include "subcommands/zcross_offset/zcross_offset.h"
 #include "test_helpers.h"
 #include "tests_config.h"
 
 SignetInterface::SignetInterface() {
-    m_subcommands.push_back(std::make_unique<AutoTuner>());
+    m_subcommands.push_back(std::make_unique<AutoTuneSubcommand>());
     m_subcommands.push_back(std::make_unique<Converter>());
     m_subcommands.push_back(std::make_unique<EmbedSamplerInfo>());
     m_subcommands.push_back(std::make_unique<Fader>());

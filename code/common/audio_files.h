@@ -5,6 +5,7 @@
 #include "types.h"
 
 class SignetBackup;
+class FilepathSet;
 
 class AudioFiles {
   public:

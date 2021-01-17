@@ -14,7 +14,7 @@
 #include "subcommands/tune/tune.h"
 #include "test_helpers.h"
 
-CLI::App *SampleBlender::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *SampleBlendCommand::CreateCommandCLI(CLI::App &app) {
     auto cli = app.add_subcommand(
         "sample-blend",
         R"aa(Multi-sample Sample Blender: creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.)aa");
@@ -43,7 +43,7 @@ CLI::App *SampleBlender::CreateSubcommandCLI(CLI::App &app) {
     return cli;
 }
 
-void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFile &f1, BaseBlendFile &f2) {
+void SampleBlendCommand::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFile &f1, BaseBlendFile &f2) {
     if (f1.root_note + m_semitone_interval >= f2.root_note) {
         MessageWithNewLine(GetName(), "Samples are close enough together already");
         return;
@@ -63,12 +63,12 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFil
 
         AudioData out = f1.file->GetAudio();
         const auto pitch_change1 = (root_note - f1.root_note) * cents_in_semitone;
-        Tuner::ChangePitch(out, pitch_change1);
+        out.ChangePitch(pitch_change1);
         out.MultiplyByScalar(distance_from_f1);
 
         AudioData other = f2.file->GetAudio();
         const auto pitch_change2 = (root_note - f2.root_note) * cents_in_semitone;
-        Tuner::ChangePitch(other, pitch_change2);
+        other.ChangePitch(pitch_change2);
         other.MultiplyByScalar(distance_from_f2);
 
         out.AddOther(other);
@@ -83,7 +83,7 @@ void SampleBlender::GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFil
     }
 }
 
-void SampleBlender::GenerateFiles(AudioFiles &input_files, SignetBackup &backup) {
+void SampleBlendCommand::GenerateFiles(AudioFiles &input_files, SignetBackup &backup) {
     std::map<fs::path, std::vector<BaseBlendFile>> base_file_folders;
     for (auto [folder, files] : input_files.Folders()) {
         for (auto &f : files) {
@@ -137,7 +137,7 @@ void SampleBlender::GenerateFiles(AudioFiles &input_files, SignetBackup &backup)
     }
 }
 
-TEST_CASE("SampleBlender") {
+TEST_CASE("SampleBlendCommand") {
     if (!fs::is_directory("test-folder")) {
         fs::create_directory("test-folder");
     }
@@ -158,7 +158,7 @@ TEST_CASE("SampleBlender") {
     // CLI::App app {"test"};
     // SignetBackup backup;
 
-    // SampleBlender::Create(app, backup);
+    // SampleBlendCommand::Create(app, backup);
 
     // const auto args = TestHelpers::StringToArgs(
     //     "signet-gen sample-blender pitched-\\w*-(\\d+) test-folder 2 out-pitched-blend-<root-num>");

@@ -9,7 +9,7 @@
 
 static constexpr usize silence_allowence = 4;
 
-CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *RemoveSilenceCommand::CreateCommandCLI(CLI::App &app) {
     auto remove_silence = app.add_subcommand(
         "remove-silence", "Silence-remover: removes silence from the start or end of the file(s). Silence is "
                           "considered anything under -90dB, "
@@ -31,7 +31,7 @@ CLI::App *SilenceRemover::CreateSubcommandCLI(CLI::App &app) {
     return remove_silence;
 }
 
-void SilenceRemover::ProcessFiles(AudioFiles &files) {
+void RemoveSilenceCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetAudio();
         usize loud_region_start = 0;
@@ -119,7 +119,7 @@ void SilenceRemover::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("[SilenceRemover]") {
+TEST_CASE("[RemoveSilenceCommand]") {
     AudioData buf;
     buf.num_channels = 1;
     buf.interleaved_samples.resize(silence_allowence * 2);
@@ -127,22 +127,22 @@ TEST_CASE("[SilenceRemover]") {
     const auto starting_size = buf.interleaved_samples.size();
 
     SUBCASE("no args") {
-        REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>("remove-silence", buf));
+        REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithCommand<RemoveSilenceCommand>("remove-silence", buf));
     }
 
     SUBCASE("all args") {
-        REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>(
+        REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithCommand<RemoveSilenceCommand>(
             "remove-silence start --threshold -90", buf));
     }
 
     SUBCASE("just threshold") {
         REQUIRE_NOTHROW(
-            TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>("remove-silence --threshold -90", buf));
+            TestHelpers::ProcessBufferWithCommand<RemoveSilenceCommand>("remove-silence --threshold -90", buf));
     }
 
     SUBCASE("removes start") {
         const auto result =
-            TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>("remove-silence start", buf);
+            TestHelpers::ProcessBufferWithCommand<RemoveSilenceCommand>("remove-silence start", buf);
         REQUIRE(result);
         REQUIRE(result->NumFrames() == starting_size - 2);
         REQUIRE(result->interleaved_samples[silence_allowence + 0] == 1.0);
@@ -151,7 +151,7 @@ TEST_CASE("[SilenceRemover]") {
 
     SUBCASE("removes end") {
         const auto result =
-            TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>("remove-silence end", buf);
+            TestHelpers::ProcessBufferWithCommand<RemoveSilenceCommand>("remove-silence end", buf);
         REQUIRE(result);
         REQUIRE(result->NumFrames() == starting_size - 1);
         REQUIRE(result->interleaved_samples[silence_allowence + 0] == 0.0);
@@ -161,7 +161,7 @@ TEST_CASE("[SilenceRemover]") {
 
     SUBCASE("removes both") {
         const auto result =
-            TestHelpers::ProcessBufferWithSubcommand<SilenceRemover>("remove-silence both", buf);
+            TestHelpers::ProcessBufferWithCommand<RemoveSilenceCommand>("remove-silence both", buf);
         REQUIRE(result);
         REQUIRE(result->NumFrames() == starting_size - 3);
         REQUIRE(result->interleaved_samples[silence_allowence + 0] == 1.0);

@@ -2,11 +2,11 @@
 
 #include "subcommand.h"
 
-class SeamlessLooper final : public Subcommand {
+class SeamlessLoopCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "SeamlessLooper"; }
+    std::string GetName() const override { return "SeamlessLoop"; }
 
   private:
     double m_crossfade_percent;

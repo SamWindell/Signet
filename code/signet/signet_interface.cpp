@@ -29,25 +29,25 @@
 #include "tests_config.h"
 
 SignetInterface::SignetInterface() {
-    m_subcommands.push_back(std::make_unique<AutoTuneSubcommand>());
-    m_subcommands.push_back(std::make_unique<Converter>());
+    m_subcommands.push_back(std::make_unique<AutoTuneCommand>());
+    m_subcommands.push_back(std::make_unique<ConvertCommand>());
     m_subcommands.push_back(std::make_unique<EmbedSamplerInfo>());
-    m_subcommands.push_back(std::make_unique<Fader>());
-    m_subcommands.push_back(std::make_unique<Folderiser>());
-    m_subcommands.push_back(std::make_unique<Gainer>());
-    m_subcommands.push_back(std::make_unique<Highpass>());
-    m_subcommands.push_back(std::make_unique<Lowpass>());
-    m_subcommands.push_back(std::make_unique<SampleInfoPrinter>());
-    m_subcommands.push_back(std::make_unique<Mover>());
-    m_subcommands.push_back(std::make_unique<Normaliser>());
-    m_subcommands.push_back(std::make_unique<PitchDetector>());
-    m_subcommands.push_back(std::make_unique<Renamer>());
-    m_subcommands.push_back(std::make_unique<SampleBlender>());
-    m_subcommands.push_back(std::make_unique<SeamlessLooper>());
-    m_subcommands.push_back(std::make_unique<SilenceRemover>());
-    m_subcommands.push_back(std::make_unique<Trimmer>());
-    m_subcommands.push_back(std::make_unique<Tuner>());
-    m_subcommands.push_back(std::make_unique<ZeroCrossingOffsetter>());
+    m_subcommands.push_back(std::make_unique<FadeCommand>());
+    m_subcommands.push_back(std::make_unique<FolderiseCommand>());
+    m_subcommands.push_back(std::make_unique<GainCommand>());
+    m_subcommands.push_back(std::make_unique<HighpassCommand>());
+    m_subcommands.push_back(std::make_unique<LowpassCommand>());
+    m_subcommands.push_back(std::make_unique<PrintInfoCommand>());
+    m_subcommands.push_back(std::make_unique<MoveCommand>());
+    m_subcommands.push_back(std::make_unique<NormaliseCommand>());
+    m_subcommands.push_back(std::make_unique<DetectPitchCommand>());
+    m_subcommands.push_back(std::make_unique<RenameCommand>());
+    m_subcommands.push_back(std::make_unique<SampleBlendCommand>());
+    m_subcommands.push_back(std::make_unique<SeamlessLoopCommand>());
+    m_subcommands.push_back(std::make_unique<RemoveSilenceCommand>());
+    m_subcommands.push_back(std::make_unique<TrimCommand>());
+    m_subcommands.push_back(std::make_unique<TuneCommand>());
+    m_subcommands.push_back(std::make_unique<ZeroCrossOffsetCommand>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
@@ -85,10 +85,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
                 for (auto l : Split(t, "\n", true)) {
                     const std::string_view headings[] {
-                        "`Usage:`", "`Description:`", "`Options:`", "`Subcommands:`", "`Positionals:`",
-                        "Usage:",   "Description:",   "Options:",   "Subcommands:",   "Positionals:"};
+                        "`Usage:`", "`Description:`", "`Options:`", "`Commands:`", "`Positionals:`",
+                        "Usage:",   "Description:",   "Options:",   "Commands:",   "Positionals:"};
 
-                    if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
+                    if (hide_subcommands && (l == "`Commands:`" || l == "Commands:")) {
                         break;
                     }
 
@@ -133,7 +133,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                                                             ProcessFormatTextMode::MarkdownCode),
                                    true);
 
-            os << "# Subcommands Usage\n";
+            os << "# Commands Usage\n";
             for (auto s : app.get_subcommands({})) {
                 auto name = s->get_name();
                 os << fmt::format("- [{}](#{})\n", name, name);
@@ -175,7 +175,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     std::vector<CLI::App *> subcommand_clis;
     for (auto &subcommand : m_subcommands) {
-        auto s = subcommand->CreateSubcommandCLI(app);
+        auto s = subcommand->CreateCommandCLI(app);
         s->needs(input_files_option);
         s->final_callback([&] {
             struct FileEditState {

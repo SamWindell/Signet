@@ -2,9 +2,9 @@
 
 #include "subcommand.h"
 
-class EmbedSamplerInfo : public Subcommand {
+class EmbedSamplerInfo : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
 
     std::string GetName() const override { return "Sample Info Embeder"; }

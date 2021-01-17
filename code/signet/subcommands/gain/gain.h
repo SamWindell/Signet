@@ -18,11 +18,11 @@ class GainAmount {
     double m_value {};
 };
 
-class Gainer final : public Subcommand {
+class GainCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Gainer"; }
+    std::string GetName() const override { return "Gain"; }
 
   private:
     GainAmount m_gain;

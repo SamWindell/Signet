@@ -5,11 +5,11 @@
 #include "audio_duration.h"
 #include "subcommand.h"
 
-class Trimmer final : public Subcommand {
+class TrimCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Trimmer"; }
+    std::string GetName() const override { return "Trim"; }
 
   private:
     std::optional<AudioDuration> m_start_duration;

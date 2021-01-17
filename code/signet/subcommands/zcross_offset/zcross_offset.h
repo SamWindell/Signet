@@ -11,7 +11,7 @@
 #include "common.h"
 #include "signet_interface.h"
 
-class ZeroCrossingOffsetter final : public Subcommand {
+class ZeroCrossOffsetCommand final : public Command {
   public:
     static size_t FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
                                                  const size_t num_frames,
@@ -30,9 +30,9 @@ class ZeroCrossingOffsetter final : public Subcommand {
         }
     }
     std::string GetName() const override { return GetNameInternal(); }
-    static std::string GetNameInternal() { return "ZeroCrossingOffsetter"; }
+    static std::string GetNameInternal() { return "ZeroCrossOffset"; }
 
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override {
+    CLI::App *CreateCommandCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand(
             "zcross-offset", "Zero-crossing Offsetter: offsets the start of an audio file to the nearest "
                              "zero-crossing (or the closest thing to a zero crossing). You can use the "

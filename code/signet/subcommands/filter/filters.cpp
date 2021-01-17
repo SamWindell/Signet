@@ -29,8 +29,9 @@ void FilterProcessFiles(AudioFiles &files,
     }
 }
 
-CLI::App *Highpass::CreateSubcommandCLI(CLI::App &app) {
-    auto hp = app.add_subcommand("highpass", R"aa(Highpass: removes frequencies below the given cutoff.)aa");
+CLI::App *HighpassCommand::CreateCommandCLI(CLI::App &app) {
+    auto hp =
+        app.add_subcommand("highpass", R"aa(HighpassCommand: removes frequencies below the given cutoff.)aa");
 
     hp->add_option("cutoff-freq-hz", m_cutoff,
                    "The cutoff point where frequencies below this should be removed.")
@@ -39,12 +40,13 @@ CLI::App *Highpass::CreateSubcommandCLI(CLI::App &app) {
     return hp;
 }
 
-void Highpass::ProcessFiles(AudioFiles &files) {
+void HighpassCommand::ProcessFiles(AudioFiles &files) {
     FilterProcessFiles(files, Filter::RBJType::HighPass, m_cutoff, Filter::default_q_factor, 0);
 }
 
-CLI::App *Lowpass::CreateSubcommandCLI(CLI::App &app) {
-    auto lp = app.add_subcommand("lowpass", R"aa(Lowpass: removes frequencies above the given cutoff.)aa");
+CLI::App *LowpassCommand::CreateCommandCLI(CLI::App &app) {
+    auto lp =
+        app.add_subcommand("lowpass", R"aa(LowpassCommand: removes frequencies above the given cutoff.)aa");
 
     lp->add_option("cutoff-freq-hz", m_cutoff,
                    "The cutoff point where frequencies above this should be removed.")
@@ -53,6 +55,6 @@ CLI::App *Lowpass::CreateSubcommandCLI(CLI::App &app) {
     return lp;
 }
 
-void Lowpass::ProcessFiles(AudioFiles &files) {
+void LowpassCommand::ProcessFiles(AudioFiles &files) {
     FilterProcessFiles(files, Filter::RBJType::LowPass, m_cutoff, Filter::default_q_factor, 0);
 }

@@ -8,11 +8,11 @@
 #include "subcommand.h"
 #include "types.h"
 
-class Renamer final : public Subcommand {
+class RenameCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Renamer"; }
+    std::string GetName() const override { return "Rename"; }
 
   private:
     AutoMapper m_auto_mapper;

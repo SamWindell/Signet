@@ -2,11 +2,9 @@
 
 #include "subcommand.h"
 
-class PitchDetector final : public Subcommand {
+class DetectPitchCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "PitchDetector"; }
-
-    static std::optional<double> DetectPitch(const AudioData &audio);
+    std::string GetName() const override { return "DetectPitch"; }
 };

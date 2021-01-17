@@ -10,16 +10,16 @@
 #include "subcommands/detect_pitch/detect_pitch.h"
 #include "test_helpers.h"
 
-CLI::App *Renamer::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *RenameCommand::CreateCommandCLI(CLI::App &app) {
     auto rename = app.add_subcommand("rename",
-                                      R"aa(File Renamer: various commands for renaming files.
+                                     R"aa(File RenameCommand: various commands for renaming files.
 
 This command can be used to bulk rename a set of files. It also has the ability to insert special variables into the file name, such as the detected pitch. As well as this, there is a special auto-mapper command that is useful to sample library developers.
 
 All options for this subcommand relate to just the name of the file - not the folder or the file extension.
 
 Any text added via this command can contain special substitution variables; these will be replaced by values specified in this list:)aa" +
-                                          RenameSubstitution::GetFullInfo());
+                                         RenameSubstitution::GetFullInfo());
     rename->require_subcommand();
 
     auto prefix = rename->add_subcommand("prefix", "Add text to the start of the filename.");
@@ -54,7 +54,7 @@ Any text added via this command can contain special substitution variables; thes
     return rename;
 }
 
-void Renamer::ProcessFiles(AudioFiles &files) {
+void RenameCommand::ProcessFiles(AudioFiles &files) {
     m_auto_mapper.InitialiseProcessing(files);
 
     for (auto [folder, folder_files] : files.Folders()) {
@@ -107,7 +107,7 @@ void Renamer::ProcessFiles(AudioFiles &files) {
                     Contains(filename, "<detected-midi-note-octave-minus-1>") ||
                     Contains(filename, "<detected-midi-note-octave-minus-2>") ||
                     Contains(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>")) {
-                    if (const auto pitch = PitchDetector::DetectPitch(f->GetAudio())) {
+                    if (const auto pitch = f->GetAudio().DetectPitch()) {
                         const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
                         Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
@@ -176,19 +176,19 @@ void Renamer::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("Renamer") {
+TEST_CASE("RenameCommand") {
     SUBCASE("requires args") {
-        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename", {}, "file.wav"));
-        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename prefix", {}, "file.wav"));
-        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename suffix", {}, "file.wav"));
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename", {}, "file.wav"));
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix", {}, "file.wav"));
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename suffix", {}, "file.wav"));
         REQUIRE_THROWS(
-            TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename regex-replace", {}, "file.wav"));
+            TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename regex-replace", {}, "file.wav"));
     }
 
     SUBCASE("prefix") {
         SUBCASE("simple") {
             const auto f =
-                TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename prefix _", {}, "file.wav");
+                TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix _", {}, "file.wav");
             REQUIRE(f);
             REQUIRE(*f == "_file");
         }
@@ -197,7 +197,7 @@ TEST_CASE("Renamer") {
     SUBCASE("suffix") {
         SUBCASE("simple") {
             const auto f =
-                TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename suffix _", {}, "file.wav");
+                TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename suffix _", {}, "file.wav");
             REQUIRE(f);
             REQUIRE(*f == "file_");
         }
@@ -205,13 +205,13 @@ TEST_CASE("Renamer") {
 
     SUBCASE("regex-replace") {
         SUBCASE("replace everything") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                 "rename regex-replace .* new_name", {}, "file.wav");
             REQUIRE(f);
             REQUIRE(*f == "new_name");
         }
         SUBCASE("insert groups into replacement") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                 "rename regex-replace ([^l]*)(le) <1><2><1>", {}, "file.wav");
             REQUIRE(f);
             REQUIRE(*f == "filefi");
@@ -220,26 +220,26 @@ TEST_CASE("Renamer") {
 
     SUBCASE("note-to-midi") {
         SUBCASE("simple single replace") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename note-to-midi", {},
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename note-to-midi", {},
                                                                                "file_c-1.wav");
             REQUIRE(f);
             REQUIRE(*f == "file_0");
         }
         SUBCASE("simple multiple replace") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename note-to-midi", {},
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename note-to-midi", {},
                                                                                "file_c-1_C4.wav");
             REQUIRE(f);
             REQUIRE(*f == "file_0_60");
         }
         SUBCASE("simple single replace with altered C-2 for zero num") {
             SUBCASE("c-2 is 0") {
-                const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                     "rename note-to-midi --midi-zero-note=C-2", {}, "file_c-2.wav");
                 REQUIRE(f);
                 REQUIRE(*f == "file_0");
             }
             SUBCASE("c3 is 60") {
-                const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+                const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                     "rename note-to-midi --midi-zero-note=C-2", {}, "file_c3.wav");
                 REQUIRE(f);
                 REQUIRE(*f == "file_60");
@@ -248,26 +248,26 @@ TEST_CASE("Renamer") {
     }
 
     SUBCASE("invalid rename substitution") {
-        const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>("rename prefix <foo><bar>", {},
+        const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix <foo><bar>", {},
                                                                            "foo/file.wav");
         REQUIRE(!f);
     }
 
     SUBCASE("<parent-folder>") {
         SUBCASE("prefix") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                 "rename prefix <parent-folder>bar", {}, "foo/file.wav");
             REQUIRE(f);
             REQUIRE(*f == "foobarfile");
         }
         SUBCASE("suffix") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                 "rename suffix _<parent-folder-snake>_suf", {}, "folder name/file.wav");
             REQUIRE(f);
             REQUIRE(*f == "file_folder_name_suf");
         }
         SUBCASE("regex-replace") {
-            const auto f = TestHelpers::ProcessFilenameWithSubcommand<Renamer>(
+            const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
                 "rename regex-replace .* <0><parent-folder-camel>", {}, "not relavent/foo/file.wav");
             REQUIRE(f);
             REQUIRE(*f == "fileFoo");

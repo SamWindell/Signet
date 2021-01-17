@@ -7,7 +7,6 @@
 #include <fmt/core.h>
 
 #include "midi_pitches.h"
-#include "subcommands/detect_pitch/detect_pitch.h"
 #include "test_helpers.h"
 
 std::optional<int> GetIntIfValid(std::string_view str) {
@@ -102,7 +101,7 @@ Sets the root note by running a pitch detection algorithm on the file. If the au
                        g_regex_capture_argument_description, GetAllDetectPitchOptions());
 }
 
-CLI::App *EmbedSamplerInfo::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *EmbedSamplerInfo::CreateCommandCLI(CLI::App &app) {
     auto embedder = app.add_subcommand(
         "embed-sampler-info", "Sample Info Embed: embeds sampler metadata into the audio file(s), such as "
                               "the root note, the velocity mapping range and the note mapping range.");
@@ -258,7 +257,7 @@ void EmbedSamplerInfo::ProcessFiles(AudioFiles &files) {
             SetFromFilenameRegexMatch(m_root_regex_pattern.value(), metadata.midi_mapping->root_midi_note);
         } else if (m_root_auto_detect_name) {
             int midi_note = 60;
-            if (auto pitch = PitchDetector::DetectPitch(f.GetAudio())) {
+            if (auto pitch = f.GetAudio().DetectPitch()) {
                 midi_note = FindClosestMidiPitch(*pitch).midi_note;
             }
 
@@ -360,25 +359,25 @@ TEST_CASE("EmbedSamplerInfo") {
     REQUIRE(!buf.metadata.midi_mapping);
 
     SUBCASE("requires subcommand") {
-        REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>("embed-sampler-info", buf));
+        REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>("embed-sampler-info", buf));
     }
 
     SUBCASE("accepts multple subcommands") {
-        REQUIRE(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+        REQUIRE(TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
             "embed-sampler-info root 60 note-range 60 60 velocity-range 60 60", buf));
     }
 
     SUBCASE("root note") {
         SUBCASE("sets integer") {
             auto out =
-                TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>("embed-sampler-info root 60", buf);
+                TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>("embed-sampler-info root 60", buf);
             REQUIRE(out);
             REQUIRE(out->metadata.midi_mapping);
             REQUIRE(out->metadata.midi_mapping->root_midi_note == 60);
         }
         SUBCASE("sets auto-detect") {
             auto CheckAutoDetectOption = [&](const std::string_view option, int expected_value) {
-                auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+                auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                     fmt::format("embed-sampler-info root {}", option), buf);
                 CHECK(out);
                 CHECK(out->metadata.midi_mapping);
@@ -392,7 +391,7 @@ TEST_CASE("EmbedSamplerInfo") {
             CheckAutoDetectOption("auto-detect-nearest-to-middle-c", 57);
         }
         SUBCASE("set from filename") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info root sample_(\\d+)", buf, "sample_60.wav");
             REQUIRE(out);
             REQUIRE(out->metadata.midi_mapping);
@@ -402,12 +401,12 @@ TEST_CASE("EmbedSamplerInfo") {
 
     SUBCASE("note range") {
         SUBCASE("2 args are required unless auto-map") {
-            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info note-range 61", buf));
         }
 
         SUBCASE("sets integer") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info note-range 61 62", buf);
             REQUIRE(out);
             REQUIRE(out->metadata.midi_mapping);
@@ -416,7 +415,7 @@ TEST_CASE("EmbedSamplerInfo") {
             REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_note == 62);
         }
         SUBCASE("sets from filename") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info note-range sample_(\\d+)_\\d+ sample_\\d+_(\\d+)", buf,
                 "sample_61_62.wav");
             REQUIRE(out);
@@ -426,7 +425,7 @@ TEST_CASE("EmbedSamplerInfo") {
             REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_note == 62);
         }
         SUBCASE("unchanged works") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info note-range 61 unchanged", buf);
             REQUIRE(out);
             REQUIRE(out->metadata.midi_mapping);
@@ -442,7 +441,7 @@ TEST_CASE("EmbedSamplerInfo") {
             const auto a4 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 440);
             const auto a5 = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 880);
 
-            auto out = TestHelpers::ProcessBuffersWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBuffersWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info root auto-detect note-range auto-map", {a3, a4, a5},
                 {"a3.wav", "a4.wav", "a5.wav"});
 
@@ -470,12 +469,12 @@ TEST_CASE("EmbedSamplerInfo") {
 
     SUBCASE("velocity range") {
         SUBCASE("2 args are required unless auto-map") {
-            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info velocity-range 61", buf));
         }
 
         SUBCASE("set integer") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info velocity-range 61 62", buf);
             REQUIRE(out);
             REQUIRE(out->metadata.midi_mapping);
@@ -485,7 +484,7 @@ TEST_CASE("EmbedSamplerInfo") {
         }
 
         SUBCASE("sets from filename") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info velocity-range sample_(\\d+)_\\d+ sample_\\d+_(\\d+)", buf,
                 "sample_61_62.wav");
             REQUIRE(out);
@@ -496,7 +495,7 @@ TEST_CASE("EmbedSamplerInfo") {
         }
 
         SUBCASE("unchanged works") {
-            auto out = TestHelpers::ProcessBufferWithSubcommand<EmbedSamplerInfo>(
+            auto out = TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>(
                 "embed-sampler-info velocity-range 61 unchanged", buf);
             REQUIRE(out);
             REQUIRE(out->metadata.midi_mapping);

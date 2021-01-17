@@ -6,11 +6,11 @@
 #include "audio_file_io.h"
 #include "subcommand.h"
 
-class SampleBlender : public Subcommand {
+class SampleBlendCommand : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void GenerateFiles(AudioFiles &files, SignetBackup &backup) override;
-    std::string GetName() const override { return "SampleBlender"; }
+    std::string GetName() const override { return "SampleBlend"; }
 
   private:
     struct BaseBlendFile {

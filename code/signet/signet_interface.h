@@ -28,7 +28,7 @@ class SignetInterface final {
     int Main(const int argc, const char *const argv[]);
 
   private:
-    std::vector<std::unique_ptr<Subcommand>> m_subcommands {};
+    std::vector<std::unique_ptr<Command>> m_subcommands {};
     SignetBackup m_backup {};
 
     AudioFiles m_input_audio_files {};

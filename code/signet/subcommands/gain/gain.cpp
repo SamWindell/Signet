@@ -38,8 +38,8 @@ double GainAmount::GetMultiplier() const {
     return 1;
 }
 
-CLI::App *Gainer::CreateSubcommandCLI(CLI::App &app) {
-    auto gain = app.add_subcommand("gain", "Gainer: changes the volume of the file(s).");
+CLI::App *GainCommand::CreateCommandCLI(CLI::App &app) {
+    auto gain = app.add_subcommand("gain", "GainCommand: changes the volume of the file(s).");
 
     gain->add_option("gain", m_gain,
                      "The gain amount. This is a number followed by a unit. The unit can be % or db. For "
@@ -50,7 +50,7 @@ CLI::App *Gainer::CreateSubcommandCLI(CLI::App &app) {
     return gain;
 }
 
-void Gainer::ProcessFiles(AudioFiles &files) {
+void GainCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (audio.IsEmpty()) continue;
@@ -63,36 +63,36 @@ void Gainer::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("Gainer") {
+TEST_CASE("GainCommand") {
     const auto buf = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 440);
 
     SUBCASE("requires db arg") {
-        REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Gainer>("gain", buf));
+        REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<GainCommand>("gain", buf));
     }
 
     SUBCASE("-6db roughly halves") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Gainer>("gain -6db", buf);
+        const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain -6db", buf);
         REQUIRE(out);
         REQUIRE(buf.interleaved_samples[0] == -1);
         REQUIRE(out->interleaved_samples[0] == doctest::Approx(-0.5).epsilon(0.01));
     }
 
     SUBCASE("+6db roughly doubles") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Gainer>("gain 6db", buf);
+        const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain 6db", buf);
         REQUIRE(out);
         REQUIRE(buf.interleaved_samples[0] == -1);
         REQUIRE(out->interleaved_samples[0] == doctest::Approx(-2).epsilon(0.01));
     }
 
     SUBCASE("50% roughly halves") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Gainer>("gain 50%", buf);
+        const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain 50%", buf);
         REQUIRE(out);
         REQUIRE(buf.interleaved_samples[0] == -1);
         REQUIRE(out->interleaved_samples[0] == doctest::Approx(-0.5).epsilon(0.01));
     }
 
     SUBCASE("200% roughly doubles") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Gainer>("gain 200%", buf);
+        const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain 200%", buf);
         REQUIRE(out);
         REQUIRE(buf.interleaved_samples[0] == -1);
         REQUIRE(out->interleaved_samples[0] == doctest::Approx(-2).epsilon(0.01));

@@ -8,14 +8,14 @@
 #include "test_helpers.h"
 
 static tcb::span<const std::string_view> GetShapeNames() {
-    static const auto names = magic_enum::enum_names<Fader::Shape>();
+    static const auto names = magic_enum::enum_names<FadeCommand::Shape>();
     return {names.data(), names.size()};
 }
 
-CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *FadeCommand::CreateCommandCLI(CLI::App &app) {
     auto fade = app.add_subcommand(
         "fade",
-        "Fader: adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has "
+        "FadeCommand: adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has "
         "itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify "
         "first the fade length. You can then optionally specify the shape of the fade curve.");
     fade->require_subcommand();
@@ -46,7 +46,7 @@ CLI::App *Fader::CreateSubcommandCLI(CLI::App &app) {
     return fade;
 }
 
-static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 size) {
+static double GetFade(const FadeCommand::Shape shape, const s64 x_index, const s64 size) {
     REQUIRE(size);
     if (x_index == 0) return 0;
     if (x_index == size) return 1;
@@ -55,26 +55,26 @@ static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 siz
     static constexpr double silent_db = -30;
     static constexpr double range_db = -silent_db;
     switch (shape) {
-        case Fader::Shape::Linear: {
+        case FadeCommand::Shape::Linear: {
             return x;
         }
-        case Fader::Shape::Sine: {
+        case FadeCommand::Shape::Sine: {
             return std::sin(x * half_pi);
         }
-        case Fader::Shape::SCurve: {
+        case FadeCommand::Shape::SCurve: {
             return (-(std::cos(x * pi) - 1.0)) / 2.0;
         }
-        case Fader::Shape::Exp: {
+        case FadeCommand::Shape::Exp: {
             return std::pow(0.5, (1 - x) * 5);
         }
-        case Fader::Shape::Log: {
+        case FadeCommand::Shape::Log: {
             const auto db = AmpToDB(x);
             if (db < silent_db) {
                 return x;
             }
             return (db + range_db) / range_db;
         }
-        case Fader::Shape::Sqrt: {
+        case FadeCommand::Shape::Sqrt: {
             return std::sqrt(x);
         }
         default: REQUIRE(0);
@@ -82,10 +82,10 @@ static double GetFade(const Fader::Shape shape, const s64 x_index, const s64 siz
     return 0;
 }
 
-void Fader::PerformFade(AudioData &audio,
+void FadeCommand::PerformFade(AudioData &audio,
                         const s64 silent_frame,
                         const s64 fullvol_frame,
-                        const Fader::Shape shape) {
+                        const FadeCommand::Shape shape) {
     const s64 increment = silent_frame < fullvol_frame ? 1 : -1;
     const auto size = std::abs(fullvol_frame - silent_frame);
 
@@ -98,7 +98,7 @@ void Fader::PerformFade(AudioData &audio,
     }
 }
 
-void Fader::ProcessFiles(AudioFiles &files) {
+void FadeCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (m_fade_in_duration) {
@@ -123,7 +123,7 @@ void Fader::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("[Fader]") {
+TEST_CASE("[FadeCommand]") {
     AudioData buf {};
     buf.sample_rate = 44100;
     buf.num_channels = 1;
@@ -132,10 +132,10 @@ TEST_CASE("[Fader]") {
 
     SUBCASE("fade calculation") {
         const auto CheckRegion = [&](const s64 silent_frame, const s64 fullvol_frame) {
-            for (const auto &shape : magic_enum::enum_values<Fader::Shape>()) {
+            for (const auto &shape : magic_enum::enum_values<FadeCommand::Shape>()) {
                 CAPTURE(silent_frame);
                 CAPTURE(fullvol_frame);
-                Fader::PerformFade(buf, silent_frame, fullvol_frame, shape);
+                FadeCommand::PerformFade(buf, silent_frame, fullvol_frame, shape);
                 REQUIRE(buf.interleaved_samples[silent_frame] == 0.0);
                 REQUIRE(buf.interleaved_samples[fullvol_frame] == 1.0);
                 for (s64 i = std::min(silent_frame, fullvol_frame) + 1;
@@ -161,7 +161,7 @@ TEST_CASE("[Fader]") {
         const auto TestArgs = [&](std::string args, const size_t expected_fade_in_samples,
                                   const size_t expected_fade_out_samples) {
             CAPTURE(args);
-            auto output = TestHelpers::ProcessBufferWithSubcommand<Fader>(args, buf);
+            auto output = TestHelpers::ProcessBufferWithCommand<FadeCommand>(args, buf);
             REQUIRE(output);
 
             SUBCASE("audio fades in from 0 to 1") {

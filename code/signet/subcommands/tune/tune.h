@@ -1,15 +1,12 @@
 #pragma once
 
-#include "audio_file_io.h"
 #include "subcommand.h"
 
-class Tuner final : public Subcommand {
+class TuneCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Tuner"; }
-
-    static void ChangePitch(AudioData &audio, double cents);
+    std::string GetName() const override { return "Tune"; }
 
   private:
     double m_tune_cents {};

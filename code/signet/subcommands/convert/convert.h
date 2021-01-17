@@ -3,16 +3,11 @@
 #include "audio_file_io.h"
 #include "signet_interface.h"
 
-class Converter final : public Subcommand {
+class ConvertCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Converter"; }
-
-    static void ConvertSampleRate(std::vector<double> &buffer,
-                                  const unsigned num_channels,
-                                  const double input_sample_rate,
-                                  const double new_sample_rate);
+    std::string GetName() const override { return "Convert"; }
 
   private:
     bool m_files_can_be_converted {};

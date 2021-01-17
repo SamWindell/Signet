@@ -43,14 +43,16 @@ target_link_libraries(third_party_libs PUBLIC cereal fmt::fmt)
 
 add_library(
     common OBJECT
+    code/common/audio_data.cpp
     code/common/audio_duration.cpp
     code/common/audio_file_io.cpp
     code/common/audio_files.cpp
     code/common/backup.cpp
-    code/common/filter.cpp
     code/common/common.cpp
-    code/common/midi_pitches.cpp
     code/common/filepath_set.cpp
+    code/common/filter.cpp
+    code/common/gain_calculators.cpp
+    code/common/midi_pitches.cpp
     code/common/string_utils.cpp
     code/signet/signet_interface.cpp
     code/signet/subcommands/auto_tune/auto_tune.cpp
@@ -60,7 +62,6 @@ add_library(
     code/signet/subcommands/gain/gain.cpp
     code/signet/subcommands/print_info/print_info.cpp
     code/signet/subcommands/move/move.cpp
-    code/signet/subcommands/normalise/gain_calculators.cpp
     code/signet/subcommands/normalise/normalise.cpp
     code/signet/subcommands/detect_pitch/detect_pitch.cpp
     code/signet/subcommands/rename/rename.cpp

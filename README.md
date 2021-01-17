@@ -84,7 +84,7 @@ However, Signet can help with safety too. It features a simple undo system. You 
 
 Files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
-## Subcommands (effects)
+## Commands (effects)
 Next, you must specify what subcommand to run. A subcommand is the effect that should be applied to the file(s).
 
 Each subcommand has its own set of arguments; these are shown by adding `--help` after the subcommand.

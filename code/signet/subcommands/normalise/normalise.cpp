@@ -5,10 +5,10 @@
 
 #include "test_helpers.h"
 
-CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand(
         "norm",
-        "Normaliser: sets the peak amplitude to a certain level. When this is used on multiple files, each "
+        "NormaliseCommand: sets the peak amplitude to a certain level. When this is used on multiple files, each "
         "file is attenuated by the same amount. You can disable this by specifying the flag "
         "--independently.");
 
@@ -29,7 +29,7 @@ CLI::App *Normaliser::CreateSubcommandCLI(CLI::App &app) {
     return norm;
 }
 
-void Normaliser::ProcessFiles(AudioFiles &files) {
+void NormaliseCommand::ProcessFiles(AudioFiles &files) {
     if (m_use_rms) {
         m_processor = std::make_unique<RMSGainCalculator>();
     } else {
@@ -58,7 +58,7 @@ void Normaliser::ProcessFiles(AudioFiles &files) {
     }
 }
 
-bool Normaliser::PerformNormalisation(AudioData &input_audio) const {
+bool NormaliseCommand::PerformNormalisation(AudioData &input_audio) const {
     if (!m_using_common_gain) {
         m_processor->Reset();
         m_processor->RegisterBufferMagnitudes(input_audio);
@@ -82,11 +82,11 @@ bool Normaliser::PerformNormalisation(AudioData &input_audio) const {
     return true;
 }
 
-bool Normaliser::ReadFileForCommonGain(const AudioData &audio) {
+bool NormaliseCommand::ReadFileForCommonGain(const AudioData &audio) {
     return m_processor->RegisterBufferMagnitudes(audio);
 }
 
-TEST_CASE("Normaliser") {
+TEST_CASE("NormaliseCommand") {
     auto sine = TestHelpers::CreateSingleOscillationSineWave(1, 100, 100);
     for (auto &s : sine.interleaved_samples) {
         s *= 0.5;
@@ -101,19 +101,19 @@ TEST_CASE("Normaliser") {
     };
 
     SUBCASE("single file") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Normaliser>("norm 0", sine);
+        const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0", sine);
         REQUIRE(out);
         REQUIRE(FindMaxSample(*out) == doctest::Approx(1.0));
     }
 
     SUBCASE("single file mix 50% to 0db") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Normaliser>("norm 0 --mix=50", sine);
+        const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0 --mix=50", sine);
         REQUIRE(out);
         REQUIRE(FindMaxSample(*out) == doctest::Approx(0.75));
     }
 
     SUBCASE("single file mix 75% to 0db") {
-        const auto out = TestHelpers::ProcessBufferWithSubcommand<Normaliser>("norm 0 --mix=75", sine);
+        const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0 --mix=75", sine);
         REQUIRE(out);
         REQUIRE(FindMaxSample(*out) == doctest::Approx(0.875));
     }
@@ -125,7 +125,7 @@ TEST_CASE("Normaliser") {
             s *= 1.5;
         }
         const auto outs =
-            TestHelpers::ProcessBuffersWithSubcommand<Normaliser>("norm 0", {sine, sine_3_quarters_vol});
+            TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>("norm 0", {sine, sine_3_quarters_vol});
         for (const auto &out : outs) {
             REQUIRE(out);
         }

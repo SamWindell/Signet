@@ -3,6 +3,7 @@
 
 #include "CLI11.hpp"
 #include "doctest.hpp"
+#include "span.hpp"
 
 #include "audio_file_io.h"
 #include "audio_files.h"
@@ -52,21 +53,21 @@ struct DataAndPath {
     fs::path path;
 };
 
-class TestSubcommandProcessor {
+class TestCommandProcessor {
   public:
-    template <typename SubcommandType>
-    static TestSubcommandProcessor Run(const std::string_view subcommand_and_args_string,
-                                       const tcb::span<DataAndPath> files) {
+    template <typename CommandType>
+    static TestCommandProcessor Run(const std::string_view subcommand_and_args_string,
+                                    const tcb::span<DataAndPath> files) {
         std::string whole_args = "signet-edit " + std::string(subcommand_and_args_string);
         CAPTURE(whole_args);
         const auto args = TestHelpers::StringToArgs {whole_args};
 
-        SubcommandType subcommand {};
+        CommandType subcommand {};
         CLI::App app;
-        subcommand.CreateSubcommandCLI(app);
+        subcommand.CreateCommandCLI(app);
         app.parse(args.Size(), args.Args());
 
-        TestSubcommandProcessor processor(subcommand, files);
+        TestCommandProcessor processor(subcommand, files);
         return processor;
     }
 
@@ -117,7 +118,7 @@ class TestSubcommandProcessor {
     }
 
   private:
-    TestSubcommandProcessor(Subcommand &subcommand, const tcb::span<DataAndPath> files_and_data) {
+    TestCommandProcessor(Command &subcommand, const tcb::span<DataAndPath> files_and_data) {
         std::vector<EditTrackedAudioFile> files;
         for (auto &fd : files_and_data) {
             files.push_back(fd.path);
@@ -133,39 +134,39 @@ class TestSubcommandProcessor {
     std::optional<AudioFiles> m_files;
 };
 
-template <typename SubcommandType>
-std::optional<AudioData> ProcessBufferWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioData &buf,
-                                                     fs::path fake_file_name = "test.wav") {
+template <typename CommandType>
+std::optional<AudioData> ProcessBufferWithCommand(const std::string_view subcommand_and_args_string,
+                                                  const AudioData &buf,
+                                                  fs::path fake_file_name = "test.wav") {
     DataAndPath d {buf, fake_file_name};
     tcb::span<DataAndPath> bufs {&d, 1};
-    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, bufs).GetBuf();
+    return TestCommandProcessor::Run<CommandType>(subcommand_and_args_string, bufs).GetBuf();
 }
 
-template <typename SubcommandType>
-std::optional<std::string> ProcessFilenameWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                         const AudioData &buf,
-                                                         const fs::path path) {
+template <typename CommandType>
+std::optional<std::string> ProcessFilenameWithCommand(const std::string_view subcommand_and_args_string,
+                                                      const AudioData &buf,
+                                                      const fs::path path) {
     DataAndPath d {buf, path};
     tcb::span<DataAndPath> bufs {&d, 1};
-    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, bufs).GetFilename();
+    return TestCommandProcessor::Run<CommandType>(subcommand_and_args_string, bufs).GetFilename();
 }
 
-template <typename SubcommandType>
-std::optional<std::string> ProcessPathWithSubcommand(const std::string_view subcommand_and_args_string,
-                                                     const AudioData &buf,
-                                                     const fs::path path) {
+template <typename CommandType>
+std::optional<std::string> ProcessPathWithCommand(const std::string_view subcommand_and_args_string,
+                                                  const AudioData &buf,
+                                                  const fs::path path) {
     DataAndPath d {buf, path};
     tcb::span<DataAndPath> bufs {&d, 1};
-    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, bufs).GetPath();
+    return TestCommandProcessor::Run<CommandType>(subcommand_and_args_string, bufs).GetPath();
 }
 
 //
 
-template <typename SubcommandType>
-auto ProcessBuffersWithSubcommand(const std::string_view subcommand_and_args_string,
-                                  std::vector<AudioData> bufs,
-                                  std::vector<fs::path> paths = {}) {
+template <typename CommandType>
+auto ProcessBuffersWithCommand(const std::string_view subcommand_and_args_string,
+                               std::vector<AudioData> bufs,
+                               std::vector<fs::path> paths = {}) {
     std::vector<DataAndPath> files;
     if (paths.size() == 0) {
         for (const auto &b : bufs) {
@@ -177,18 +178,18 @@ auto ProcessBuffersWithSubcommand(const std::string_view subcommand_and_args_str
             files.push_back({bufs[i], paths[i]});
         }
     }
-    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, files).GetBufs();
+    return TestCommandProcessor::Run<CommandType>(subcommand_and_args_string, files).GetBufs();
 }
-template <typename SubcommandType>
-auto ProcessFilenamesWithSubcommand(const std::string_view subcommand_and_args_string,
-                                    std::vector<DataAndPath> files) {
-    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, files).GetFilenames();
+template <typename CommandType>
+auto ProcessFilenamesWithCommand(const std::string_view subcommand_and_args_string,
+                                 std::vector<DataAndPath> files) {
+    return TestCommandProcessor::Run<CommandType>(subcommand_and_args_string, files).GetFilenames();
 }
 
-template <typename SubcommandType>
-auto ProcessPathsWithSubcommand(const std::string_view subcommand_and_args_string,
-                                std::vector<DataAndPath> files) {
-    return TestSubcommandProcessor::Run<SubcommandType>(subcommand_and_args_string, files).GetPaths();
+template <typename CommandType>
+auto ProcessPathsWithCommand(const std::string_view subcommand_and_args_string,
+                             std::vector<DataAndPath> files) {
+    return TestCommandProcessor::Run<CommandType>(subcommand_and_args_string, files).GetPaths();
 }
 
 } // namespace TestHelpers

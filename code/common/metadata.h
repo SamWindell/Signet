@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "dr_wav.h"
+#include "span.hpp"
 #include <cereal/cereal.hpp>
 
 static const char *flac_custom_signet_application_id = "SGNT";

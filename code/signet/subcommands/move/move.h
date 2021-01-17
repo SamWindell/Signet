@@ -2,11 +2,11 @@
 
 #include "subcommand.h"
 
-class Mover final : public Subcommand {
+class MoveCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Mover"; }
+    std::string GetName() const override { return "Move"; }
 
   private:
     fs::path m_destination_dir;

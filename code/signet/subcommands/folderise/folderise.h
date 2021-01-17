@@ -4,11 +4,11 @@
 
 #include "subcommand.h"
 
-class Folderiser final : public Subcommand {
+class FolderiseCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Folderiser"; }
+    std::string GetName() const override { return "Folderise"; }
 
   private:
     std::string m_filename_pattern;

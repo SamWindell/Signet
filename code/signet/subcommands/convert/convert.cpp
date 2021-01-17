@@ -1,13 +1,12 @@
 #include "convert.h"
 
 #include "magic_enum.hpp"
-#include "r8brain-resampler/CDSPResampler.h"
 
 #include "test_helpers.h"
 
-CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *ConvertCommand::CreateCommandCLI(CLI::App &app) {
     auto convert = app.add_subcommand(
-        "convert", "Converter: converts the file format, bit-depth or sample "
+        "convert", "ConvertCommand: converts the file format, bit-depth or sample "
                    "rate. Features a high quality resampling algorithm. This subcommand has subcommands; it "
                    "requires at least one of sample-rate, bit-depth or file-format to be specified.");
     convert->require_subcommand();
@@ -41,33 +40,7 @@ CLI::App *Converter::CreateSubcommandCLI(CLI::App &app) {
     return convert;
 }
 
-void Converter::ConvertSampleRate(std::vector<double> &buffer,
-                                  const unsigned num_channels,
-                                  const double input_sample_rate,
-                                  const double new_sample_rate) {
-    if (input_sample_rate == new_sample_rate) return;
-    const auto num_frames = buffer.size() / num_channels;
-
-    const auto result_num_frames = (usize)(num_frames * (new_sample_rate / (double)input_sample_rate));
-    std::vector<double> result_interleaved_samples(num_channels * result_num_frames);
-
-    r8b::CDSPResampler24 resampler(input_sample_rate, new_sample_rate, (int)num_frames);
-
-    ForEachDeinterleavedChannel(buffer, num_channels, [&](const auto &channel_buffer, auto channel) {
-        std::vector<double> output_buffer(result_num_frames);
-        resampler.oneshot(channel_buffer.data(), (int)channel_buffer.size(), output_buffer.data(),
-                          (int)result_num_frames);
-        for (size_t frame = 0; frame < result_num_frames; ++frame) {
-            result_interleaved_samples[frame * num_channels + channel] = output_buffer[frame];
-        }
-
-        resampler.clear();
-    });
-
-    buffer = result_interleaved_samples;
-}
-
-void Converter::ProcessFiles(AudioFiles &files) {
+void ConvertCommand::ProcessFiles(AudioFiles &files) {
     m_files_can_be_converted = true;
     if (m_bit_depth) {
         if (!m_file_format) {
@@ -108,12 +81,9 @@ void Converter::ProcessFiles(AudioFiles &files) {
                 edited = true;
             }
             if (m_sample_rate && audio.sample_rate != *m_sample_rate) {
-                auto &audio_out = f.GetWritableAudio();
-                ConvertSampleRate(audio_out.interleaved_samples, audio_out.num_channels,
-                                  audio_out.sample_rate, (double)*m_sample_rate);
-                MessageWithNewLine(GetName(), "Converting sample rate from {} to {}", audio_out.sample_rate,
+                MessageWithNewLine(GetName(), "Converting sample rate from {} to {}", audio.sample_rate,
                                    *m_sample_rate);
-                audio_out.sample_rate = *m_sample_rate;
+                f.GetWritableAudio().Resample((double)*m_sample_rate);
                 edited = true;
             }
             if (m_file_format && audio.format != *m_file_format) {
@@ -134,10 +104,10 @@ void Converter::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("[Converter]") {
+TEST_CASE("[ConvertCommand]") {
     SUBCASE("args") {
         SUBCASE("requires a subcommand") {
-            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Converter>("convert", {}));
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<ConvertCommand>("convert", {}));
         }
     }
     SUBCASE("conversion") {
@@ -148,7 +118,7 @@ TEST_CASE("[Converter]") {
             buf.sample_rate = 48000;
             buf.bits_per_sample = 16;
 
-            auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>(
+            auto out = TestHelpers::ProcessBufferWithCommand<ConvertCommand>(
                 "convert sample-rate 96000 bit-depth 16", buf);
             REQUIRE(out);
             REQUIRE(out->NumFrames() == 12);
@@ -161,7 +131,8 @@ TEST_CASE("[Converter]") {
             buf.sample_rate = 48000;
             buf.bits_per_sample = 32;
 
-            auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>("convert file-format flac", buf);
+            auto out =
+                TestHelpers::ProcessBufferWithCommand<ConvertCommand>("convert file-format flac", buf);
             REQUIRE(!out);
         }
 
@@ -181,7 +152,7 @@ TEST_CASE("[Converter]") {
                 }
 
                 const auto target_str = std::to_string(target_sample_rate);
-                const auto out = TestHelpers::ProcessBufferWithSubcommand<Converter>(
+                const auto out = TestHelpers::ProcessBufferWithCommand<ConvertCommand>(
                     "convert sample-rate " + target_str + " bit-depth 16", buf);
                 if (starting_sample_rate != target_sample_rate) {
                     REQUIRE(out);

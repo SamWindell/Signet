@@ -4,7 +4,7 @@
 
 #include "test_helpers.h"
 
-size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
+size_t ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
                                                              const size_t num_frames,
                                                              const unsigned num_channels) {
     double minimum_range = DBL_MAX;
@@ -23,7 +23,7 @@ size_t ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(const tcb::span<con
     return index_of_min;
 }
 
-bool ZeroCrossingOffsetter::CreateSampleOffsetToNearestZCross(AudioData &audio,
+bool ZeroCrossOffsetCommand::CreateSampleOffsetToNearestZCross(AudioData &audio,
                                                               const AudioDuration &search_size,
                                                               const bool append_skipped_frames_on_end) {
     const auto search_frames = search_size.GetDurationAsFrames(audio.sample_rate, audio.NumFrames());
@@ -65,13 +65,13 @@ TEST_CASE("[ZCross Offset]") {
         REQUIRE(buf.num_channels == 1);
 
         SUBCASE("finds a zero crossing at the start") {
-            REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf.interleaved_samples, 10,
+            REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(buf.interleaved_samples, 10,
                                                                           buf.num_channels) == 0);
         }
         SUBCASE("finds a zero crossing at pi radians") {
             tcb::span<const double> span = buf.interleaved_samples;
             span = span.subspan(buf.NumFrames() / 4);
-            REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(span, 60, buf.num_channels) ==
+            REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(span, 60, buf.num_channels) ==
                     buf.NumFrames() / 4);
         }
     }
@@ -82,14 +82,14 @@ TEST_CASE("[ZCross Offset]") {
             buf[i] = (double)(buf.size() - i) / (double)buf.size();
         }
 
-        REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf, 1, 1) == 0);
-        REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf, 10, 1) == 9);
-        REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf, 20, 1) == 19);
-        REQUIRE(ZeroCrossingOffsetter::FindFrameNearestToZeroInBuffer(buf, 100, 1) == 99);
+        REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(buf, 1, 1) == 0);
+        REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(buf, 10, 1) == 9);
+        REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(buf, 20, 1) == 19);
+        REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(buf, 100, 1) == 99);
     }
 
     SUBCASE("empty file") {
-        auto buf = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>("zcross-offset 100ms", {});
+        auto buf = TestHelpers::ProcessBufferWithCommand<ZeroCrossOffsetCommand>("zcross-offset 100ms", {});
     }
 
     SUBCASE("correctly appends to end") {
@@ -98,7 +98,7 @@ TEST_CASE("[ZCross Offset]") {
             buf.interleaved_samples = {1, 1, 1, 0, -1, -1, -1};
             buf.num_channels = 1;
 
-            auto result = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>(
+            auto result = TestHelpers::ProcessBufferWithCommand<ZeroCrossOffsetCommand>(
                 "zcross-offset 4smp --append", buf);
             REQUIRE(result);
             REQUIRE(result->interleaved_samples.size() == buf.interleaved_samples.size());
@@ -113,7 +113,7 @@ TEST_CASE("[ZCross Offset]") {
             buf.interleaved_samples = {0.5, 0.4, 0.3, 0.2, 0.1, 0.0, 0.9, 0.8, 0.7, 0.6};
             buf.num_channels = 2;
 
-            auto result = TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>(
+            auto result = TestHelpers::ProcessBufferWithCommand<ZeroCrossOffsetCommand>(
                 "zcross-offset 4smp --append", buf);
             REQUIRE(result);
             REQUIRE(result->interleaved_samples.size() == buf.interleaved_samples.size());
@@ -131,6 +131,6 @@ TEST_CASE("[ZCross Offset]") {
         buf.num_channels = 1;
 
         auto result =
-            TestHelpers::ProcessBufferWithSubcommand<ZeroCrossingOffsetter>("zcross-offset 100s", buf);
+            TestHelpers::ProcessBufferWithCommand<ZeroCrossOffsetCommand>("zcross-offset 100s", buf);
     }
 }

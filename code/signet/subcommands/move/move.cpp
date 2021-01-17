@@ -2,13 +2,13 @@
 
 #include "CLI11.hpp"
 
-CLI::App *Mover::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *MoveCommand::CreateCommandCLI(CLI::App &app) {
     auto move = app.add_subcommand("move", "Moves all input files to a given folder.");
     move->add_option("destination-folder", m_destination_dir, "The folder to put all of the input files in.");
     return move;
 }
 
-void Mover::ProcessFiles(AudioFiles &files) {
+void MoveCommand::ProcessFiles(AudioFiles &files) {
     std::vector<fs::path> dest_paths {};
     for (auto &f : files) {
         const auto p = m_destination_dir / f.GetPath().filename();

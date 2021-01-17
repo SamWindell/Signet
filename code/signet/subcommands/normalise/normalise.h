@@ -6,11 +6,11 @@
 #include "gain_calculators.h"
 #include "signet_interface.h"
 
-class Normaliser final : public Subcommand {
+class NormaliseCommand final : public Command {
   public:
-    CLI::App *CreateSubcommandCLI(CLI::App &app) override;
+    CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
-    std::string GetName() const override { return "Normaliser"; }
+    std::string GetName() const override { return "Normalise"; }
 
   private:
     bool PerformNormalisation(AudioData &input_audio) const;

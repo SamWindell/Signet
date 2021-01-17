@@ -9,10 +9,10 @@
 #include "subcommands/detect_pitch/detect_pitch.h"
 #include "test_helpers.h"
 
-CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *FolderiseCommand::CreateCommandCLI(CLI::App &app) {
     auto folderise = app.add_subcommand(
         "folderise",
-        "Folderiser: moves files into folders based on their names. This is done by specifying "
+        "FolderiseCommand: moves files into folders based on their names. This is done by specifying "
         "a regex pattern to match the name against. The folder in which the matched file should be "
         "moved to can be based off of the name. These folders are created if they do not already exist.");
 
@@ -44,7 +44,7 @@ CLI::App *Folderiser::CreateSubcommandCLI(CLI::App &app) {
     return folderise;
 }
 
-void Folderiser::ProcessFiles(AudioFiles &files) {
+void FolderiseCommand::ProcessFiles(AudioFiles &files) {
     int num_matches = 0;
     for (auto &f : files) {
         const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
@@ -74,35 +74,36 @@ void Folderiser::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("Folderiser") {
+TEST_CASE("FolderiseCommand") {
     SUBCASE("requires args") {
-        REQUIRE_THROWS(TestHelpers::ProcessPathWithSubcommand<Folderiser>("folderise", {}, "file.wav"));
-        REQUIRE_THROWS(TestHelpers::ProcessPathWithSubcommand<Folderiser>("folderise foo", {}, "file.wav"));
+        REQUIRE_THROWS(TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise", {}, "file.wav"));
+        REQUIRE_THROWS(
+            TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise foo", {}, "file.wav"));
     }
 
     SUBCASE("no-regex") {
         const auto f =
-            TestHelpers::ProcessPathWithSubcommand<Folderiser>("folderise file folder", {}, "file.wav");
+            TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise file folder", {}, "file.wav");
         REQUIRE(f);
         REQUIRE(*f == "folder/file.wav");
     }
 
     SUBCASE("regex") {
         const auto f =
-            TestHelpers::ProcessPathWithSubcommand<Folderiser>("folderise (fi).* <1>", {}, "file.wav");
+            TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise (fi).* <1>", {}, "file.wav");
         REQUIRE(f);
         REQUIRE(*f == "fi/file.wav");
     }
 
     SUBCASE("regex no match") {
         const auto f =
-            TestHelpers::ProcessPathWithSubcommand<Folderiser>("folderise (\\d*) <1>", {}, "file.wav");
+            TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise (\\d*) <1>", {}, "file.wav");
         REQUIRE(!f);
     }
 
     SUBCASE("regex 2 groups") {
-        const auto f = TestHelpers::ProcessPathWithSubcommand<Folderiser>("folderise (\\w*)-(\\w*) <1><2>",
-                                                                          {}, "unprocessed-piano.wav");
+        const auto f = TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise (\\w*)-(\\w*) <1><2>",
+                                                                             {}, "unprocessed-piano.wav");
         REQUIRE(f);
         REQUIRE(*f == "unprocessedpiano/unprocessed-piano.wav");
     }

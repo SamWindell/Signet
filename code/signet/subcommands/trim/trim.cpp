@@ -4,10 +4,10 @@
 #include "common.h"
 #include "test_helpers.h"
 
-CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *TrimCommand::CreateCommandCLI(CLI::App &app) {
     auto trim = app.add_subcommand(
         "trim",
-        "Trimmer: removes the start or end of the file(s). This subcommand has itself 2 subcommands, 'start' "
+        "TrimCommand: removes the start or end of the file(s). This subcommand has itself 2 subcommands, 'start' "
         "and 'end'; one of which must be specified. For each, the amount to remove must be specified.");
     trim->require_subcommand();
 
@@ -25,7 +25,7 @@ CLI::App *Trimmer::CreateSubcommandCLI(CLI::App &app) {
     return trim;
 }
 
-void Trimmer::ProcessFiles(AudioFiles &files) {
+void TrimCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         auto &audio = f.GetAudio();
         if (audio.IsEmpty()) continue;
@@ -73,7 +73,7 @@ void Trimmer::ProcessFiles(AudioFiles &files) {
     }
 }
 
-TEST_CASE("[Trimmer]") {
+TEST_CASE("[TrimCommand]") {
     SUBCASE("single channel") {
         AudioData buf;
         buf.num_channels = 1;
@@ -81,30 +81,30 @@ TEST_CASE("[Trimmer]") {
         buf.interleaved_samples = {1, 2, 3, 4, 5, 6};
 
         SUBCASE("both start and end") {
-            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1s end 1s", buf));
+            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1s end 1s", buf));
         }
 
         SUBCASE("just start") {
-            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1%", buf));
+            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1%", buf));
         }
 
         SUBCASE("just end") {
-            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 50smp", buf));
+            REQUIRE_NOTHROW(TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim end 50smp", buf));
         }
 
         SUBCASE("neither start or end throws") {
-            REQUIRE_THROWS(TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim", buf));
+            REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim", buf));
         }
 
         SUBCASE("trim start") {
-            const auto result = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+            const auto result = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
             REQUIRE(result);
             REQUIRE(result->interleaved_samples.size() == 5);
             REQUIRE(result->interleaved_samples[0] == 2);
         }
 
         SUBCASE("trim end") {
-            const auto result = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+            const auto result = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim end 1smp", buf);
             REQUIRE(result);
             REQUIRE(result->interleaved_samples.size() == 5);
             REQUIRE(result->interleaved_samples[0] == 1);
@@ -118,7 +118,7 @@ TEST_CASE("[Trimmer]") {
         buf.interleaved_samples = {1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6};
 
         const auto result =
-            TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp end 2smp", buf);
+            TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp end 2smp", buf);
         REQUIRE(result);
         REQUIRE(result->NumFrames() == 3);
         REQUIRE(result->interleaved_samples[0] == 2);
@@ -135,20 +135,20 @@ TEST_CASE("[Trimmer]") {
                 SUBCASE("start") {
                     buf.metadata.markers.push_back({"marker1", 0});
                     const auto out =
-                        TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                        TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
                     REQUIRE(out);
                     REQUIRE(out->metadata.markers.size() == 0);
                 }
                 SUBCASE("end") {
                     buf.metadata.markers.push_back({"marker1", 9});
-                    const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+                    const auto out = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim end 1smp", buf);
                     REQUIRE(out);
                     REQUIRE(out->metadata.markers.size() == 0);
                 }
             }
             SUBCASE("marker position moves if start trimmed") {
                 buf.metadata.markers.push_back({"marker1", 2});
-                const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                const auto out = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
                 REQUIRE(out);
                 REQUIRE(out->metadata.markers.size() == 1);
                 REQUIRE(out->metadata.markers[0].start_frame == 1);
@@ -160,20 +160,20 @@ TEST_CASE("[Trimmer]") {
                 SUBCASE("start") {
                     buf.metadata.regions.push_back({"region marker", "region name", 0, 2});
                     const auto out =
-                        TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                        TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
                     REQUIRE(out);
                     REQUIRE(out->metadata.regions.size() == 0);
                 }
                 SUBCASE("end") {
                     buf.metadata.regions.push_back({"region marker", "region name", 8, 2});
-                    const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+                    const auto out = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim end 1smp", buf);
                     REQUIRE(out);
                     REQUIRE(out->metadata.regions.size() == 0);
                 }
             }
             SUBCASE("region position moves if start trimmed") {
                 buf.metadata.regions.push_back({"region marker", "region name", 2, 2});
-                const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                const auto out = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
                 REQUIRE(out);
                 REQUIRE(out->metadata.regions.size() == 1);
                 REQUIRE(out->metadata.regions[0].start_frame == 1);
@@ -185,20 +185,20 @@ TEST_CASE("[Trimmer]") {
                 SUBCASE("start") {
                     buf.metadata.loops.push_back({"loop name", MetadataItems::LoopType::Forward, 0, 2, 0});
                     const auto out =
-                        TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                        TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
                     REQUIRE(out);
                     REQUIRE(out->metadata.loops.size() == 0);
                 }
                 SUBCASE("end") {
                     buf.metadata.loops.push_back({"loop name", MetadataItems::LoopType::Forward, 8, 2, 0});
-                    const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim end 1smp", buf);
+                    const auto out = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim end 1smp", buf);
                     REQUIRE(out);
                     REQUIRE(out->metadata.loops.size() == 0);
                 }
             }
             SUBCASE("loop position moves if start trimmed") {
                 buf.metadata.loops.push_back({"loop name", MetadataItems::LoopType::Forward, 2, 2, 0});
-                const auto out = TestHelpers::ProcessBufferWithSubcommand<Trimmer>("trim start 1smp", buf);
+                const auto out = TestHelpers::ProcessBufferWithCommand<TrimCommand>("trim start 1smp", buf);
                 REQUIRE(out);
                 REQUIRE(out->metadata.loops.size() == 1);
                 REQUIRE(out->metadata.loops[0].start_frame == 1);

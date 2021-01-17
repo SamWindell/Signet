@@ -1,8 +1,9 @@
 #include "gain_calculators.h"
 
+#include <type_traits>
+
 #include "doctest.hpp"
 #include "test_helpers.h"
-#include <type_traits>
 
 void NormaliseToTarget(AudioData &audio, const double target_amp) {
     PeakGainCalculator calc {};
@@ -30,7 +31,7 @@ double GetRMS(const tcb::span<const double> samples) {
     return std::sqrt(result);
 }
 
-TEST_CASE_TEMPLATE("[Normaliser] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {
+TEST_CASE_TEMPLATE("[NormaliseCommand] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {
     T calc;
     INFO(calc.GetName());
     auto buf = TestHelpers::CreateSingleOscillationSineWave(1, 44100, 100);

@@ -6,9 +6,9 @@
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 
-#include "subcommands/normalise/gain_calculators.h"
+#include "gain_calculators.h"
 
-CLI::App *SampleInfoPrinter::CreateSubcommandCLI(CLI::App &app) {
+CLI::App *PrintInfoCommand::CreateCommandCLI(CLI::App &app) {
     auto printer = app.add_subcommand(
         "print-info",
         GetName() +
@@ -16,7 +16,7 @@ CLI::App *SampleInfoPrinter::CreateSubcommandCLI(CLI::App &app) {
     return printer;
 }
 
-void SampleInfoPrinter::ProcessFiles(AudioFiles &files) {
+void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         std::string info_text;
         if (!f.GetAudio().metadata.IsEmpty()) {

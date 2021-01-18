@@ -294,7 +294,7 @@ TEST_CASE("[SignetInterface]") {
         }
     }
 
-    SUBCASE("undos") {
+    SUBCASE("undo") {
         SUBCASE("undo of tf1.wav") {
             auto args = TestHelpers::StringToArgs {"signet test-folder/tf1.wav trim start 50%"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);

@@ -55,27 +55,27 @@ add_library(
     code/common/midi_pitches.cpp
     code/common/string_utils.cpp
     code/signet/signet_interface.cpp
-    code/signet/subcommands/auto_tune/auto_tune.cpp
-    code/signet/subcommands/convert/convert.cpp
-    code/signet/subcommands/fade/fade.cpp
-    code/signet/subcommands/folderise/folderise.cpp
-    code/signet/subcommands/gain/gain.cpp
-    code/signet/subcommands/print_info/print_info.cpp
-    code/signet/subcommands/move/move.cpp
-    code/signet/subcommands/normalise/normalise.cpp
-    code/signet/subcommands/detect_pitch/detect_pitch.cpp
-    code/signet/subcommands/rename/rename.cpp
-    code/signet/subcommands/rename/auto_mapper.cpp
-    code/signet/subcommands/rename/rename_substitutions.cpp
-    code/signet/subcommands/rename/note_to_midi.cpp
-    code/signet/subcommands/sample_blend/sample_blend.cpp
-    code/signet/subcommands/seamless_loop/seamless_loop.cpp
-    code/signet/subcommands/remove_silence/remove_silence.cpp
-    code/signet/subcommands/trim/trim.cpp
-    code/signet/subcommands/tune/tune.cpp
-    code/signet/subcommands/filter/filters.cpp
-    code/signet/subcommands/zcross_offset/zcross_offset.cpp
-    code/signet/subcommands/embed_sampler_info/embed_sampler_info.cpp
+    code/signet/commands/auto_tune/auto_tune.cpp
+    code/signet/commands/convert/convert.cpp
+    code/signet/commands/fade/fade.cpp
+    code/signet/commands/folderise/folderise.cpp
+    code/signet/commands/gain/gain.cpp
+    code/signet/commands/print_info/print_info.cpp
+    code/signet/commands/move/move.cpp
+    code/signet/commands/normalise/normalise.cpp
+    code/signet/commands/detect_pitch/detect_pitch.cpp
+    code/signet/commands/rename/rename.cpp
+    code/signet/commands/rename/auto_mapper.cpp
+    code/signet/commands/rename/rename_substitutions.cpp
+    code/signet/commands/rename/note_to_midi.cpp
+    code/signet/commands/sample_blend/sample_blend.cpp
+    code/signet/commands/seamless_loop/seamless_loop.cpp
+    code/signet/commands/remove_silence/remove_silence.cpp
+    code/signet/commands/trim/trim.cpp
+    code/signet/commands/tune/tune.cpp
+    code/signet/commands/filter/filters.cpp
+    code/signet/commands/zcross_offset/zcross_offset.cpp
+    code/signet/commands/embed_sampler_info/embed_sampler_info.cpp
     code/tests/test_helpers.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)

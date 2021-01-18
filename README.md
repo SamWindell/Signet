@@ -53,7 +53,7 @@ Convert all audio files in the folder "my_folder" (not recursively) to a sample 
 [Usage page](docs/usage.md)
 
 ### Display help text
-Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available subcommands. You can also add `--help` after a subcommand to see the options of that subcommand specifically. For example:
+Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the argument `--help` to see information about the available options. Run with `--help-all` to see all the available commands. You can also add `--help` after a command to see the options of that command specifically. For example:
 
 ```signet --help```
 
@@ -85,9 +85,9 @@ However, Signet can help with safety too. It features a simple undo system. You 
 Files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
 ## Commands (effects)
-Next, you must specify what subcommand to run. A subcommand is the effect that should be applied to the file(s).
+Next, you must specify what command to run. A command is the effect that should be applied to the file(s).
 
-Each subcommand has its own set of arguments; these are shown by adding `--help` after the subcommand.
+Each command has its own set of arguments; these are shown by adding `--help` after the command.
 
-You can use multiple subcommands in the same call by simply specifying them one after the other. The effects of each subcommand will be applied to the file(s) in the order that they appear.
+You can use multiple commands in the same call by simply specifying them one after the other. The effects of each command will be applied to the file(s) in the order that they appear.
 

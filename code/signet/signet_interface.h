@@ -8,9 +8,9 @@
 #include "audio_file_io.h"
 #include "audio_files.h"
 #include "backup.h"
+#include "command.h"
 #include "common.h"
 #include "filesystem.hpp"
-#include "subcommand.h"
 
 namespace SignetResult {
 enum SignetResultEnum {
@@ -28,7 +28,7 @@ class SignetInterface final {
     int Main(const int argc, const char *const argv[]);
 
   private:
-    std::vector<std::unique_ptr<Command>> m_subcommands {};
+    std::vector<std::unique_ptr<Command>> m_commands {};
     SignetBackup m_backup {};
 
     AudioFiles m_input_audio_files {};

@@ -52,8 +52,8 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
             out << fmt_yellow;
             out << " " << (app->get_require_subcommand_min() == 0 ? "[" : "")
                 << get_label(app->get_require_subcommand_max() < 2 || app->get_require_subcommand_min() > 1
-                                 ? "SUBCOMMAND"
-                                 : "SUBCOMMANDS")
+                                 ? "COMMAND"
+                                 : "COMMANDS")
                 << (app->get_require_subcommand_min() == 0 ? "]" : "");
             out << fmt_divider;
         }

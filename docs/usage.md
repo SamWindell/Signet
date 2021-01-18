@@ -7,7 +7,7 @@ was primarily designed for people who make sample libraries, but its
 features can be useful for any type of bulk audio processing.
 
 #### Usage:
-signet `[OPTIONS] [input-files...] SUBCOMMAND`
+signet `[OPTIONS] [input-files...] COMMAND`
 
 #### Positionals:
 `input-files TEXT ...`
@@ -26,7 +26,7 @@ too.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 `--undo`
 Undoes any changes made by the last run of Signet; files that were
@@ -55,60 +55,59 @@ Creates a markdown file containing the full CLI - based on running
 signet --help.
 
 `auto-tune`
-Auto-tune: tunes the file(s) to their nearest detected musical pitch.
+AutoTune: tunes the file(s) to their nearest detected musical pitch.
 For example, a file with a detected pitch of 450Hz will be tuned to
 440Hz (A4).
 
 `convert`
-ConvertCommand: converts the file format, bit-depth or sample rate.
-Features a high quality resampling algorithm. This subcommand has
-subcommands; it requires at least one of sample-rate, bit-depth or
-file-format to be specified.
+Convert: converts the file format, bit-depth or sample rate. Features
+a high quality resampling algorithm. This command has subcommands; it
+requires at least one of sample-rate, bit-depth or file-format to be
+specified.
 
 `embed-sampler-info`
-Sample Info Embed: embeds sampler metadata into the audio file(s),
+Sample Info Embeder: embeds sampler metadata into the audio file(s),
 such as the root note, the velocity mapping range and the note mapping
 range.
 
 `fade`
-FadeCommand: adds a fade-in to the start and/or a fade-out to the end
-of the file(s). This subcommand has itself 2 subcommands, 'in' and
-'out'; one of which must be specified. For each, you must specify
-first the fade length. You can then optionally specify the shape of
-the fade curve.
+Fade: adds a fade-in to the start and/or a fade-out to the end of the
+file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one
+of which must be specified. For each, you must specify first the fade
+length. You can then optionally specify the shape of the fade curve.
 
 `folderise`
-FolderiseCommand: moves files into folders based on their names. This
-is done by specifying a regex pattern to match the name against. The
-folder in which the matched file should be moved to can be based off
-of the name. These folders are created if they do not already exist.
+Folderise: moves files into folders based on their names. This is done
+by specifying a regex pattern to match the name against. The folder in
+which the matched file should be moved to can be based off of the
+name. These folders are created if they do not already exist.
 
 `gain`
-GainCommand: changes the volume of the file(s).
+Gain: changes the volume of the file(s).
 
 `highpass`
-HighpassCommand: removes frequencies below the given cutoff.
+Highpass: removes frequencies below the given cutoff.
 
 `lowpass`
-LowpassCommand: removes frequencies above the given cutoff.
+Lowpass: removes frequencies above the given cutoff.
 
 `print-info`
 PrintInfo: prints information about the audio file(s), such as the
 embedded metadata, sample-rate and RMS.
 
 `move`
-Moves all input files to a given folder.
+Move: moves all input files to a given folder.
 
 `norm`
-NormaliseCommand: sets the peak amplitude to a certain level. When
-this is used on multiple files, each file is attenuated by the same
-amount. You can disable this by specifying the flag --independently.
+Normalise: sets the peak amplitude to a certain level. When this is
+used on multiple files, each file is attenuated by the same amount.
+You can disable this by specifying the flag --independently.
 
 `detect-pitch`
-Pitch-detector: prints out the detected pitch of the file(s).
+DetectPitch: prints out the detected pitch of the file(s).
 
 `rename`
-File RenameCommand: various commands for renaming files.
+Rename: various commands for renaming files.
 
 This command can be used to bulk rename a set of files. It also has
 the ability to insert special variables into the file name, such as
@@ -179,40 +178,40 @@ The snake-case name of the folder that contains the audio file.
 The camel-case name of the folder that contains the audio file.
 
 `sample-blend`
-Multi-sample Sample Blender: creates samples in between other samples
-that are different pitches. It takes 2 samples and generates a set of
-samples in between them at a given semitone interval. Each generated
-sample is a different blend of the 2 base samples, tuned to match each
-other. This tool is useful when you have a multi-sampled instrument
-that was sampled only at large intervals; such as every octave. This
-tool can be used to create an instrument that sounds like it was
-sampled at smaller intervals.
+SampleBlend: creates samples in between other samples that are
+different pitches. It takes 2 samples and generates a set of samples
+in between them at a given semitone interval. Each generated sample is
+a different blend of the 2 base samples, tuned to match each other.
+This tool is useful when you have a multi-sampled instrument that was
+sampled only at large intervals; such as every octave. This tool can
+be used to create an instrument that sounds like it was sampled at
+smaller intervals.
 
 `seamless-loop`
-Turns the files(s) into seamless loops by crossfading a given
-percentage of audio from the start of the file to the end of the file.
-Due to this overlap, the resulting file is shorter.
+SeamlessLoop: turns the files(s) into seamless loops by crossfading a
+given percentage of audio from the start of the file to the end of the
+file. Due to this overlap, the resulting file is shorter.
 
 `remove-silence`
-Silence-remover: removes silence from the start or end of the file(s).
+RemoveSilence: removes silence from the start or end of the file(s).
 Silence is considered anything under -90dB, however this threshold can
 be changed with the --threshold option.
 
 `trim`
-TrimCommand: removes the start or end of the file(s). This subcommand
-has itself 2 subcommands, 'start' and 'end'; one of which must be
-specified. For each, the amount to remove must be specified.
+Trim: removes the start or end of the file(s). This command has 2
+subcommands, 'start' and 'end'; one of which must be specified. For
+each, the amount to remove must be specified.
 
 `tune`
-TuneCommand: changes the tune the file(s) by stretching or shrinking
-them. Uses a high quality resampling algorithm.
+Tune: changes the tune the file(s) by stretching or shrinking them.
+Uses a high quality resampling algorithm.
 
 `zcross-offset`
-Zero-crossing Offsetter: offsets the start of an audio file to the
-nearest zero-crossing (or the closest thing to a zero crossing). You
-can use the option --append to cause the samples that were offsetted
-to be appended to the end of the file. This is useful for when the
-file is a seamless loop.
+ZeroCrossOffset: offsets the start of an audio file to the nearest
+zero-crossing (or the closest thing to a zero crossing). You can use
+the option --append to cause the samples that were offsetted to be
+appended to the end of the file. This is useful for when the file is a
+seamless loop.
 
 
 # Commands Usage
@@ -254,14 +253,14 @@ The filepath for the generated markdown file.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## auto-tune
 #### Description:
-Auto-tune: tunes the file(s) to their nearest detected musical pitch.
-For example, a file with a detected pitch of 450Hz will be tuned to
-440Hz (A4).
+AutoTune: tunes the file(s) to their nearest detected musical pitch. For
+example, a file with a detected pitch of 450Hz will be tuned to 440Hz
+(A4).
 
 #### Usage:
 auto-tune `[OPTIONS]`
@@ -271,25 +270,25 @@ auto-tune `[OPTIONS]`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## convert
 #### Description:
-ConvertCommand: converts the file format, bit-depth or sample rate.
-Features a high quality resampling algorithm. This subcommand has
-subcommands; it requires at least one of sample-rate, bit-depth or
-file-format to be specified.
+Convert: converts the file format, bit-depth or sample rate. Features a
+high quality resampling algorithm. This command has subcommands; it
+requires at least one of sample-rate, bit-depth or file-format to be
+specified.
 
 #### Usage:
-convert `[OPTIONS] SUBCOMMAND`
+convert `[OPTIONS] COMMAND`
 
 #### Options:
 `-h,--help`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 `Subcommands:`
@@ -320,18 +319,19 @@ The output file format.
 
 ## embed-sampler-info
 #### Description:
-Sample Info Embed: embeds sampler metadata into the audio file(s), such
-as the root note, the velocity mapping range and the note mapping range.
+Sample Info Embeder: embeds sampler metadata into the audio file(s),
+such as the root note, the velocity mapping range and the note mapping
+range.
 
 #### Usage:
-embed-sampler-info `[OPTIONS] SUBCOMMAND`
+embed-sampler-info `[OPTIONS] COMMAND`
 
 #### Options:
 `-h,--help`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 `Subcommands:`
@@ -458,20 +458,20 @@ to 1 for the low velocity or 127 for the high velocity.
 
 ## fade
 #### Description:
-FadeCommand: adds a fade-in to the start and/or a fade-out to the end of
-the file(s). This subcommand has itself 2 subcommands, 'in' and 'out';
-one of which must be specified. For each, you must specify first the
-fade length. You can then optionally specify the shape of the fade curve.
+Fade: adds a fade-in to the start and/or a fade-out to the end of the
+file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one
+of which must be specified. For each, you must specify first the fade
+length. You can then optionally specify the shape of the fade curve.
 
 #### Usage:
-fade `[OPTIONS] SUBCOMMAND`
+fade `[OPTIONS] COMMAND`
 
 #### Options:
 `-h,--help`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 `Subcommands:`
@@ -506,10 +506,10 @@ The shape of the fade-out curve. The default is the 'sine' shape.
 
 ## folderise
 #### Description:
-FolderiseCommand: moves files into folders based on their names. This is
-done by specifying a regex pattern to match the name against. The folder
-in which the matched file should be moved to can be based off of the
-name. These folders are created if they do not already exist.
+Folderise: moves files into folders based on their names. This is done
+by specifying a regex pattern to match the name against. The folder in
+which the matched file should be moved to can be based off of the name.
+These folders are created if they do not already exist.
 
 #### Usage:
 folderise `[OPTIONS] filename-regex out-folder`
@@ -534,12 +534,12 @@ example, 'folderise file(\d+).wav C:/folder<1>' would create folders
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## gain
 #### Description:
-GainCommand: changes the volume of the file(s).
+Gain: changes the volume of the file(s).
 
 #### Usage:
 gain `[OPTIONS] gain`
@@ -556,12 +556,12 @@ half as loud. A gain of 200% makes it twice as loud.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## highpass
 #### Description:
-HighpassCommand: removes frequencies below the given cutoff.
+Highpass: removes frequencies below the given cutoff.
 
 #### Usage:
 highpass `[OPTIONS] cutoff-freq-hz`
@@ -576,12 +576,12 @@ The cutoff point where frequencies below this should be removed.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## lowpass
 #### Description:
-LowpassCommand: removes frequencies above the given cutoff.
+Lowpass: removes frequencies above the given cutoff.
 
 #### Usage:
 lowpass `[OPTIONS] cutoff-freq-hz`
@@ -596,7 +596,7 @@ The cutoff point where frequencies above this should be removed.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## print-info
@@ -612,12 +612,12 @@ print-info `[OPTIONS]`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## move
 #### Description:
-Moves all input files to a given folder.
+Move: moves all input files to a given folder.
 
 #### Usage:
 move `[OPTIONS] [destination-folder]`
@@ -632,14 +632,14 @@ The folder to put all of the input files in.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## norm
 #### Description:
-NormaliseCommand: sets the peak amplitude to a certain level. When this
-is used on multiple files, each file is attenuated by the same amount.
-You can disable this by specifying the flag --independently.
+Normalise: sets the peak amplitude to a certain level. When this is used
+on multiple files, each file is attenuated by the same amount. You can
+disable this by specifying the flag --independently.
 
 #### Usage:
 norm `[OPTIONS] target-decibels`
@@ -654,7 +654,7 @@ The target level in decibels, where 0dB is the max volume.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 `--independently`
 When there are multiple files, normalise each one individually rather
@@ -671,7 +671,7 @@ to the target, and 0% means no change.
 
 ## detect-pitch
 #### Description:
-Pitch-detector: prints out the detected pitch of the file(s).
+DetectPitch: prints out the detected pitch of the file(s).
 
 #### Usage:
 detect-pitch `[OPTIONS]`
@@ -681,12 +681,12 @@ detect-pitch `[OPTIONS]`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## rename
 #### Description:
-File RenameCommand: various commands for renaming files.
+Rename: various commands for renaming files.
 
 This command can be used to bulk rename a set of files. It also has
 the ability to insert special variables into the file name, such as the
@@ -756,14 +756,14 @@ The snake-case name of the folder that contains the audio file.
 The camel-case name of the folder that contains the audio file.
 
 #### Usage:
-rename `[OPTIONS] SUBCOMMAND`
+rename `[OPTIONS] COMMAND`
 
 #### Options:
 `-h,--help`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 `Subcommands:`
@@ -845,14 +845,13 @@ angle-brackets (such as <1>).
 
 ## sample-blend
 #### Description:
-Multi-sample Sample Blender: creates samples in between other samples
-that are different pitches. It takes 2 samples and generates a set of
-samples in between them at a given semitone interval. Each generated
-sample is a different blend of the 2 base samples, tuned to match each
-other. This tool is useful when you have a multi-sampled instrument that
-was sampled only at large intervals; such as every octave. This tool can
-be used to create an instrument that sounds like it was sampled at
-smaller intervals.
+SampleBlend: creates samples in between other samples that are different
+pitches. It takes 2 samples and generates a set of samples in between
+them at a given semitone interval. Each generated sample is a different
+blend of the 2 base samples, tuned to match each other. This tool is
+useful when you have a multi-sampled instrument that was sampled only at
+large intervals; such as every octave. This tool can be used to create
+an instrument that sounds like it was sampled at smaller intervals.
 
 #### Usage:
 sample-blend `[OPTIONS] root_note_regex semitone-interval out-filename`
@@ -877,14 +876,14 @@ replaced by the note name, such as C3.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## seamless-loop
 #### Description:
-Turns the files(s) into seamless loops by crossfading a given percentage
-of audio from the start of the file to the end of the file. Due to this
-overlap, the resulting file is shorter.
+SeamlessLoop: turns the files(s) into seamless loops by crossfading a
+given percentage of audio from the start of the file to the end of the
+file. Due to this overlap, the resulting file is shorter.
 
 #### Usage:
 seamless-loop `[OPTIONS] [crossfade-percent]`
@@ -899,12 +898,12 @@ The size of the crossfade region as a percent of the whole file.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## remove-silence
 #### Description:
-Silence-remover: removes silence from the start or end of the file(s).
+RemoveSilence: removes silence from the start or end of the file(s).
 Silence is considered anything under -90dB, however this threshold can
 be changed with the --threshold option.
 
@@ -921,7 +920,7 @@ Specify whether the removal should be at the start, the end or both.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 `--threshold FLOAT:INT in [-200 - 0]`
 The threshold in decibels to which anything under it should be
@@ -930,19 +929,19 @@ considered silence.
 
 ## trim
 #### Description:
-TrimCommand: removes the start or end of the file(s). This subcommand
-has itself 2 subcommands, 'start' and 'end'; one of which must be
-specified. For each, the amount to remove must be specified.
+Trim: removes the start or end of the file(s). This command has 2
+subcommands, 'start' and 'end'; one of which must be specified. For
+each, the amount to remove must be specified.
 
 #### Usage:
-trim `[OPTIONS] SUBCOMMAND`
+trim `[OPTIONS] COMMAND`
 
 #### Options:
 `-h,--help`
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 `Subcommands:`
@@ -975,8 +974,8 @@ the sample. Examples of audio durations are: 5s, 12.5%, 250ms or
 
 ## tune
 #### Description:
-TuneCommand: changes the tune the file(s) by stretching or shrinking
-them. Uses a high quality resampling algorithm.
+Tune: changes the tune the file(s) by stretching or shrinking them. Uses
+a high quality resampling algorithm.
 
 #### Usage:
 tune `[OPTIONS] tune cents`
@@ -991,16 +990,16 @@ The cents to change the pitch by.
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 
 ## zcross-offset
 #### Description:
-Zero-crossing Offsetter: offsets the start of an audio file to the
-nearest zero-crossing (or the closest thing to a zero crossing). You can
-use the option --append to cause the samples that were offsetted to be
-appended to the end of the file. This is useful for when the file is a
-seamless loop.
+ZeroCrossOffset: offsets the start of an audio file to the nearest
+zero-crossing (or the closest thing to a zero crossing). You can use the
+option --append to cause the samples that were offsetted to be appended
+to the end of the file. This is useful for when the file is a seamless
+loop.
 
 #### Usage:
 zcross-offset `[OPTIONS] search_size`
@@ -1020,7 +1019,7 @@ the whole length of the sample. Examples of audio durations are: 5s,
 Print this help message and exit
 
 `--help-all`
-Print help message for all subcommands
+Print help message for all commands
 
 `--append`
 Append the frames offsetted to the end of the file - useful when the

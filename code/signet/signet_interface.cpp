@@ -7,47 +7,47 @@
 
 #include "audio_file_io.h"
 #include "cli_formatter.h"
-#include "subcommands/auto_tune/auto_tune.h"
-#include "subcommands/convert/convert.h"
-#include "subcommands/detect_pitch/detect_pitch.h"
-#include "subcommands/embed_sampler_info/embed_sampler_info.h"
-#include "subcommands/fade/fade.h"
-#include "subcommands/filter/filters.h"
-#include "subcommands/folderise/folderise.h"
-#include "subcommands/gain/gain.h"
-#include "subcommands/move/move.h"
-#include "subcommands/normalise/normalise.h"
-#include "subcommands/print_info/print_info.h"
-#include "subcommands/remove_silence/remove_silence.h"
-#include "subcommands/rename/rename.h"
-#include "subcommands/sample_blend/sample_blend.h"
-#include "subcommands/seamless_loop/seamless_loop.h"
-#include "subcommands/trim/trim.h"
-#include "subcommands/tune/tune.h"
-#include "subcommands/zcross_offset/zcross_offset.h"
+#include "commands/auto_tune/auto_tune.h"
+#include "commands/convert/convert.h"
+#include "commands/detect_pitch/detect_pitch.h"
+#include "commands/embed_sampler_info/embed_sampler_info.h"
+#include "commands/fade/fade.h"
+#include "commands/filter/filters.h"
+#include "commands/folderise/folderise.h"
+#include "commands/gain/gain.h"
+#include "commands/move/move.h"
+#include "commands/normalise/normalise.h"
+#include "commands/print_info/print_info.h"
+#include "commands/remove_silence/remove_silence.h"
+#include "commands/rename/rename.h"
+#include "commands/sample_blend/sample_blend.h"
+#include "commands/seamless_loop/seamless_loop.h"
+#include "commands/trim/trim.h"
+#include "commands/tune/tune.h"
+#include "commands/zcross_offset/zcross_offset.h"
 #include "test_helpers.h"
 #include "tests_config.h"
 
 SignetInterface::SignetInterface() {
-    m_subcommands.push_back(std::make_unique<AutoTuneCommand>());
-    m_subcommands.push_back(std::make_unique<ConvertCommand>());
-    m_subcommands.push_back(std::make_unique<EmbedSamplerInfo>());
-    m_subcommands.push_back(std::make_unique<FadeCommand>());
-    m_subcommands.push_back(std::make_unique<FolderiseCommand>());
-    m_subcommands.push_back(std::make_unique<GainCommand>());
-    m_subcommands.push_back(std::make_unique<HighpassCommand>());
-    m_subcommands.push_back(std::make_unique<LowpassCommand>());
-    m_subcommands.push_back(std::make_unique<PrintInfoCommand>());
-    m_subcommands.push_back(std::make_unique<MoveCommand>());
-    m_subcommands.push_back(std::make_unique<NormaliseCommand>());
-    m_subcommands.push_back(std::make_unique<DetectPitchCommand>());
-    m_subcommands.push_back(std::make_unique<RenameCommand>());
-    m_subcommands.push_back(std::make_unique<SampleBlendCommand>());
-    m_subcommands.push_back(std::make_unique<SeamlessLoopCommand>());
-    m_subcommands.push_back(std::make_unique<RemoveSilenceCommand>());
-    m_subcommands.push_back(std::make_unique<TrimCommand>());
-    m_subcommands.push_back(std::make_unique<TuneCommand>());
-    m_subcommands.push_back(std::make_unique<ZeroCrossOffsetCommand>());
+    m_commands.push_back(std::make_unique<AutoTuneCommand>());
+    m_commands.push_back(std::make_unique<ConvertCommand>());
+    m_commands.push_back(std::make_unique<EmbedSamplerInfo>());
+    m_commands.push_back(std::make_unique<FadeCommand>());
+    m_commands.push_back(std::make_unique<FolderiseCommand>());
+    m_commands.push_back(std::make_unique<GainCommand>());
+    m_commands.push_back(std::make_unique<HighpassCommand>());
+    m_commands.push_back(std::make_unique<LowpassCommand>());
+    m_commands.push_back(std::make_unique<PrintInfoCommand>());
+    m_commands.push_back(std::make_unique<MoveCommand>());
+    m_commands.push_back(std::make_unique<NormaliseCommand>());
+    m_commands.push_back(std::make_unique<DetectPitchCommand>());
+    m_commands.push_back(std::make_unique<RenameCommand>());
+    m_commands.push_back(std::make_unique<SampleBlendCommand>());
+    m_commands.push_back(std::make_unique<SeamlessLoopCommand>());
+    m_commands.push_back(std::make_unique<RemoveSilenceCommand>());
+    m_commands.push_back(std::make_unique<TrimCommand>());
+    m_commands.push_back(std::make_unique<TuneCommand>());
+    m_commands.push_back(std::make_unique<ZeroCrossOffsetCommand>());
 }
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
@@ -55,7 +55,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         R"^^(Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.)^^"};
 
     app.require_subcommand();
-    app.set_help_all_flag("--help-all", "Print help message for all subcommands");
+    app.set_help_all_flag("--help-all", "Print help message for all commands");
     app.formatter(std::make_shared<SignetCLIHelpFormatter>());
     app.name("signet");
 
@@ -174,8 +174,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
 
     std::vector<CLI::App *> subcommand_clis;
-    for (auto &subcommand : m_subcommands) {
-        auto s = subcommand->CreateCommandCLI(app);
+    for (auto &command : m_commands) {
+        auto s = command->CreateCommandCLI(app);
         s->needs(input_files_option);
         s->final_callback([&] {
             struct FileEditState {
@@ -187,9 +187,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 initial_file_edit_state.push_back({f.NumTimesAudioChanged(), f.NumTimesPathChanged()});
             }
 
-            MessageWithNewLine(subcommand->GetName(), "Starting processing");
-            subcommand->ProcessFiles(m_input_audio_files);
-            subcommand->GenerateFiles(m_input_audio_files, m_backup);
+            MessageWithNewLine(command->GetName(), "Starting processing");
+            command->ProcessFiles(m_input_audio_files);
+            command->GenerateFiles(m_input_audio_files, m_backup);
 
             int num_audio_edits = 0;
             int num_path_edits = 0;
@@ -199,8 +199,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 if (initial_file_edit_state[i].num_audio_edits != f.NumTimesAudioChanged()) ++num_audio_edits;
                 if (initial_file_edit_state[i].num_path_edits != f.NumTimesPathChanged()) ++num_path_edits;
             }
-            MessageWithNewLine(subcommand->GetName(), "Total audio files edited: {}", num_audio_edits);
-            MessageWithNewLine(subcommand->GetName(), "Total audio file paths edited: {}", num_path_edits);
+            MessageWithNewLine(command->GetName(), "Total audio files edited: {}", num_audio_edits);
+            MessageWithNewLine(command->GetName(), "Total audio file paths edited: {}", num_path_edits);
         });
     }
 

@@ -126,7 +126,7 @@ Print this help message and exit
 Print help message for all commands
 
 
-`Subcommands:`
+#### Subcommands:
 `sample-rate`
 ##### Description:
 Change the sample rate using a high quality resampler.
@@ -169,7 +169,7 @@ Print this help message and exit
 Print help message for all commands
 
 
-`Subcommands:`
+#### Subcommands:
 `root`
 ##### Description:
 Embed the root note of the audio file
@@ -309,7 +309,7 @@ Print this help message and exit
 Print help message for all commands
 
 
-`Subcommands:`
+#### Subcommands:
 `in`
 ##### Description:
 Fade in the volume at the start of the file(s).
@@ -601,7 +601,7 @@ Print this help message and exit
 Print help message for all commands
 
 
-`Subcommands:`
+#### Subcommands:
 `prefix`
 ##### Description:
 Add text to the start of the filename.
@@ -779,7 +779,7 @@ Print this help message and exit
 Print help message for all commands
 
 
-`Subcommands:`
+#### Subcommands:
 `start`
 ##### Description:
 Removes the start of the file.

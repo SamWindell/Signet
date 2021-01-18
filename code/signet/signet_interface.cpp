@@ -85,8 +85,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
                 for (auto l : Split(t, "\n", true)) {
                     const std::string_view headings[] {
-                        "`Usage:`", "`Description:`", "`Options:`", "`Commands:`", "`Positionals:`",
-                        "Usage:",   "Description:",   "Options:",   "Commands:",   "Positionals:"};
+                        "`Usage:`", "`Description:`", "`Options:`", "`Subcommands:`", "`Positionals:`",
+                        "Usage:",   "Description:",   "Options:",   "Subcommands:",   "Positionals:"};
 
                     if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
                         break;

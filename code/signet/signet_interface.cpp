@@ -88,7 +88,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                         "`Usage:`", "`Description:`", "`Options:`", "`Commands:`", "`Positionals:`",
                         "Usage:",   "Description:",   "Options:",   "Commands:",   "Positionals:"};
 
-                    if (hide_subcommands && (l == "`Commands:`" || l == "Commands:")) {
+                    if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
                         break;
                     }
 

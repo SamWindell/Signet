@@ -6,7 +6,7 @@
 
 // Changes made to the data, path or format are tracked, and the data is only loaded when it is requested
 struct EditTrackedAudioFile {
-    EditTrackedAudioFile(const fs::path &path) : m_original_path(path), m_path(path) {}
+    EditTrackedAudioFile(const fs::path &path) : m_path(path), m_original_path(path) {}
 
     AudioData &GetWritableAudio() {
         ++m_file_edited;

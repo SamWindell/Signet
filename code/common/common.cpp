@@ -5,7 +5,7 @@
 
 #include "doctest.hpp"
 #include "filesystem.hpp"
-#include "rang.hpp"
+#include "fmt/color.h"
 
 #include "types.h"
 
@@ -15,20 +15,18 @@ bool GetMessagesEnabled() { return g_messages_enabled; }
 void SetMessagesEnabled(bool v) { g_messages_enabled = v; }
 
 void PrintErrorPrefix(std::string_view heading) {
-    std::cout << rang::fg::red << rang::style::bold << "ERROR (" << heading << "): " << rang::fg::reset
-              << rang::style::reset;
+    fmt::print(fg(fmt::color::red) | fmt::emphasis::bold, "ERROR ({}): ", heading);
 }
 
 void PrintWarningPrefix(std::string_view heading) {
-    std::cout << rang::fg::yellow << rang::style::bold << "WARNING (" << heading << "): " << rang::fg::reset
-              << rang::style::reset;
+    fmt::print(fg(fmt::color::yellow) | fmt::emphasis::bold, "WARNING ({}): ", heading);
 }
 
 void PrintMessagePrefix(const std::string_view heading) {
-    std::cout << rang::style::bold << "[" << heading << "]: " << rang::style::reset;
+    fmt::print(fmt::emphasis::bold, "[{}]: ", heading);
 }
 
-void PrintDebugPrefix() { std::cout << rang::style::bold << "DEBUG: " << rang::style::reset; }
+void PrintDebugPrefix() { fmt::print(fmt::emphasis::bold, "[DEBUG]: "); }
 
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,
@@ -73,7 +71,7 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     int ec;
 #if _WIN32
     FILE *f;
-    std::array<WCHAR, 8> wchar_mode {};
+    std::array<wchar_t, 8> wchar_mode {};
     for (size_t i = 0; i < wchar_mode.size() - 1; ++i) {
         wchar_mode[i] = mode[i];
         if (mode[i] == '\0') break;

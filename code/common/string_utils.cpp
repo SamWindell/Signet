@@ -120,7 +120,7 @@ std::string ToCamelCase(const std::string_view str) {
     return result;
 }
 
-std::string WrapText(const std::string_view text, const unsigned width, const usize indent_spaces) {
+std::string WrapText(const std::string_view text, const unsigned width) {
     std::string result;
     result.reserve(text.size() * 3 / 2);
     usize col = 0;
@@ -132,26 +132,23 @@ std::string WrapText(const std::string_view text, const unsigned width, const us
                 i++;
             }
             result += '\n';
-            result.append(indent_spaces, ' ');
-            col = indent_spaces;
+            col = 0;
         } else if (col >= width) {
             bool found_space = false;
             int pos = (int)result.size() - 1;
             while (pos >= 0) {
                 if (std::isspace(result[pos])) {
                     result[pos] = '\n';
-                    result.insert(pos + 1, indent_spaces, ' ');
                     found_space = true;
                     break;
                 }
                 pos--;
             }
             if (found_space) {
-                col = (int)result.size() - (pos + indent_spaces);
+                col = (int)result.size() - pos;
             } else {
                 result += '\n';
-                result.append(indent_spaces, ' ');
-                col = indent_spaces;
+                col = 0;
             }
             result += c;
         } else {
@@ -161,6 +158,15 @@ std::string WrapText(const std::string_view text, const unsigned width, const us
             }
         }
     }
+    return result;
+}
+
+std::string IndentText(const std::string_view text, usize num_indent_spaces) {
+    if (!num_indent_spaces) return std::string {text};
+    std::string spaces(num_indent_spaces, ' ');
+    std::string result {spaces + std::string(text)};
+    std::string replacement {"\n" + spaces};
+    Replace(result, "\n", replacement);
     return result;
 }
 

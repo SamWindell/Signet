@@ -1,34 +1,36 @@
 #pragma once
 #include "CLI11.hpp"
 #include "fmt/color.h"
-#include "rang.hpp"
 
-// We put these ascii patterns into the formatted text. At the end we can parse the whole block of formatted
-// text and remove these patterns for something meaningful (ANSI escape sequences for terminal colours, for
-// example).
-static constexpr auto fmt_divider = '\033';
-static constexpr char fmt_bold[] = {fmt_divider, '\001', '\0'};
-static constexpr char fmt_yellow[] = {fmt_divider, '\002', '\0'};
-static constexpr char fmt_cyan[] = {fmt_divider, '\003', '\0'};
-static constexpr char fmt_green[] = {fmt_divider, '\004', '\0'};
+// A hack to be able to easily override the const methods of CLI::Formatter
+int global_formatter_indent {};
 
 class SignetCLIHelpFormatter : public CLI::Formatter {
   public:
+    enum class OutputMode { CommandLine, Markdown };
     static constexpr int wrap_size = 75;
+
+    SignetCLIHelpFormatter(OutputMode mode) : m_mode(mode) {
+        labels_["SUBCOMMANDS"] = "COMMANDS";
+        labels_["SUBCOMMAND"] = "COMMAND";
+        labels_["Subcommand"] = "Command";
+        labels_["subcommand"] = "command";
+        labels_["Subcommands"] = "Commands";
+        labels_["subcommands"] = "commands";
+    }
 
     inline std::string make_usage(const CLI::App *app, std::string name) const override {
         std::stringstream out;
 
-        out << fmt_bold << get_label("Usage") << ":" << fmt_divider << "\n"
-            << (name.empty() ? "" : "  ") << name;
+        out << fmt::format("{}:\n", FormatHeading(get_label("Usage"))) << (name.empty() ? "" : "  ")
+            << FormatCLIExample(name);
 
         std::vector<std::string> groups = app->get_groups();
 
         // Print an Options badge if any options exist
         std::vector<const CLI::Option *> non_pos_options =
             app->get_options([](const CLI::Option *opt) { return opt->nonpositional(); });
-        if (!non_pos_options.empty())
-            out << " " << fmt_green << "[" << get_label("OPTIONS") << "]" << fmt_divider;
+        if (!non_pos_options.empty()) out << " " << FormatOption(fmt::format("[{}]", get_label("OPTIONS")));
 
         // Positionals need to be listed here
         std::vector<const CLI::Option *> positionals =
@@ -41,7 +43,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
             std::transform(positionals.begin(), positionals.end(), positional_names.begin(),
                            [this](const CLI::Option *opt) { return make_option_usage(opt); });
 
-            out << fmt_cyan << " " << CLI::detail::join(positional_names, " ") << fmt_divider;
+            out << " " << FormatPositional(CLI::detail::join(positional_names, " "));
         }
 
         // Add a marker if subcommands are expected or optional
@@ -49,13 +51,13 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
                     return ((!subc->get_disabled()) && (!subc->get_name().empty()));
                 })
                  .empty()) {
-            out << fmt_yellow;
-            out << " " << (app->get_require_subcommand_min() == 0 ? "[" : "")
-                << get_label(app->get_require_subcommand_max() < 2 || app->get_require_subcommand_min() > 1
-                                 ? "COMMAND"
-                                 : "COMMANDS")
-                << (app->get_require_subcommand_min() == 0 ? "]" : "");
-            out << fmt_divider;
+            out << " "
+                << FormatSubcommandCLIExample((app->get_require_subcommand_min() == 0 ? "[" : "") +
+                                              get_label(app->get_require_subcommand_max() < 2 ||
+                                                                app->get_require_subcommand_min() > 1
+                                                            ? "COMMAND"
+                                                            : "COMMANDS") +
+                                              (app->get_require_subcommand_min() == 0 ? "]" : ""));
         }
 
         out << std::endl;
@@ -67,7 +69,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     make_group(std::string group, bool is_positional, std::vector<const CLI::Option *> opts) const override {
         std::stringstream out;
 
-        out << "\n" << fmt_bold << group << ":" << fmt_divider << "\n";
+        out << fmt::format("\n{}:\n", FormatHeading(group));
         for (const auto opt : opts) {
             out << make_option(opt, is_positional);
         }
@@ -100,7 +102,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
 
         // For each group, filter out and print subcommands
         for (const std::string &group : subcmd_groups_seen) {
-            out << fmt::format("\n{}{}:{}\n", fmt_bold, group, fmt_divider);
+            out << fmt::format("\n{}:\n", FormatHeading(group));
             auto subcommands_group = app->get_subcommands([&group](const CLI::App *sub_app) {
                 return CLI::detail::to_lower(sub_app->get_group()) == CLI::detail::to_lower(group);
             });
@@ -120,38 +122,37 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
 
     std::string make_subcommand(const CLI::App *sub) const override {
         std::stringstream out;
-        out << std::setw(static_cast<int>(2)) << "";
-        out << fmt_yellow + sub->get_name() + fmt_divider + "\n";
 
-        const auto desc = WrapText(sub->get_description(), wrap_size - 4);
-        out << std::setw(static_cast<int>(4)) << "";
-        for (const char c : desc) {
-            out.put(c);
-            if (c == '\n') {
-                out << std::setw(static_cast<int>(4)) << "";
-            }
-        }
-        out << "\n\n";
+        global_formatter_indent += 2;
+        out << IndentTextIfNeeded(FormatSubcommand(sub->get_name()), global_formatter_indent) << "\n";
+
+        global_formatter_indent += 2;
+        auto desc = WrapTextIfNeeded(sub->get_description(), wrap_size - global_formatter_indent);
+        desc = IndentTextIfNeeded(desc, global_formatter_indent);
+        global_formatter_indent -= 2;
+
+        global_formatter_indent -= 2;
+        out << desc << "\n\n";
 
         return out.str();
     }
 
     std::string make_option(const CLI::Option *opt, bool is_positional) const override {
         std::stringstream out;
-        out << std::setw(static_cast<int>(2)) << "";
-        out << (is_positional ? fmt_cyan : fmt_green);
-        out << make_option_name(opt, is_positional) + make_option_opts(opt);
-        out << fmt_divider << "\n";
 
-        const auto desc = WrapText(make_option_desc(opt), wrap_size - 4);
-        out << std::setw(static_cast<int>(4)) << "";
-        for (const char c : desc) {
-            out.put(c);
-            if (c == '\n') {
-                out << std::setw(static_cast<int>(4)) << "";
-            }
-        }
-        out << "\n\n";
+        global_formatter_indent += 2;
+        const auto content = make_option_name(opt, is_positional) + make_option_opts(opt);
+        out << IndentTextIfNeeded(is_positional ? FormatPositional(content) : FormatOption(content),
+                                  global_formatter_indent);
+        out << "\n";
+
+        global_formatter_indent += 2;
+        auto desc = WrapTextIfNeeded(make_option_desc(opt), wrap_size - global_formatter_indent);
+        desc = IndentTextIfNeeded(desc, global_formatter_indent);
+        global_formatter_indent -= 2;
+
+        global_formatter_indent -= 2;
+        out << desc << "\n\n";
         return out.str();
     }
 
@@ -180,71 +181,161 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         } else if (min_options > 0) {
             desc += " \n[At least " + std::to_string(min_options) + " of the following options are required]";
         }
-        std::string result = fmt_bold + std::string("Description:") + fmt_divider + std::string("\n  ");
-        auto body = (!desc.empty()) ? WrapText(desc, wrap_size - 2, 2) + "\n\n" : std::string {};
+        std::string result = FormatHeading("Description:") + std::string("\n");
+        global_formatter_indent += 2;
+        std::string content = WrapTextIfNeeded(desc, wrap_size - global_formatter_indent);
+        content = IndentTextIfNeeded(content, global_formatter_indent);
+        global_formatter_indent -= 2;
+        auto body = (!desc.empty()) ? content + "\n\n" : std::string {};
         return result + body;
     }
 
     inline std::string make_expanded(const CLI::App *sub) const override {
         std::stringstream out;
-        // out << sub->get_display_name() << "\n";
 
-        out << fmt_yellow;
-        out << sub->get_name();
-        out << fmt_divider;
+        global_formatter_indent += 2;
+
+        out << IndentTextIfNeeded(FormatSubcommand(sub->get_name()), global_formatter_indent);
         out << "\n";
+
+        global_formatter_indent += 2;
 
         out << make_description(sub);
         out << make_positionals(sub);
         out << make_groups(sub, CLI::AppFormatMode::Sub);
         out << make_subcommands(sub, CLI::AppFormatMode::Sub);
 
+        global_formatter_indent -= 2;
+
         // Drop blank spaces
         std::string tmp = CLI::detail::find_and_replace(out.str(), "\n\n", "\n");
         tmp = tmp.substr(0, tmp.size() - 1); // Remove the final '\n'
 
+        global_formatter_indent -= 2;
+
         // Indent all but the first line (the name)
-        return CLI::detail::find_and_replace(tmp, "\n", "\n  ") + "\n";
+        return tmp + "\n";
+        // return CLI::detail::find_and_replace(tmp, "\n", "\n  ") + "\n";
     }
+
+    inline std::string
+    make_help(const CLI::App *app, std::string name, CLI::AppFormatMode mode) const override {
+
+        // This immediately forwards to the make_expanded method. This is done this way so that subcommands
+        // can have overridden formatters
+        if (mode == CLI::AppFormatMode::Sub) return make_expanded(app);
+
+        std::stringstream out;
+        if ((app->get_name().empty()) && (app->get_parent() != nullptr)) {
+            if (app->get_group() != "Commands") {
+                out << app->get_group() << ':';
+            }
+        }
+
+        out << make_description(app);
+        out << make_usage(app, name);
+        out << make_positionals(app);
+        out << make_groups(app, mode);
+        out << make_subcommands(app, mode);
+        out << '\n' << make_footer(app);
+
+        return out.str();
+    }
+
+  private:
+    std::string IndentTextIfNeeded(const std::string &str, usize indent) const {
+        if (m_mode == OutputMode::Markdown) return str;
+        return IndentText(str, indent);
+    }
+
+    std::string WrapTextIfNeeded(const std::string &str, unsigned size) const {
+        if (m_mode == OutputMode::Markdown) return str;
+        return WrapText(str, size);
+    }
+
+    std::string FormatCLIExample(const std::string &str) const {
+        if (m_mode == OutputMode::CommandLine) {
+            return str;
+        }
+        return fmt::format("`{}`", str);
+    }
+
+    std::string FormatHeading(const std::string &heading) const {
+        switch (m_mode) {
+            case OutputMode::CommandLine: {
+                return IndentText(fmt::format(fmt::emphasis::bold, "{}", heading), global_formatter_indent);
+            }
+            case OutputMode::Markdown: {
+                if (global_formatter_indent) {
+                    // Limit the heading to H6 - this seems to be the max for markdown.
+                    return "##" + std::string(std::min(global_formatter_indent, 4), '#') + " " + heading;
+                } else {
+                    return "## " + heading;
+                }
+            }
+        }
+        return "";
+    }
+
+    std::string FormatOption(const std::string &option) const {
+        switch (m_mode) {
+            case OutputMode::CommandLine: {
+                return fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "{}", option);
+            }
+            case OutputMode::Markdown: {
+                return fmt::format("`{}`", option);
+            }
+        }
+        return "";
+    }
+
+    std::string FormatPositional(const std::string &pos) const {
+        switch (m_mode) {
+            case OutputMode::CommandLine: {
+                return fmt::format(fg(fmt::color::cyan) | fmt::emphasis::bold, "{}", pos);
+            }
+            case OutputMode::Markdown: {
+                return fmt::format("`{}`", pos);
+            }
+        }
+        return "";
+    }
+
+    std::string FormatSubcommandCLIExample(const std::string &sub) const {
+        if (m_mode == OutputMode::CommandLine) {
+            return FormatSubcommand(sub);
+        }
+        return FormatCLIExample(sub);
+    }
+
+    std::string FormatSubcommand(const std::string &sub) const {
+        switch (m_mode) {
+            case OutputMode::CommandLine: {
+                return fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{}", sub);
+            }
+            case OutputMode::Markdown: {
+                return FormatHeading(sub);
+            }
+        }
+        return "";
+    }
+
+    OutputMode m_mode;
 };
 
 static void PrintSignetHeading() {
-    std::cout << rang::style::bold << "Signet\n" << rang::style::reset;
+    fmt::print(fmt::emphasis::bold, "Signet\n");
+
     std::array<char, SignetCLIHelpFormatter::wrap_size> divider {};
     std::memset(divider.data(), '=', divider.size() - 1);
-    std::cout << rang::fg::gray << divider.data() << "\n\n" << rang::fg::reset;
+    fmt::print(fg(fmt::color::gray), "{}\n\n", divider.data());
 }
 
-enum class ProcessFormatTextMode { AnsiColours, MarkdownCode };
-
-static std::string ProcessFormattedHelpText(const std::string &str,
-                                            ProcessFormatTextMode mode = ProcessFormatTextMode::AnsiColours) {
-    std::string result;
-    auto sections = Split(str, {&fmt_divider, 1});
-    for (auto s : sections) {
-        char c = s[0];
-        bool keep_char = false;
-
-        if (mode == ProcessFormatTextMode::AnsiColours) {
-            fmt::text_style style;
-            switch (c) {
-                case fmt_bold[1]: style = fmt::emphasis::bold; break;
-                case fmt_yellow[1]: style = fg(fmt::color::yellow) | fmt::emphasis::bold; break;
-                case fmt_cyan[1]: style = fg(fmt::color::cyan) | fmt::emphasis::bold; break;
-                case fmt_green[1]: style = fg(fmt::color::green) | fmt::emphasis::bold; break;
-                default: keep_char = true; break;
-            }
-            if (!keep_char) s.remove_prefix(1);
-            result += fmt::format(style, "{}", s);
-        } else if (mode == ProcessFormatTextMode::MarkdownCode) {
-            bool is_styled = c == fmt_bold[1] || c == fmt_yellow[1] || c == fmt_cyan[1] || c == fmt_green[1];
-            if (is_styled) {
-                s.remove_prefix(1);
-                if (s.size()) result += fmt::format("`{}`", s);
-            } else {
-                result += s;
-            }
-        }
+// Subcommands can have different formatters to their parents, to set all of them, we have to go down
+// recursively setting the new formatter.
+static void SetFormatterRecursively(CLI::App *app, std::shared_ptr<SignetCLIHelpFormatter> formatter) {
+    app->formatter(formatter);
+    for (auto s : app->get_subcommands({})) {
+        SetFormatterRecursively(s, formatter);
     }
-    return result;
 }

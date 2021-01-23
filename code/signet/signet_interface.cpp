@@ -3,7 +3,6 @@
 #include <functional>
 
 #include "doctest.hpp"
-#include "rang.hpp"
 
 #include "audio_file_io.h"
 #include "cli_formatter.h"
@@ -56,8 +55,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     app.require_subcommand();
     app.set_help_all_flag("--help-all", "Print help message for all commands");
-    app.formatter(std::make_shared<SignetCLIHelpFormatter>());
+    app.formatter(std::make_shared<SignetCLIHelpFormatter>(SignetCLIHelpFormatter::OutputMode::CommandLine));
     app.name("signet");
+    app.group("Commands");
 
     app.add_flag_callback(
         "--undo",
@@ -81,72 +81,44 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             // were parsed.
             app.clear();
 
+            // Set a new formatter in Markdown mode
+            SetFormatterRecursively(
+                &app, std::make_shared<SignetCLIHelpFormatter>(SignetCLIHelpFormatter::OutputMode::Markdown));
+
             std::ofstream os(make_docs_filepath);
-            auto FormatHelpTextToStream = [&](std::string t, bool hide_subcommands) {
-                for (auto l : Split(t, "\n", true)) {
-                    const std::string_view headings[] {
-                        "`Usage:`", "`Description:`", "`Options:`", "`Subcommands:`", "`Positionals:`",
-                        "Usage:",   "Description:",   "Options:",   "Subcommands:",   "Positionals:"};
 
-                    if (hide_subcommands && (l == "`Subcommands:`" || l == "Subcommands:")) {
-                        break;
-                    }
+            os << "# Signet Usage\n";
+            os << "\nThis is an auto-generated file based on the output of `signet --help`. It contains information about every feature of Signet.\n\n";
 
-                    bool remove_grave_accent = false;
-                    for (const auto &h : headings) {
-                        if (h == l) {
-                            os << "#### ";
-                            remove_grave_accent = true;
-                        } else if (EndsWith(l, h)) {
-                            os << "##### ";
-                            remove_grave_accent = true;
-                        }
-                    }
-
-                    while (l.size() && l.front() == ' ') {
-                        l.remove_prefix(1);
-                    }
-
-                    std::string str {l};
-                    if (remove_grave_accent) {
-                        for (auto it = str.begin(); it != str.end();) {
-                            if (*it == '`') {
-                                it = str.erase(it);
-                            } else {
-                                ++it;
-                            }
-                        }
-                        l = str;
-                    }
-                    Replace(str, "``", "");
-                    Replace(str, "*", "\\*");
-                    if (StartsWith(str, "<") && EndsWith(str, ">")) {
-                        os << "`" << str << "`\n";
-                    } else {
-                        os << str << '\n';
-                    }
-                }
-            };
-
-            os << "# Usage\n";
-            FormatHelpTextToStream(ProcessFormattedHelpText(app.help("", CLI::AppFormatMode::Normal),
-                                                            ProcessFormatTextMode::MarkdownCode),
-                                   true);
-
-            os << "# Commands Usage\n";
+            // Print a 'contents' like section
+            os << "- [Signet](#Signet)\n";
+            os << "- [Commands](#Signet%20Commands)\n";
             for (auto s : app.get_subcommands({})) {
                 auto name = s->get_name();
-                os << fmt::format("- [{}](#{})\n", name, name);
+                os << fmt::format("  - [{}](#{})\n", name, name);
                 for (auto ss : s->get_subcommands({})) {
-                    os << fmt::format("  - [{}](#{})\n", ss->get_name(), name);
+                    os << fmt::format("    - [{}](#{})\n", ss->get_name(), name);
                 }
             }
 
+            os << "# Signet\n";
+            auto main_usage = app.help("", CLI::AppFormatMode::Normal);
+            // Rather than include the text descriptions of the commands, we ignore anything from the heading
+            // "commands" onwards and instead write our own commands section below.
+            for (auto l : Split(main_usage, "\n", true)) {
+                if (l == "## Commands:") break;
+                std::string line {l};
+                Replace(line, "*", "\\*");
+                os << line << "\n";
+            }
+
+            os << "# Signet Commands\n";
             for (auto s : app.get_subcommands({})) {
                 os << "## " << s->get_name() << "\n";
-                std::string r = ProcessFormattedHelpText(s->help("", CLI::AppFormatMode::All),
-                                                         ProcessFormatTextMode::MarkdownCode);
-                FormatHelpTextToStream(r, false);
+                global_formatter_indent = 1;
+                std::string r = s->help("", CLI::AppFormatMode::All);
+                os << r;
+                global_formatter_indent = 0;
             }
 
             throw CLI::Success();
@@ -212,14 +184,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     } catch (const CLI::ParseError &e) {
         PrintSignetHeading();
         if (e.get_exit_code() != 0) {
-            std::cout << rang::fg::red;
-            std::atexit([]() { std::cout << rang::fg::reset; });
-            std::cout << "ERROR:\n";
-            return app.exit(e);
+            std::stringstream out;
+            std::stringstream error;
+            auto result = app.exit(e, out, error);
+
+            fmt::print(fg(fmt::color::red), "ERROR:\n{}{}", out.str(), error.str());
+            return result;
         } else {
             std::stringstream help_text_stream;
             const auto result = app.exit(e, help_text_stream);
-            std::cout << ProcessFormattedHelpText(help_text_stream.str());
+            std::cout << (help_text_stream.str());
             return result;
         }
     }

@@ -23,7 +23,8 @@ std::string ToSnakeCase(std::string_view str);
 std::string ToCamelCase(std::string_view str);
 
 std::string PutNumberInAngleBracket(usize num);
-std::string WrapText(const std::string_view text, const unsigned width, const usize indent_spaces = 0);
+std::string WrapText(const std::string_view text, const unsigned width);
+std::string IndentText(const std::string_view text, usize num_indent_spaces);
 
 std::string GetJustFilenameWithNoExtension(fs::path path);
 std::vector<std::string_view>

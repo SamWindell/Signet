@@ -7,7 +7,7 @@ class EmbedSamplerInfo : public Command {
     CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
 
-    std::string GetName() const override { return "Sample Info Embeder"; }
+    std::string GetName() const override { return "Sample Info Embedder"; }
 
   private:
     std::optional<int> m_root_number;

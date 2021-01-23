@@ -9,9 +9,9 @@ void AutoMapper::CreateCLI(CLI::App &rename) {
         "auto-map",
         R"^^(Samplers can often read the root, low and high MIDI note numbers from within a filename. This command makes inserting the low and high keys into the filename simple.
 
-    First you specify a regex pattern that captures a number representing the MIDI root note from the input filenames. This tool collects all of the root notes found in each folder, and works out reasonable values for what the low and high MIDI notes should be.
+First you specify a regex pattern that captures a number representing the MIDI root note from the input filenames. This tool collects all of the root notes found in each folder, and works out reasonable values for what the low and high MIDI notes should be.
 
-    You control the format of the renaming by specifing a pattern containing substitution variables for <lo>, <root> and <high>. These variables are replaced by the MIDI note numbers in the range 0 to 127.)^^");
+You control the format of the renaming by specifing a pattern containing substitution variables for <lo>, <root> and <high>. These variables are replaced by the MIDI note numbers in the range 0 to 127.)^^");
 
     auto_map
         ->add_option("auto-map-filename-pattern", m_automap_pattern,

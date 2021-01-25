@@ -209,14 +209,16 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         global_formatter_indent -= indent_size;
 
         // Drop blank spaces
-        std::string tmp = CLI::detail::find_and_replace(out.str(), "\n\n", "\n");
-        tmp = tmp.substr(0, tmp.size() - 1); // Remove the final '\n'
+        std::string result = out.str();
+        if (m_mode == OutputMode::CommandLine) {
+            result = CLI::detail::find_and_replace(result, "\n\n", "\n");
+        }
+        result = result.substr(0, result.size() - 1); // Remove the final '\n'
 
         global_formatter_indent -= indent_size;
 
         // Indent all but the first line (the name)
-        return tmp + "\n";
-        // return CLI::detail::find_and_replace(tmp, "\n", "\n  ") + "\n";
+        return result + "\n";
     }
 
     inline std::string
@@ -240,7 +242,12 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         out << make_subcommands(app, mode);
         out << '\n' << make_footer(app);
 
-        return out.str();
+        auto result = out.str();
+        if (m_mode == OutputMode::Markdown) {
+            Replace(result, "*", "\\*");
+        }
+
+        return result;
     }
 
   private:

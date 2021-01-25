@@ -90,7 +90,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             os << "# Signet Usage\n";
             os << "\nThis is an auto-generated file based on the output of `signet --help`. It contains information about every feature of Signet.\n\n";
 
-            // Print a 'contents' like section
+            // Print a contents section
             os << "- [Signet](#Signet)\n";
             os << "- [Commands](#Signet%20Commands)\n";
             for (auto s : app.get_subcommands({})) {
@@ -101,23 +101,33 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 }
             }
 
+            auto MakeAngleBracketWordsMarkdownCode = [](std::string markdown) {
+                // There are commands have use a concept of a 'variable' which is a string instide angle
+                // brackets. In order for them to show up nicely in the markdown, we wrap them in ` characters
+                // to make them markdown 'code'.
+                std::string result {};
+                for (auto l : Split(markdown, "\n", true)) {
+                    result += std::regex_replace(std::string(l), std::regex("<[\\w-]+>"), "`$&`") + "\n";
+                }
+                return result;
+            };
+
             os << "# Signet\n";
-            auto main_usage = app.help("", CLI::AppFormatMode::Normal);
+            auto main_usage = MakeAngleBracketWordsMarkdownCode(app.help("", CLI::AppFormatMode::Normal));
             // Rather than include the text descriptions of the commands, we ignore anything from the heading
             // "commands" onwards and instead write our own commands section below.
             for (auto l : Split(main_usage, "\n", true)) {
                 if (l == "## Commands:") break;
                 std::string line {l};
-                Replace(line, "*", "\\*");
                 os << line << "\n";
             }
 
+            // Write the commands section
             os << "# Signet Commands\n";
             for (auto s : app.get_subcommands({})) {
                 os << "## " << s->get_name() << "\n";
-                global_formatter_indent = 2;
-                std::string r = s->help("", CLI::AppFormatMode::All);
-                os << r;
+                global_formatter_indent = 2; //
+                os << MakeAngleBracketWordsMarkdownCode(s->help("", CLI::AppFormatMode::All));
                 global_formatter_indent = 0;
             }
 

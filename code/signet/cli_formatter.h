@@ -9,6 +9,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
   public:
     enum class OutputMode { CommandLine, Markdown };
     static constexpr int wrap_size = 75;
+    static constexpr int indent_size = 2;
 
     SignetCLIHelpFormatter(OutputMode mode) : m_mode(mode) {
         labels_["SUBCOMMANDS"] = "COMMANDS";
@@ -123,15 +124,15 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     std::string make_subcommand(const CLI::App *sub) const override {
         std::stringstream out;
 
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
         out << IndentTextIfNeeded(FormatSubcommand(sub->get_name()), global_formatter_indent) << "\n";
 
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
         auto desc = WrapTextIfNeeded(sub->get_description(), wrap_size - global_formatter_indent);
         desc = IndentTextIfNeeded(desc, global_formatter_indent);
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
 
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
         out << desc << "\n\n";
 
         return out.str();
@@ -140,18 +141,18 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     std::string make_option(const CLI::Option *opt, bool is_positional) const override {
         std::stringstream out;
 
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
         const auto content = make_option_name(opt, is_positional) + make_option_opts(opt);
         out << IndentTextIfNeeded(is_positional ? FormatPositional(content) : FormatOption(content),
                                   global_formatter_indent);
         out << "\n";
 
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
         auto desc = WrapTextIfNeeded(make_option_desc(opt), wrap_size - global_formatter_indent);
         desc = IndentTextIfNeeded(desc, global_formatter_indent);
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
 
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
         out << desc << "\n\n";
         return out.str();
     }
@@ -182,10 +183,10 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
             desc += " \n[At least " + std::to_string(min_options) + " of the following options are required]";
         }
         std::string result = FormatHeading("Description:") + std::string("\n");
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
         std::string content = WrapTextIfNeeded(desc, wrap_size - global_formatter_indent);
         content = IndentTextIfNeeded(content, global_formatter_indent);
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
         auto body = (!desc.empty()) ? content + "\n\n" : std::string {};
         return result + body;
     }
@@ -193,25 +194,25 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     inline std::string make_expanded(const CLI::App *sub) const override {
         std::stringstream out;
 
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
 
         out << IndentTextIfNeeded(FormatSubcommand(sub->get_name()), global_formatter_indent);
         out << "\n";
 
-        global_formatter_indent += 2;
+        global_formatter_indent += indent_size;
 
         out << make_description(sub);
         out << make_positionals(sub);
         out << make_groups(sub, CLI::AppFormatMode::Sub);
         out << make_subcommands(sub, CLI::AppFormatMode::Sub);
 
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
 
         // Drop blank spaces
         std::string tmp = CLI::detail::find_and_replace(out.str(), "\n\n", "\n");
         tmp = tmp.substr(0, tmp.size() - 1); // Remove the final '\n'
 
-        global_formatter_indent -= 2;
+        global_formatter_indent -= indent_size;
 
         // Indent all but the first line (the name)
         return tmp + "\n";
@@ -268,7 +269,8 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
             case OutputMode::Markdown: {
                 if (global_formatter_indent) {
                     // Limit the heading to H6 - this seems to be the max for markdown.
-                    return "##" + std::string(std::min(global_formatter_indent, 4), '#') + " " + heading;
+                    return "##" + std::string(std::min(global_formatter_indent / indent_size, 4), '#') + " " +
+                           heading;
                 } else {
                     return "## " + heading;
                 }

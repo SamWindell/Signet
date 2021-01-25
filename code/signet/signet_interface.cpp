@@ -115,7 +115,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             os << "# Signet Commands\n";
             for (auto s : app.get_subcommands({})) {
                 os << "## " << s->get_name() << "\n";
-                global_formatter_indent = 1;
+                global_formatter_indent = 2;
                 std::string r = s->help("", CLI::AppFormatMode::All);
                 os << r;
                 global_formatter_indent = 0;

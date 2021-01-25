@@ -11,10 +11,10 @@
 CLI::App *FolderiseCommand::CreateCommandCLI(CLI::App &app) {
     auto folderise = app.add_subcommand(
         "folderise",
-        GetName() +
-            ": moves files into folders based on their names. This is done by specifying "
-            "a regex pattern to match the name against. The folder in which the matched file should be "
-            "moved to can be based off of the name. These folders are created if they do not already exist.");
+
+        "Moves files into folders based on their names. This is done by specifying "
+        "a regex pattern to match the name against. The folder in which the matched file should be "
+        "moved to can be based off of the name. These folders are created if they do not already exist.");
 
     folderise
         ->add_option("filename-regex", m_filename_pattern,

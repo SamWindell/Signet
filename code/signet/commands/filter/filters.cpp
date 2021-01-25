@@ -30,8 +30,7 @@ void FilterProcessFiles(AudioFiles &files,
 }
 
 CLI::App *HighpassCommand::CreateCommandCLI(CLI::App &app) {
-    auto hp =
-        app.add_subcommand("highpass", GetName() + R"aa(: removes frequencies below the given cutoff.)aa");
+    auto hp = app.add_subcommand("highpass", R"aa(Removes frequencies below the given cutoff.)aa");
 
     hp->add_option("cutoff-freq-hz", m_cutoff,
                    "The cutoff point where frequencies below this should be removed.")

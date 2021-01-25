@@ -34,11 +34,10 @@ class ZeroCrossOffsetCommand final : public Command {
 
     CLI::App *CreateCommandCLI(CLI::App &app) override {
         auto zcross = app.add_subcommand(
-            "zcross-offset",
-            GetName() + ": offsets the start of an audio file to the nearest "
-                        "zero-crossing (or the closest thing to a zero crossing). You can use the "
-                        "option --append to cause the samples that were offsetted to be appended to the "
-                        "end of the file. This is useful for when the file is a seamless loop.");
+            "zcross-offset", "Offsets the start of an audio file to the nearest "
+                             "zero-crossing (or the closest thing to a zero crossing). You can use the "
+                             "option --append to cause the samples that were offsetted to be appended to the "
+                             "end of the file. This is useful for when the file is a seamless loop.");
         zcross->add_flag("--append", m_append_skipped_frames_on_end,
                          "Append the frames offsetted to the end of the file - useful when the sample is a "
                          "seamless loop.");

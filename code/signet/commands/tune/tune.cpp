@@ -5,9 +5,8 @@
 #include "test_helpers.h"
 
 CLI::App *TuneCommand::CreateCommandCLI(CLI::App &app) {
-    auto tune =
-        app.add_subcommand("tune", GetName() + ": changes the tune the file(s) by stretching or shrinking "
-                                               "them. Uses a high quality resampling algorithm.");
+    auto tune = app.add_subcommand("tune", "Changes the tune the file(s) by stretching or shrinking "
+                                           "them. Uses a high quality resampling algorithm.");
     tune->add_option("tune cents", m_tune_cents, "The cents to change the pitch by.")->required();
     return tune;
 }

@@ -39,7 +39,7 @@ double GainAmount::GetMultiplier() const {
 }
 
 CLI::App *GainCommand::CreateCommandCLI(CLI::App &app) {
-    auto gain = app.add_subcommand("gain", GetName() + ": changes the volume of the file(s).");
+    auto gain = app.add_subcommand("gain", "Changes the volume of the file(s).");
 
     gain->add_option("gain", m_gain,
                      "The gain amount. This is a number followed by a unit. The unit can be % or db. For "

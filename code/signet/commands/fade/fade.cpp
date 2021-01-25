@@ -15,10 +15,9 @@ static tcb::span<const std::string_view> GetShapeNames() {
 CLI::App *FadeCommand::CreateCommandCLI(CLI::App &app) {
     auto fade = app.add_subcommand(
         "fade",
-        GetName() +
-            ": adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has "
-            "itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify "
-            "first the fade length. You can then optionally specify the shape of the fade curve.");
+        "Adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has "
+        "itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify "
+        "first the fade length. You can then optionally specify the shape of the fade curve.");
     fade->require_subcommand();
 
     std::map<std::string, Shape> shape_name_dictionary;

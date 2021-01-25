@@ -11,8 +11,7 @@
 CLI::App *PrintInfoCommand::CreateCommandCLI(CLI::App &app) {
     auto printer = app.add_subcommand(
         "print-info",
-        GetName() +
-            ": prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.");
+        "Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.");
     return printer;
 }
 

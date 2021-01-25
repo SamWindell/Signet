@@ -6,10 +6,9 @@
 
 CLI::App *ConvertCommand::CreateCommandCLI(CLI::App &app) {
     auto convert = app.add_subcommand(
-        "convert", GetName() +
-                       ": converts the file format, bit-depth or sample "
-                       "rate. Features a high quality resampling algorithm. This command has subcommands; it "
-                       "requires at least one of sample-rate, bit-depth or file-format to be specified.");
+        "convert", "Converts the file format, bit-depth or sample "
+                   "rate. Features a high quality resampling algorithm. This command has subcommands; it "
+                   "requires at least one of sample-rate, bit-depth or file-format to be specified.");
     convert->require_subcommand();
 
     auto sample_rate =

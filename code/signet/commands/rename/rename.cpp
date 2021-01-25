@@ -10,7 +10,7 @@
 #include "test_helpers.h"
 
 CLI::App *RenameCommand::CreateCommandCLI(CLI::App &app) {
-    auto rename = app.add_subcommand("rename", GetName() + R"aa(: various commands for renaming files.
+    auto rename = app.add_subcommand("rename", R"aa("Various commands for renaming files.
 
 This command can be used to bulk rename a set of files. It also has the ability to insert special variables into the file name, such as the detected pitch. As well as this, there is a special auto-mapper command that is useful to sample library developers.
 

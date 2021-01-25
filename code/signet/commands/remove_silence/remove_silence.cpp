@@ -11,9 +11,9 @@ static constexpr usize silence_allowence = 4;
 
 CLI::App *RemoveSilenceCommand::CreateCommandCLI(CLI::App &app) {
     auto remove_silence = app.add_subcommand(
-        "remove-silence", GetName() + ": removes silence from the start or end of the file(s). Silence is "
-                                      "considered anything under -90dB, "
-                                      "however this threshold can be changed with the --threshold option.");
+        "remove-silence", "Removes silence from the start or end of the file(s). Silence is "
+                          "considered anything under -90dB, "
+                          "however this threshold can be changed with the --threshold option.");
 
     std::map<std::string, Region> region_name_dictionary;
     for (const auto &e : magic_enum::enum_entries<Region>()) {

@@ -103,9 +103,8 @@ Sets the root note by running a pitch detection algorithm on the file. If the au
 
 CLI::App *EmbedSamplerInfo::CreateCommandCLI(CLI::App &app) {
     auto embedder = app.add_subcommand(
-        "embed-sampler-info", GetName() +
-                                  ": embeds sampler metadata into the audio file(s), such as "
-                                  "the root note, the velocity mapping range and the note mapping range.");
+        "embed-sampler-info", "Embeds sampler metadata into the audio file(s), such as "
+                              "the root note, the velocity mapping range and the note mapping range.");
     embedder->require_subcommand();
 
     auto root = embedder->add_subcommand("root", "Embed the root note of the audio file");

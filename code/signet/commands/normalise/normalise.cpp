@@ -7,10 +7,9 @@
 
 CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand(
-        "norm", GetName() +
-                    ": sets the peak amplitude to a certain level. When this is used on multiple files, each "
-                    "file is attenuated by the same amount. You can disable this by specifying the flag "
-                    "--independently.");
+        "norm", "Sets the peak amplitude to a certain level. When this is used on multiple files, each "
+                "file is attenuated by the same amount. You can disable this by specifying the flag "
+                "--independently.");
 
     norm->add_option("target-decibels", m_target_decibels,
                      "The target level in decibels, where 0dB is the max volume.")

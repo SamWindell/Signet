@@ -3,7 +3,7 @@
 #include "CLI11.hpp"
 
 CLI::App *MoveCommand::CreateCommandCLI(CLI::App &app) {
-    auto move = app.add_subcommand("move", GetName() + ": moves all input files to a given folder.");
+    auto move = app.add_subcommand("move", "Moves all input files to a given folder.");
     move->add_option("destination-folder", m_destination_dir, "The folder to put all of the input files in.");
     return move;
 }

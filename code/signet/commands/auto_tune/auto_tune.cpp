@@ -9,9 +9,8 @@
 
 CLI::App *AutoTuneCommand::CreateCommandCLI(CLI::App &app) {
     auto auto_tune = app.add_subcommand(
-        "auto-tune", GetName() +
-                         ": tunes the file(s) to their nearest detected musical pitch. For example, a "
-                         "file with a detected pitch of 450Hz will be tuned to 440Hz (A4).");
+        "auto-tune", "Tunes the file(s) to their nearest detected musical pitch. For example, a "
+                     "file with a detected pitch of 450Hz will be tuned to 440Hz (A4).");
     return auto_tune;
 }
 

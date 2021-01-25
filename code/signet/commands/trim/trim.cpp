@@ -7,9 +7,8 @@
 CLI::App *TrimCommand::CreateCommandCLI(CLI::App &app) {
     auto trim = app.add_subcommand(
         "trim",
-        GetName() +
-            ": removes the start or end of the file(s). This command has 2 subcommands, 'start' "
-            "and 'end'; one of which must be specified. For each, the amount to remove must be specified.");
+        "Removes the start or end of the file(s). This command has 2 subcommands, 'start' "
+        "and 'end'; one of which must be specified. For each, the amount to remove must be specified.");
     trim->require_subcommand();
 
     auto start = trim->add_subcommand("start", "Removes the start of the file.");

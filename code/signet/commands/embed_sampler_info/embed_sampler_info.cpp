@@ -186,7 +186,7 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
     auto velocity_range = embedder->add_subcommand(
         "velocity-range",
         "Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI "
-        "velocity. In order to to this, the sampler needs to know what the minimum and maximum MIDI velocity "
+        "velocity. In order to do this, the sampler needs to know what the minimum and maximum MIDI velocity "
         "values that a sample should play in. The whole MIDI velocity range is between 1 and 127.");
     velocity_range
         ->add_option_function<std::vector<std::string>>(

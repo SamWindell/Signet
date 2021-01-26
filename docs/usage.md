@@ -52,12 +52,6 @@ The audio files to process. You can specify more than one of these. Each input-f
 
 
 ## Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
 `--undo`
 Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
@@ -77,30 +71,14 @@ When the input is a directory, scan for files in it recursively
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4).
 
 ### Usage:
-  `auto-tune` `[OPTIONS]`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `auto-tune`
 
 ## convert
 ### Description:
 Converts the file format, bit-depth or sample rate. Features a high quality resampling algorithm. This command has subcommands; it requires at least one of sample-rate, bit-depth or file-format to be specified.
 
 ### Usage:
-  `convert` `[OPTIONS]` `COMMAND`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `convert` `COMMAND`
 
 ### Commands:
 #### sample-rate
@@ -139,30 +117,14 @@ The output file format.
 Prints out the detected pitch of the file(s).
 
 ### Usage:
-  `detect-pitch` `[OPTIONS]`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `detect-pitch`
 
 ## embed-sampler-info
 ### Description:
 Embeds sampler metadata into the audio file(s), such as the root note, the velocity mapping range and the note mapping range.
 
 ### Usage:
-  `embed-sampler-info` `[OPTIONS]` `COMMAND`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `embed-sampler-info` `COMMAND`
 
 ### Commands:
 #### root
@@ -252,15 +214,7 @@ DESCRIPTION
 Adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify first the fade length. You can then optionally specify the shape of the fade curve.
 
 ### Usage:
-  `fade` `[OPTIONS]` `COMMAND`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `fade` `COMMAND`
 
 ### Commands:
 #### in
@@ -295,7 +249,7 @@ The shape of the fade-out curve. The default is the 'sine' shape.
 Moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
 
 ### Usage:
-  `folderise` `[OPTIONS]` `filename-regex out-folder`
+  `folderise` `filename-regex out-folder`
 
 ### Positionals:
 `filename-regex TEXT REQUIRED`
@@ -305,32 +259,16 @@ The ECMAScript-style regex pattern used to match filenames against. The file ext
 The output folder that the matching files should be put into. This will be created if it does not exist. It can contain numbers in angle brackets to signify where groups from the matching regex should be inserted. These means files can end up in multiple folders. For example, 'folderise file(\d+).wav C:/folder`<1>`' would create folders 'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.
 
 
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
-
 ## gain
 ### Description:
 Changes the volume of the file(s).
 
 ### Usage:
-  `gain` `[OPTIONS]` `gain`
+  `gain` `gain`
 
 ### Positionals:
 `gain TEXT REQUIRED`
 The gain amount. This is a number followed by a unit. The unit can be % or db. For example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% makes it twice as loud.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## highpass
@@ -338,19 +276,11 @@ Print help message for all commands
 Removes frequencies below the given cutoff.
 
 ### Usage:
-  `highpass` `[OPTIONS]` `cutoff-freq-hz`
+  `highpass` `cutoff-freq-hz`
 
 ### Positionals:
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies below this should be removed.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## lowpass
@@ -358,19 +288,11 @@ Print help message for all commands
 Lowpass: removes frequencies above the given cutoff.
 
 ### Usage:
-  `lowpass` `[OPTIONS]` `cutoff-freq-hz`
+  `lowpass` `cutoff-freq-hz`
 
 ### Positionals:
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies above this should be removed.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## make-docs
@@ -378,19 +300,11 @@ Print help message for all commands
 Creates a markdown file containing the full CLI - based on running signet --help.
 
 ### Usage:
-  `make-docs` `[OPTIONS]` `output-file`
+  `make-docs` `output-file`
 
 ### Positionals:
 `output-file TEXT REQUIRED`
 The filepath for the generated markdown file.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## move
@@ -398,19 +312,11 @@ Print help message for all commands
 Moves all input files to a given folder.
 
 ### Usage:
-  `move` `[OPTIONS]` `[destination-folder]`
+  `move` `[destination-folder]`
 
 ### Positionals:
 `destination-folder TEXT`
 The folder to put all of the input files in.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## norm
@@ -426,12 +332,6 @@ The target level in decibels, where 0dB is the max volume.
 
 
 ### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
 `--independently`
 When there are multiple files, normalise each one individually rather than by a common gain.
 
@@ -447,15 +347,7 @@ The mix of the normalised signal, where 100% means normalised exactly to the tar
 Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
 
 ### Usage:
-  `print-info` `[OPTIONS]`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `print-info`
 
 ## remove-silence
 ### Description:
@@ -470,12 +362,6 @@ Specify whether the removal should be at the start, the end or both.
 
 
 ### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
 `--threshold FLOAT:INT in [-200 - 0]`
 The threshold in decibels to which anything under it should be considered silence.
 
@@ -530,15 +416,7 @@ The snake-case name of the folder that contains the audio file.
 The camel-case name of the folder that contains the audio file.
 
 ### Usage:
-  `rename` `[OPTIONS]` `COMMAND`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `rename` `COMMAND`
 
 ### Commands:
 #### prefix
@@ -610,7 +488,7 @@ The name of the output file (excluding extension). This should contain substitut
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
 
 ### Usage:
-  `sample-blend` `[OPTIONS]` `root_note_regex semitone-interval out-filename`
+  `sample-blend` `root_note_regex semitone-interval out-filename`
 
 ### Positionals:
 `root_note_regex TEXT REQUIRED`
@@ -623,32 +501,16 @@ The semitone interval at which to generate new samples by
 The filename of the generated files (excluding extension). It should contain either the substitution variable `<root-num>` or `<root-note>` which will be replaced by the root note of the generated file. `<root-num>` is replaced by the MIDI note number, and `<root-name>` is replaced by the note name, such as C3.
 
 
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
-
 ## seamless-loop
 ### Description:
 Turns the files(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
 
 ### Usage:
-  `seamless-loop` `[OPTIONS]` `[crossfade-percent]`
+  `seamless-loop` `[crossfade-percent]`
 
 ### Positionals:
 `crossfade-percent FLOAT:INT in [0 - 100]`
 The size of the crossfade region as a percent of the whole file.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## trim
@@ -656,15 +518,7 @@ Print help message for all commands
 Removes the start or end of the file(s). This command has 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
 
 ### Usage:
-  `trim` `[OPTIONS]` `COMMAND`
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
+  `trim` `COMMAND`
 
 ### Commands:
 #### start
@@ -693,19 +547,11 @@ The amount to remove from the end. This value is a number directly followed by a
 Changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
 
 ### Usage:
-  `tune` `[OPTIONS]` `tune cents`
+  `tune` `tune cents`
 
 ### Positionals:
 `tune cents FLOAT REQUIRED`
 The cents to change the pitch by.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
 
 
 ## zcross-offset
@@ -721,12 +567,6 @@ The maximum length that it is allowed to offset to. This value is a number direc
 
 
 ### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
 `--append`
 Append the frames offsetted to the end of the file - useful when the sample is a seamless loop.
 

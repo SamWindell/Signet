@@ -29,8 +29,9 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         std::vector<std::string> groups = app->get_groups();
 
         // Print an Options badge if any options exist
-        std::vector<const CLI::Option *> non_pos_options =
-            app->get_options([](const CLI::Option *opt) { return opt->nonpositional(); });
+        std::vector<const CLI::Option *> non_pos_options = app->get_options([app](const CLI::Option *opt) {
+            return opt->nonpositional() && opt != app->get_help_ptr() && opt != app->get_help_all_ptr();
+        });
         if (!non_pos_options.empty()) out << " " << FormatOption(fmt::format("[{}]", get_label("OPTIONS")));
 
         // Positionals need to be listed here
@@ -70,6 +71,19 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     make_group(std::string group, bool is_positional, std::vector<const CLI::Option *> opts) const override {
         std::stringstream out;
 
+        if (m_mode == OutputMode::Markdown) {
+            // Remove help options - there's no need to keep repeating this
+            for (auto it = opts.begin(); it != opts.end();) {
+                const auto long_names = (*it)->get_lnames();
+                if (long_names.size() == 1 && (long_names[0] == "help" || long_names[0] == "help-all")) {
+                    it = opts.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+        };
+
+        if (!opts.size()) return {};
         out << fmt::format("\n{}:\n", FormatHeading(group));
         for (const auto opt : opts) {
             out << make_option(opt, is_positional);

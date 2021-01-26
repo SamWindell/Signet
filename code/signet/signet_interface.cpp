@@ -90,10 +90,14 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             os << "# Signet Usage\n";
             os << "\nThis is an auto-generated file based on the output of `signet --help`. It contains information about every feature of Signet.\n\n";
 
+            auto all_commands_sorted = app.get_subcommands({});
+            std::sort(all_commands_sorted.begin(), all_commands_sorted.end(),
+                      [](const CLI::App *a, const CLI::App *b) { return a->get_name() < b->get_name(); });
+
             // Print a contents section
             os << "- [Signet](#Signet)\n";
             os << "- [Commands](#Signet%20Commands)\n";
-            for (auto s : app.get_subcommands({})) {
+            for (auto s : all_commands_sorted) {
                 auto name = s->get_name();
                 os << fmt::format("  - [{}](#{})\n", name, name);
                 for (auto ss : s->get_subcommands({})) {
@@ -124,7 +128,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
             // Write the commands section
             os << "# Signet Commands\n";
-            for (auto s : app.get_subcommands({})) {
+            for (auto s : all_commands_sorted) {
                 os << "## " << s->get_name() << "\n";
                 global_formatter_indent = 2; //
                 os << MakeAngleBracketWordsMarkdownCode(s->help("", CLI::AppFormatMode::All));

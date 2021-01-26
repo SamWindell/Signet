@@ -4,12 +4,12 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 
 - [Signet](#Signet)
 - [Commands](#Signet%20Commands)
-  - [make-docs](#make-docs)
   - [auto-tune](#auto-tune)
   - [convert](#convert)
     - [sample-rate](#sample-rate)
     - [bit-depth](#bit-depth)
     - [file-format](#file-format)
+  - [detect-pitch](#detect-pitch)
   - [embed-sampler-info](#embed-sampler-info)
     - [root](#root)
     - [note-range](#note-range)
@@ -21,10 +21,11 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [gain](#gain)
   - [highpass](#highpass)
   - [lowpass](#lowpass)
-  - [print-info](#print-info)
+  - [make-docs](#make-docs)
   - [move](#move)
   - [norm](#norm)
-  - [detect-pitch](#detect-pitch)
+  - [print-info](#print-info)
+  - [remove-silence](#remove-silence)
   - [rename](#rename)
     - [prefix](#prefix)
     - [suffix](#suffix)
@@ -33,7 +34,6 @@ This is an auto-generated file based on the output of `signet --help`. It contai
     - [auto-map](#auto-map)
   - [sample-blend](#sample-blend)
   - [seamless-loop](#seamless-loop)
-  - [remove-silence](#remove-silence)
   - [trim](#trim)
     - [start](#start)
     - [end](#end)
@@ -72,26 +72,6 @@ When the input is a directory, scan for files in it recursively
 
 
 # Signet Commands
-## make-docs
-### Description:
-Creates a markdown file containing the full CLI - based on running signet --help.
-
-### Usage:
-  `make-docs` `[OPTIONS]` `output-file`
-
-### Positionals:
-`output-file TEXT REQUIRED`
-The filepath for the generated markdown file.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
-
 ## auto-tune
 ### Description:
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4).
@@ -152,6 +132,21 @@ Change the file format.
 `file-format ENUM:value in {Flac->1,Wav->0} OR {1,0} REQUIRED`
 The output file format.
 
+
+
+## detect-pitch
+### Description:
+Prints out the detected pitch of the file(s).
+
+### Usage:
+  `detect-pitch` `[OPTIONS]`
+
+### Options:
+`-h,--help`
+Print this help message and exit
+
+`--help-all`
+Print help message for all commands
 
 
 ## embed-sampler-info
@@ -378,12 +373,17 @@ Print this help message and exit
 Print help message for all commands
 
 
-## print-info
+## make-docs
 ### Description:
-Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
+Creates a markdown file containing the full CLI - based on running signet --help.
 
 ### Usage:
-  `print-info` `[OPTIONS]`
+  `make-docs` `[OPTIONS]` `output-file`
+
+### Positionals:
+`output-file TEXT REQUIRED`
+The filepath for the generated markdown file.
+
 
 ### Options:
 `-h,--help`
@@ -442,12 +442,12 @@ Use RMS (root mean squared) calculations to work out the required gain amount.
 The mix of the normalised signal, where 100% means normalised exactly to the target, and 0% means no change.
 
 
-## detect-pitch
+## print-info
 ### Description:
-Prints out the detected pitch of the file(s).
+Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
 
 ### Usage:
-  `detect-pitch` `[OPTIONS]`
+  `print-info` `[OPTIONS]`
 
 ### Options:
 `-h,--help`
@@ -457,9 +457,32 @@ Print this help message and exit
 Print help message for all commands
 
 
+## remove-silence
+### Description:
+Removes silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
+
+### Usage:
+  `remove-silence` `[OPTIONS]` `[start-or-end]`
+
+### Positionals:
+`start-or-end ENUM:value in {Both->2,End->1,Start->0} OR {2,1,0}`
+Specify whether the removal should be at the start, the end or both.
+
+
+### Options:
+`-h,--help`
+Print this help message and exit
+
+`--help-all`
+Print help message for all commands
+
+`--threshold FLOAT:INT in [-200 - 0]`
+The threshold in decibels to which anything under it should be considered silence.
+
+
 ## rename
 ### Description:
-"Various commands for renaming files.
+Various commands for renaming files.
 
 This command can be used to bulk rename a set of files. It also has the ability to insert special variables into the file name, such as the detected pitch. As well as this, there is a special auto-mapper command that is useful to sample library developers.
 
@@ -626,29 +649,6 @@ Print this help message and exit
 
 `--help-all`
 Print help message for all commands
-
-
-## remove-silence
-### Description:
-Removes silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
-
-### Usage:
-  `remove-silence` `[OPTIONS]` `[start-or-end]`
-
-### Positionals:
-`start-or-end ENUM:value in {Both->2,End->1,Start->0} OR {2,1,0}`
-Specify whether the removal should be at the start, the end or both.
-
-
-### Options:
-`-h,--help`
-Print this help message and exit
-
-`--help-all`
-Print help message for all commands
-
-`--threshold FLOAT:INT in [-200 - 0]`
-The threshold in decibels to which anything under it should be considered silence.
 
 
 ## trim

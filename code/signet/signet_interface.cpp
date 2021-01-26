@@ -97,7 +97,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 auto name = s->get_name();
                 os << fmt::format("  - [{}](#{})\n", name, name);
                 for (auto ss : s->get_subcommands({})) {
-                    os << fmt::format("    - [{}](#{})\n", ss->get_name(), name);
+                    os << fmt::format("    - [{}](#{})\n", ss->get_name(), ss->get_name());
                 }
             }
 

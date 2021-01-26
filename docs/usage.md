@@ -7,16 +7,16 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [make-docs](#make-docs)
   - [auto-tune](#auto-tune)
   - [convert](#convert)
-    - [sample-rate](#convert)
-    - [bit-depth](#convert)
-    - [file-format](#convert)
+    - [sample-rate](#sample-rate)
+    - [bit-depth](#bit-depth)
+    - [file-format](#file-format)
   - [embed-sampler-info](#embed-sampler-info)
-    - [root](#embed-sampler-info)
-    - [note-range](#embed-sampler-info)
-    - [velocity-range](#embed-sampler-info)
+    - [root](#root)
+    - [note-range](#note-range)
+    - [velocity-range](#velocity-range)
   - [fade](#fade)
-    - [in](#fade)
-    - [out](#fade)
+    - [in](#in)
+    - [out](#out)
   - [folderise](#folderise)
   - [gain](#gain)
   - [highpass](#highpass)
@@ -26,17 +26,17 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [norm](#norm)
   - [detect-pitch](#detect-pitch)
   - [rename](#rename)
-    - [prefix](#rename)
-    - [suffix](#rename)
-    - [regex-replace](#rename)
-    - [note-to-midi](#rename)
-    - [auto-map](#rename)
+    - [prefix](#prefix)
+    - [suffix](#suffix)
+    - [regex-replace](#regex-replace)
+    - [note-to-midi](#note-to-midi)
+    - [auto-map](#auto-map)
   - [sample-blend](#sample-blend)
   - [seamless-loop](#seamless-loop)
   - [remove-silence](#remove-silence)
   - [trim](#trim)
-    - [start](#trim)
-    - [end](#trim)
+    - [start](#start)
+    - [end](#end)
   - [tune](#tune)
   - [zcross-offset](#zcross-offset)
 # Signet
@@ -228,7 +228,7 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
 
 #### velocity-range
 ##### Description:
-Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI velocity. In order to to this, the sampler needs to know what the minimum and maximum MIDI velocity values that a sample should play in. The whole MIDI velocity range is between 1 and 127.
+Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI velocity. In order to do this, the sampler needs to know what the minimum and maximum MIDI velocity values that a sample should play in. The whole MIDI velocity range is between 1 and 127.
 
 
 ##### Positionals:

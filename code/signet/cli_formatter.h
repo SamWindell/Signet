@@ -18,6 +18,8 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         labels_["subcommand"] = "command";
         labels_["Subcommands"] = "Commands";
         labels_["subcommands"] = "commands";
+        labels_["Positionals"] = "Arguments";
+        labels_["positionals"] = "arguments";
     }
 
     inline std::string make_usage(const CLI::App *app, std::string name) const override {

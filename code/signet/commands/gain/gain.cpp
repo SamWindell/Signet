@@ -41,7 +41,7 @@ double GainAmount::GetMultiplier() const {
 CLI::App *GainCommand::CreateCommandCLI(CLI::App &app) {
     auto gain = app.add_subcommand("gain", "Changes the volume of the file(s).");
 
-    gain->add_option("gain", m_gain,
+    gain->add_option("gain-amount", m_gain,
                      "The gain amount. This is a number followed by a unit. The unit can be % or db. For "
                      "example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% "
                      "makes it twice as loud.")

@@ -30,7 +30,9 @@ class AudioFiles {
     EditTrackedAudioFile &operator[](size_t index) { return m_all_files[index]; }
 
     //
-    // You can also access the files in separate vectors based on each files parent folder.
+    // You can also get a std::map of the same files based on what folder each file is in. For example
+    // Folders()["my-folder"] would return a vector of all of the files in the folder with the name
+    // "my-folder".
     //
     const auto &Folders() { return m_folders; }
 

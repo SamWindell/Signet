@@ -17,6 +17,7 @@
     - [Comprehensive help text](#comprehensive-help-text)
     - [Undo](#undo)
     - [Commands](#commands)
+    - [Metadata is preserved](#metadata-is-preserved)
   - [Documentation](#documentation)
 
 ## Overview
@@ -47,7 +48,7 @@ Auto-tunes all the audio files in the directory 'untuned-files' to their nearest
 
 ```signet untuned-files auto-tune```
 
-Normalises (to a common gain) all .wav files in the current directory to -3dB
+Normalises (to a common gain) all WAV files in the current directory to -3dB
 
 ```signet *.wav norm -3```
 
@@ -55,7 +56,7 @@ Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
 
 ```signet filename1.wav filename2.flac norm -1```
 
-Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all .wav files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with "-unprocessed.wav".
+Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all WAV files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with "-unprocessed.wav".
 
 ```signet "sampler/session*/**.wav" "-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms```
 
@@ -81,15 +82,15 @@ Input files are processed and then saved back to file (overwritten). Signet feat
 ### Comprehensive help text
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the option `--help` to see information about the available options. Run with `--help-all` to see all the available commands. You can also add `--help` after a command to see the options of that command specifically. For example:
 
-```signet --help```
+`signet --help`
 
-```signet --help-all```
+`signet --help-all`
 
-```signet auto-tune --help```
+`signet auto-tune --help`
 
-```signet fade --help-all```
+`signet fade --help-all`
 
-```signet convert file-format --help```
+`signet convert file-format --help`
 
 ### Undo
 Signet overwrites the files that it processes. It is therefore advisable to make a copy your audio files before processing them with Signet.
@@ -111,6 +112,11 @@ There are lots of ways to process audio files using Signet. See the [documentati
 - Remove silence from start/end
 - Make into seamless loops
 - Fade in/out
+
+### Metadata is preserved
+The metadata in the file is preserved even after stretching, chopping, resampling, or converting from WAV to FLAC. This includes loop points, MIDI mapping data, etc. However, in the case that Signet chops away part of the audio that contained a marker or loop, a warning will be issued as there is no reasonable way to resolve this. 
+
+With WAV files, metadata is read and written in the most commonly used RIFF chunks - so should transfer to other tools. FLAC does not have the same benefit - for the types of metadata we want to use, there is no standardisation. To work around this, Signet stores data in the FLAC 'application' block using the id 'SGNT'. This is a block designed for application-specific data. A JSON string is stored there containing all of the metadata that Signet cares about. Developers of other software are welcome to read this data. It is the same format as the metadata printed when using the print-info command.
 
 ## Documentation
 [See the documentation page.](docs/usage.md)

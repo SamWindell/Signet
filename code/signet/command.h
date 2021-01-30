@@ -13,6 +13,6 @@ class Command {
     virtual CLI::App *CreateCommandCLI(CLI::App &app) = 0;
     virtual std::string GetName() const = 0;
 
-    virtual void GenerateFiles(AudioFiles &files, SignetBackup &backup) {}
-    virtual void ProcessFiles(AudioFiles &files) {}
+    virtual void GenerateFiles(AudioFiles &, SignetBackup &) {}
+    virtual void ProcessFiles(AudioFiles &) {}
 };

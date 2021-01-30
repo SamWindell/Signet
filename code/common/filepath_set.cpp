@@ -27,7 +27,7 @@ static void ForEachFileInDirectory(const std::string_view directory,
     }
 }
 
-const bool IsPathExcluded(const fs::path &path, const std::vector<std::string> &exclude_patterns) {
+static bool IsPathExcluded(const fs::path &path, const std::vector<std::string> &exclude_patterns) {
     for (const auto &exclude : exclude_patterns) {
         if (WildcardMatch(exclude, path.generic_string())) {
             return true;

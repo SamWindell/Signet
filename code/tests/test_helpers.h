@@ -40,7 +40,7 @@ class StringToArgs {
         }
     }
 
-    const char *const *const Args() const { return arg_ptrs.data(); }
+    const char *const * Args() const { return arg_ptrs.data(); }
     int Size() const { return (int)args.size(); }
 
   private:

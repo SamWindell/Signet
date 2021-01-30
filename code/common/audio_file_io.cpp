@@ -68,16 +68,6 @@ static size_t OnWrite(void *pUserData, const void *pData, size_t bytesToWrite) {
     return fwrite(pData, 1, bytesToWrite, (FILE *)pUserData);
 }
 
-static u64 OnWaveChunk(void *chunk_user_data,
-                       drwav_read_proc on_read,
-                       drwav_seek_proc on_seek,
-                       void *read_seek_user_data,
-                       const drwav_chunk_header *chunk_header,
-                       drwav_container container,
-                       const drwav_fmt *pFMT) {
-    return 0;
-}
-
 std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
     os << "{\n";
     os << "  manufacturer: " << s.manufacturerId << "\n";
@@ -487,7 +477,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         std::vector<float> f32_buf {};
         drwav wav;
 
-        if (!drwav_init_ex_with_metadata(&wav, OnReadFile, OnSeekFile, OnWaveChunk, file.get(), nullptr, 0,
+        if (!drwav_init_ex_with_metadata(&wav, OnReadFile, OnSeekFile, nullptr, file.get(), nullptr, 0,
                                          nullptr, (u64)drwav_metadata_type_all)) {
             WarningWithNewLine("Wav", "could not init the WAV file {}", path);
             return {};

@@ -13,7 +13,7 @@ struct FlacFileDataContext {
     AudioData &data;
 };
 
-FLAC__StreamDecoderReadStatus FlacDecodeReadCallback(const FLAC__StreamDecoder *decoder,
+FLAC__StreamDecoderReadStatus FlacDecodeReadCallback(const FLAC__StreamDecoder *,
                                                      FLAC__byte buffer[],
                                                      size_t *bytes,
                                                      void *client_data) {
@@ -31,7 +31,7 @@ FLAC__StreamDecoderReadStatus FlacDecodeReadCallback(const FLAC__StreamDecoder *
         return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
 }
 
-FLAC__StreamDecoderSeekStatus FlacDecodeSeekCallback(const FLAC__StreamDecoder *decoder,
+FLAC__StreamDecoderSeekStatus FlacDecodeSeekCallback(const FLAC__StreamDecoder *,
                                                      FLAC__uint64 absolute_byte_offset,
                                                      void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
@@ -43,7 +43,7 @@ FLAC__StreamDecoderSeekStatus FlacDecodeSeekCallback(const FLAC__StreamDecoder *
         return FLAC__STREAM_DECODER_SEEK_STATUS_OK;
 }
 
-FLAC__StreamDecoderTellStatus FlacDecodeTellCallback(const FLAC__StreamDecoder *decoder,
+FLAC__StreamDecoderTellStatus FlacDecodeTellCallback(const FLAC__StreamDecoder *,
                                                      FLAC__uint64 *absolute_byte_offset,
                                                      void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
@@ -58,7 +58,7 @@ FLAC__StreamDecoderTellStatus FlacDecodeTellCallback(const FLAC__StreamDecoder *
 }
 
 FLAC__StreamDecoderLengthStatus
-FlacDecodeLengthCallback(const FLAC__StreamDecoder *decoder, FLAC__uint64 *stream_length, void *client_data) {
+FlacDecodeLengthCallback(const FLAC__StreamDecoder *, FLAC__uint64 *stream_length, void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
 
     struct stat filestats;
@@ -74,12 +74,12 @@ FlacDecodeLengthCallback(const FLAC__StreamDecoder *decoder, FLAC__uint64 *strea
     }
 }
 
-FLAC__bool FlacDecodeIsEndOfFile(const FLAC__StreamDecoder *decoder, void *client_data) {
+FLAC__bool FlacDecodeIsEndOfFile(const FLAC__StreamDecoder *, void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
     return feof(context.file) ? true : false;
 }
 
-FLAC__StreamDecoderWriteStatus FlacDecoderWriteCallback(const FLAC__StreamDecoder *decoder,
+FLAC__StreamDecoderWriteStatus FlacDecoderWriteCallback(const FLAC__StreamDecoder *,
                                                         const FLAC__Frame *flac_frame,
                                                         const FLAC__int32 *const buffer[],
                                                         void *client_data) {
@@ -111,7 +111,7 @@ FLAC__StreamDecoderWriteStatus FlacDecoderWriteCallback(const FLAC__StreamDecode
     return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 
-void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
+void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *,
                                  const FLAC__StreamMetadata *metadata,
                                  void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
@@ -156,9 +156,9 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *decoder,
     context.data.flac_metadata.push_back(ptr);
 }
 
-void FlacStreamDecodeErrorCallback(const FLAC__StreamDecoder *decoder,
+void FlacStreamDecodeErrorCallback(const FLAC__StreamDecoder *,
                                    FLAC__StreamDecoderErrorStatus status,
-                                   void *client_data) {
+                                   void *) {
     ErrorWithNewLine("Flac", "error triggered: {}", FLAC__StreamDecoderErrorStatusString[status]);
 }
 

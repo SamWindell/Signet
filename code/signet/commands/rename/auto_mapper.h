@@ -17,7 +17,7 @@ class AutomapFolder {
         int root;
         int low;
         int high;
-        std::vector<std::string> regex_groups;
+        std::vector<std::string> regex_groups {};
     };
 
     void AddFile(const fs::path &path, int root_note, const std::smatch &match) {

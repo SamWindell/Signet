@@ -1,9 +1,10 @@
-cmake_minimum_required(VERSION 3.15.0)
+cmake_minimum_required(VERSION 3.16.0)
 project(Signet)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# 3rd party libs
 add_library(
     third_party_libs STATIC
     code/third_party_libs/dywapitchtrack/dywapitchtrack.c
@@ -39,8 +40,7 @@ add_subdirectory(code/third_party_libs/cereal)
 add_subdirectory(code/third_party_libs/fmt)
 target_link_libraries(third_party_libs PUBLIC cereal fmt::fmt)
 
-#
-
+# Common
 add_library(
     common OBJECT
     code/common/audio_data.cpp
@@ -79,7 +79,7 @@ add_library(
     code/tests/test_helpers.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
-target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS DRWAV_MAX_SMPL_LOOPS=16)
+target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
 target_precompile_headers(
     common
     PRIVATE
@@ -99,7 +99,7 @@ if (CMAKE_BUILD_TYPE MATCHES Debug)
     target_compile_definitions(common PUBLIC SIGNET_DEBUG)
 endif ()
 
-if (WIN32)
+if (MSVC)
     set(WARNINGS_TO_ENABLE
         /W4
         /w14242
@@ -117,21 +117,21 @@ if (WIN32)
         /wd4702
         /wd4324
         /wd4127)
-    set(FULL_PATH_OF_SOURCE_CODE "/FC")
-    target_compile_options(common PUBLIC /diagnostics:column ${FULL_PATH_OF_SOURCE_CODE}
+    target_compile_options(common PUBLIC /diagnostics:column /FC
                                          ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
 else ()
-    target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall -ftime-trace)
+    target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
 endif ()
 target_link_libraries(common PUBLIC third_party_libs)
 
+# Tests config header
 configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
                ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)
 
 # Signet
 add_executable(signet code/signet/signet_main.cpp)
 target_link_libraries(signet PRIVATE common)
-if (WIN32)
+if (MSVC)
     target_sources(signet PRIVATE signet_win32.manifest)
     set_property(
         TARGET signet

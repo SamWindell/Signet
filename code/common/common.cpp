@@ -63,10 +63,8 @@ double GetFreqWithCentDifference(const double starting_hz, const double cents) {
     return starting_hz * multiplier;
 }
 
-std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode) {
-    static const auto SafeFClose = [](FILE *f) {
-        if (f) fclose(f);
-    };
+FILE *OpenFileRaw(const fs::path &path, const char *mode, std::error_code *ec_out) {
+    if (ec_out) *ec_out = {};
 
     int ec;
 #if _WIN32
@@ -78,18 +76,30 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     }
     ec = _wfopen_s(&f, path.wstring().data(), wchar_mode.data());
     if (ec == 0) {
-        return {f, SafeFClose};
+        return f
     }
 #else
     auto f = std::fopen(path.string().data(), mode);
     if (f) {
-        return {f, SafeFClose};
+        return f;
     }
     ec = errno;
 #endif
 
-    std::error_code std_ec {ec, std::generic_category()};
-    WarningWithNewLine("Signet", "could not open file {} for reason: {}", path, std_ec.message());
+    if (ec_out) *ec_out = {ec, std::generic_category()};
+    return nullptr;
+}
+
+std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode) {
+    static const auto SafeFClose = [](FILE *f) {
+        if (f) fclose(f);
+    };
+
+    std::error_code ec {};
+    auto f = OpenFileRaw(path, mode, &ec);
+    if (f) return {f, SafeFClose};
+
+    WarningWithNewLine("Signet", "could not open file {} for reason: {}", path, ec.message());
     return {nullptr, SafeFClose};
 }
 

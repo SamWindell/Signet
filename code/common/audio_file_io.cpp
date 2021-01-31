@@ -1065,13 +1065,13 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
         assert(set_metadata);
     }
 
-    auto f = OpenFile(filename, "w+b");
+    auto f = OpenFileRaw(filename, "w+b");
     if (!f) {
         WarningWithNewLine("Flac", "could not write flac file - could not open file {}", filename);
         return false;
     }
 
-    if (const auto o = FLAC__stream_encoder_init_FILE(encoder.get(), f.get(), nullptr, nullptr);
+    if (const auto o = FLAC__stream_encoder_init_FILE(encoder.get(), f, nullptr, nullptr);
         o != FLAC__STREAM_ENCODER_INIT_STATUS_OK) {
         WarningWithNewLine("Flac", "could not write flac file: ");
         PrintFlacStatusCode(o);

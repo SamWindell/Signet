@@ -28,8 +28,11 @@ add_library(
 
 if (WIN32)
     target_sources(third_party_libs PRIVATE code/third_party_libs/FLAC/src/win_utf8_io.c)
-else (APPLE)
+else ()
     target_compile_definitions(third_party_libs PRIVATE HAVE_LROUND)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_link_libraries(third_party_libs PRIVATE pthread)
+    endif ()
 endif ()
 
 target_include_directories(third_party_libs PUBLIC code/third_party_libs/FLAC/src/include
@@ -120,7 +123,10 @@ if (MSVC)
     target_compile_options(common PUBLIC /diagnostics:column /FC
                                          ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
 else ()
-    target_compile_options(common PUBLIC -fdiagnostics-absolute-paths -Wall)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(common PUBLIC -fdiagnostics-absolute-paths)
+    endif ()
+    target_compile_options(common PUBLIC -Wall -Wno-switch)
 endif ()
 target_link_libraries(common PUBLIC third_party_libs)
 

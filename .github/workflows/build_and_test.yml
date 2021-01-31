@@ -22,8 +22,8 @@ jobs:
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
       env:
-        cc: gcc-9
-        cc: g++-9
+        CC: gcc-9
+        CXX: g++-9
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable

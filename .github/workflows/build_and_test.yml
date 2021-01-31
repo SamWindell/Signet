@@ -15,8 +15,15 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Get required GCC version
+      shell: bash
+      run: sudo apt install gcc-9 g++-9
+
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
+      env:
+        cc: gcc-9
+        cc: g++-9
 
     - name: Configure CMake
       # Use a bash shell so we can use the same syntax for environment variable

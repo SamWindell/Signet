@@ -21,7 +21,7 @@ void FilterProcessFiles(AudioFiles &files,
 
         for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
             Filter::Data data {};
-            for (auto frame = 0; frame < audio.NumFrames(); ++frame) {
+            for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
                 auto &v = audio.GetSample(chan, frame);
                 v = Filter::Process(data, coeffs, v);
             }

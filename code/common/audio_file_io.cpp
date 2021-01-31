@@ -1039,7 +1039,7 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
         metadata.push_back(m.get());
     }
 
-    // Add in our metadata to a custome FLAC block
+    // Add in our metadata to a custom FLAC block
     FLAC__StreamMetadata signet_metadata {};
     {
         std::stringstream ss;

@@ -41,7 +41,7 @@ void AutoMapper::AddToFolderMap(const fs::path &folder, const fs::path &path) {
     std::smatch pieces_match;
     std::regex r {*m_automap_pattern};
     if (std::regex_match(filename, pieces_match, r)) {
-        if (m_root_note_regex_group >= pieces_match.size()) {
+        if (m_root_note_regex_group >= (int)pieces_match.size()) {
             ErrorWithNewLine("Auto-map", "the regex pattern does not contain contain the group given {}",
                              *m_automap_pattern);
             return;

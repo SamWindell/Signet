@@ -76,7 +76,7 @@ FILE *OpenFileRaw(const fs::path &path, const char *mode, std::error_code *ec_ou
     }
     ec = _wfopen_s(&f, path.wstring().data(), wchar_mode.data());
     if (ec == 0) {
-        return f
+        return f;
     }
 #else
     auto f = std::fopen(path.string().data(), mode);

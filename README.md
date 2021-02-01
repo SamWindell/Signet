@@ -73,7 +73,7 @@ Convert all audio files in the folder "my_folder" (not recursively) to a sample 
 Signet is flexible in terms of what files to process. You can specify one or more of any of the following input options: 
 - A single file such as `file.wav`.
 - A directory such as `sounds/unprocessed`. In this case Signet will search for all audio files in that directory and process them all. You can specify the option `--recursive` to make this also search subfolders.
-- A glob-style filename pattern. You can use `*` to match any non-slash character and use `**` to match any character. So essentially use `**` to signify recursively searching folders. For example `*.wav` will match any file that has a `.wav` extension in the current folder. `unprocessed/**/*.wav` will match any file with the `.wav` extension in the `unprocessed` folder and any subfolder of it.
+- A glob-style filename pattern. You can use `*` to match any non-slash character and use `**` to match any character. So essentially use `**` to signify recursively searching folders. For example `*.wav` will match any file that has a `.wav` extension in the current folder. `unprocessed/**/*.wav` will match any file with the `.wav` extension in the `unprocessed` folder and any subfolder of it. Some shells, such as bash, already do this pathname expansion prior to calling any command. Signet's implementation of this feature is a little more specific to audio files but largely the same. To use Signet's version instead of your shell's version, put quotes around the argument.
 
 You can exclude certain files from being processed by prefixing them with a dash. For example `"file.*" "-*.wav"` will match all files in the current directory that start with `file`, except those with the `.wav` extension.
 

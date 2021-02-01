@@ -35,7 +35,7 @@ Currently only supports reading and writing WAV and FLAC files.
 ## Building
 To get Signet, you currently have to build it from the source code. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.
 
-A C++17 compiler is required. Tested with MSVC 16.5.1, Apple Clang 11.0.0 and GCC 9.3.0.
+A C++17 compiler is required. The compiler must also be [compatible with the magic_enum library](https://github.com/Neargye/magic_enum#compiler-compatibility) which is used by Signet. Signet has been tested with MSVC 16.5.1, Apple Clang 11.0.0, GCC 9.3.0 and Clang 10.
 
 ## Examples
 The general pattern is `signet <input-files> <command>`. You can have one or more commands, in which case they will process the input-files one after each other in the order that you specify them.

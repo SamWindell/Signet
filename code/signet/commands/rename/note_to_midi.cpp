@@ -81,7 +81,7 @@ static std::optional<std::string_view> FindNoteName(std::string_view str) {
     return {};
 }
 
-bool NoteToMIDIConverter::Rename(const EditTrackedAudioFile &f, std::string &filename) {
+bool NoteToMIDIConverter::Rename(std::string &filename) {
     if (m_on) {
         const auto zero_note = ParseNote(m_midi_0_note);
         if (!zero_note) {

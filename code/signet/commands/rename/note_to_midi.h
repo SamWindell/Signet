@@ -8,7 +8,7 @@
 
 class NoteToMIDIConverter {
   public:
-    bool Rename(const EditTrackedAudioFile &f, std::string &filename);
+    bool Rename(std::string &filename);
     void CreateCLI(CLI::App &rename);
 
   private:

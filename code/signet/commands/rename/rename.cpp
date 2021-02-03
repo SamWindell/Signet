@@ -86,7 +86,7 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                 renamed = true;
             }
 
-            renamed = m_note_to_midi_processor.Rename(*f, filename) | renamed;
+            renamed = m_note_to_midi_processor.Rename(filename) | renamed;
 
             if (renamed) {
                 if (Contains(filename, "<counter>") || Contains(filename, "<alpha-counter>")) {

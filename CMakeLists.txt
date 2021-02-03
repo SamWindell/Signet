@@ -126,7 +126,8 @@ else ()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(common PUBLIC -fdiagnostics-absolute-paths)
     endif ()
-    target_compile_options(common PUBLIC -Wall -Wno-switch -Wno-unused-variable)
+    target_compile_options(common PUBLIC -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Woverloaded-virtual 
+                           -Wno-switch -Wno-unused-variable)
 endif ()
 target_link_libraries(common PUBLIC third_party_libs)
 

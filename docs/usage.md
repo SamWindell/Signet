@@ -400,7 +400,7 @@ The MIDI note number (-12 semitones) that is closest to the detected pitch of th
 `<detected-midi-note-octave-minus-2>`
 The MIDI note number (-24 semitones) that is closest to the detected pitch of the audio file. If no pitch is found this variable will be empty.
 
-`<detected-midi-note-octaved-to-be-nearest-to-middle-c>`
+`<detected-midi-note-octave-nearest-to-middle-c>`
 The MIDI note number that is closest to the detected pitch of the audio file, but moved by octaves to be nearest as possible to middle C. If no pitch is found this variable will be empty.
 
 `<detected-note>`

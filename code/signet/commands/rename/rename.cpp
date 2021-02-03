@@ -104,7 +104,7 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                     Contains(filename, "<detected-midi-note-octave-plus-2>") ||
                     Contains(filename, "<detected-midi-note-octave-minus-1>") ||
                     Contains(filename, "<detected-midi-note-octave-minus-2>") ||
-                    Contains(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>")) {
+                    Contains(filename, "<detected-midi-note-octave-nearest-to-middle-c>")) {
                     if (const auto pitch = f->GetAudio().DetectPitch()) {
                         const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
@@ -120,7 +120,7 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                         Replace(filename, "<detected-midi-note-octave-minus-2>",
                                 std::to_string(closest_musical_note.midi_note - 24));
                         Replace(filename, "<detected-note>", closest_musical_note.name);
-                        Replace(filename, "<detected-midi-note-octaved-to-be-nearest-to-middle-c>",
+                        Replace(filename, "<detected-midi-note-octave-nearest-to-middle-c>",
                                 std::to_string(
                                     ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note)));
                     } else {
@@ -268,7 +268,7 @@ TEST_CASE("RenameCommand") {
         }
         SUBCASE("regex-replace") {
             const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>(
-                "rename regex-replace .* <0><parent-folder-camel>", {}, "not relavent/foo/file.wav");
+                "rename regex-replace .* <0><parent-folder-camel>", {}, "not relevent/foo/file.wav");
             REQUIRE(f);
             REQUIRE(*f == "fileFoo");
         }

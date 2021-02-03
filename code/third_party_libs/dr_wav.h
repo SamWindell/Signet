@@ -2169,8 +2169,6 @@ static void drwav__metadata_alloc(drwav__metadata_parser *parser, drwav_allocati
     }
 }
 
-static void drwav__metadata_dealloc(drwav__metadata_parser *parser, drwav_allocation_callbacks *allocationCallbacks) { allocationCallbacks->onFree(parser->data, allocationCallbacks->pUserData); }
-
 static size_t drwav__metadata_parser_read(drwav__metadata_parser *parser, void* pBufferOut, size_t bytesToRead, drwav_uint64* pCursor) {
     if (pCursor != NULL) {
         return drwav__on_read(parser->onRead, parser->readSeekUserData, pBufferOut, bytesToRead, pCursor);
@@ -3400,12 +3398,6 @@ static size_t drwav__write_or_count_u32ne_to_le(drwav* pWav, drwav_uint32 value)
 {
     if (pWav == NULL) return 4;
     return drwav__write_u32ne_to_le(pWav, value);
-}
-
-static size_t drwav__write_or_count_u64ne_to_le(drwav* pWav, drwav_uint64 value)
-{
-    if (pWav == NULL) return 8;
-    return drwav__write_u64ne_to_le(pWav, value);
 }
 
 

@@ -10,7 +10,7 @@ CLI::App *SeamlessLoopCommand::CreateCommandCLI(CLI::App &app) {
         "Turns the files(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.");
     looper
         ->add_option("crossfade-percent", m_crossfade_percent,
-                     "The size of the crossfade region as a percent of the whole file.")
+                     "The size of the crossfade region as a percent of the whole file.")->required()
         ->check(CLI::Range(0, 100));
     return looper;
 }

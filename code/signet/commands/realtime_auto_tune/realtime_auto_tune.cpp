@@ -125,6 +125,55 @@ bool DoesFileHaveReliablePitchData(std::vector<Chunk> &chunks) {
     return result;
 }
 
+void MarkIgnoreRegions(const std::vector<Chunk> &chunks) {
+    const auto NextOutlier = [&](std::vector<Chunk>::const_iterator start) {
+        return std::find_if(start, chunks.end(), [](const auto &c) { return c.is_outlier; });
+    };
+
+    constexpr std::ptrdiff_t min_consecutive_good_chunks = 7;
+    constexpr std::ptrdiff_t min_bad_region_size = 4;
+
+    std::vector<Chunk>::const_iterator bad_region_start;
+    const auto first_outlier = NextOutlier(chunks.begin());
+    if (first_outlier == chunks.end()) {
+        return;
+    }
+
+    if (std::distance(chunks.begin(), first_outlier) < min_consecutive_good_chunks) {
+        bad_region_start = chunks.begin();
+    } else {
+        bad_region_start = first_outlier;
+    }
+
+    std::vector<tcb::span<Chunk>> bad_regions;
+    std::vector<Chunk>::const_iterator cursor = bad_region_start + 1;
+    while (true) {
+        const auto next_outlier = NextOutlier(cursor);
+        const auto distance_to_next_outlier = std::distance(cursor, next_outlier);
+
+        if (distance_to_next_outlier >= min_consecutive_good_chunks || next_outlier == chunks.end()) {
+            // handle the end of a bad-region
+            const auto bad_region_size = std::distance(bad_region_start, cursor);
+            if (bad_region_size >= min_bad_region_size) {
+                // if the bad-region is not too small, we register
+                bad_regions.push_back({(Chunk *)&*bad_region_start, (size_t)bad_region_size});
+            }
+            bad_region_start = next_outlier;
+        }
+
+        if (next_outlier == chunks.end()) {
+
+            break;
+        }
+        cursor = next_outlier + 1;
+    }
+
+    for (auto &r : bad_regions) {
+        for (auto &c : r) {
+            c.ignore_tuning = true;
+        }
+    }
+}
 void RealTimeAutoTuneCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         const auto &audio = f.GetAudio();
@@ -168,6 +217,7 @@ void RealTimeAutoTuneCommand::ProcessFiles(AudioFiles &files) {
                 }
                 FixObviousOutliers(chunks);
                 MarkOutliers(chunks);
+                MarkIgnoreRegions(chunks);
                 // MarkPitchToUse(chunks);
 
                 for (const auto &c : chunks) {

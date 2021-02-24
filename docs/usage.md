@@ -32,6 +32,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
     - [regex-replace](#regex-replace)
     - [note-to-midi](#note-to-midi)
     - [auto-map](#auto-map)
+  - [rt-auto-tune](#rt-auto-tune)
   - [sample-blend](#sample-blend)
   - [seamless-loop](#seamless-loop)
   - [trim](#trim)
@@ -483,6 +484,11 @@ The name of the output file (excluding extension). This should contain substitut
 
 
 
+## rt-auto-tune
+### Description:
+### Usage:
+  `rt-auto-tune`
+
 ## sample-blend
 ### Description:
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
@@ -506,10 +512,10 @@ The filename of the generated files (excluding extension). It should contain eit
 Turns the files(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
 
 ### Usage:
-  `seamless-loop` `[crossfade-percent]`
+  `seamless-loop` `crossfade-percent`
 
 ### Arguments:
-`crossfade-percent FLOAT:INT in [0 - 100]`
+`crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
 The size of the crossfade region as a percent of the whole file.
 
 

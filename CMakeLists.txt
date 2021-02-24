@@ -57,32 +57,34 @@ add_library(
     code/common/gain_calculators.cpp
     code/common/midi_pitches.cpp
     code/common/string_utils.cpp
-    code/signet/signet_interface.cpp
     code/signet/commands/auto_tune/auto_tune.cpp
     code/signet/commands/convert/convert.cpp
+    code/signet/commands/detect_pitch/detect_pitch.cpp
+    code/signet/commands/embed_sampler_info/embed_sampler_info.cpp
     code/signet/commands/fade/fade.cpp
+    code/signet/commands/filter/filters.cpp
     code/signet/commands/folderise/folderise.cpp
     code/signet/commands/gain/gain.cpp
-    code/signet/commands/print_info/print_info.cpp
     code/signet/commands/move/move.cpp
     code/signet/commands/normalise/normalise.cpp
-    code/signet/commands/detect_pitch/detect_pitch.cpp
-    code/signet/commands/rename/rename.cpp
+    code/signet/commands/print_info/print_info.cpp
+    code/signet/commands/realtime_auto_tune/realtime_auto_tune.cpp
+    code/signet/commands/remove_silence/remove_silence.cpp
     code/signet/commands/rename/auto_mapper.cpp
-    code/signet/commands/rename/rename_substitutions.cpp
     code/signet/commands/rename/note_to_midi.cpp
+    code/signet/commands/rename/rename.cpp
+    code/signet/commands/rename/rename_substitutions.cpp
     code/signet/commands/sample_blend/sample_blend.cpp
     code/signet/commands/seamless_loop/seamless_loop.cpp
-    code/signet/commands/remove_silence/remove_silence.cpp
     code/signet/commands/trim/trim.cpp
     code/signet/commands/tune/tune.cpp
-    code/signet/commands/filter/filters.cpp
     code/signet/commands/zcross_offset/zcross_offset.cpp
-    code/signet/commands/embed_sampler_info/embed_sampler_info.cpp
+    code/signet/signet_interface.cpp
     code/tests/test_helpers.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+# set_target_properties(common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
 target_precompile_headers(
     common
     PRIVATE
@@ -120,14 +122,21 @@ if (MSVC)
         /wd4702
         /wd4324
         /wd4127)
-    target_compile_options(common PUBLIC /diagnostics:column /FC
-                                         ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
+    target_compile_options(common PUBLIC /diagnostics:column /FC ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
 else ()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(common PUBLIC -fdiagnostics-absolute-paths)
     endif ()
-    target_compile_options(common PUBLIC -Wall -Wextra -Wpedantic -Wshadow -Wnon-virtual-dtor -Woverloaded-virtual 
-                           -Wno-switch -Wno-unused-variable)
+    target_compile_options(
+        common
+        PUBLIC -Wall
+               -Wextra
+               -Wpedantic
+               -Wshadow
+               -Wnon-virtual-dtor
+               -Woverloaded-virtual
+               -Wno-switch
+               -Wno-unused-variable)
 endif ()
 target_link_libraries(common PUBLIC third_party_libs)
 

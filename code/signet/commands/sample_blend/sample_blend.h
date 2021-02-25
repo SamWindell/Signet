@@ -14,7 +14,8 @@ class SampleBlendCommand : public Command {
 
   private:
     struct BaseBlendFile {
-        BaseBlendFile(EditTrackedAudioFile *file, const int root_note) : root_note(root_note), file(file) {}
+        BaseBlendFile(EditTrackedAudioFile *file_, const int root_note_)
+            : root_note(root_note_), file(file_) {}
         int root_note;
         EditTrackedAudioFile *file;
     };

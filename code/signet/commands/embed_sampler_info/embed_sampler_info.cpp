@@ -56,7 +56,7 @@ void CLISetArg(const std::string &arg_description,
         throw CLI::ValidationError("Low note", "Argument is not an integer, 'unchanged' or a regex "
                                                "pattern to match against the filename.");
     }
-};
+}
 
 const std::string_view g_auto_detect_pitch_options[] = {
     "auto-detect",

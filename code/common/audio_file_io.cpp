@@ -1121,7 +1121,7 @@ struct BufferConversionTest {
                 REQUIRE(data[i] == expected[i]);
             }
         });
-    };
+    }
 };
 
 TEST_CASE("[AudioData]") {

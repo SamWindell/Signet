@@ -99,7 +99,6 @@ void MarkInvalidChunks(std::vector<Chunk> &chunks) {
         // If the chunk's detected pitch is too different from a moving average, mark it as potentially
         // erroneous
         const auto mean_pitch = moving_average.Mean();
-        const auto cents_from_mean = std::abs(GetCentsDifference(chunk.detected_pitch, mean_pitch));
         constexpr double max_cents_deviation_from_mean = 3;
         if (!PitchesAreRoughlyEqual(chunk.detected_pitch, mean_pitch, max_cents_deviation_from_mean)) {
             chunk.is_invalid = true;
@@ -210,21 +209,21 @@ double TargetPitchForChunkRegion(tcb::span<const Chunk> chunks) {
                                              [](const auto &a, const auto &b) { return a.value < b; });
         assert(closest_band != value_bands.end());
         ++closest_band->count;
-        chunks_with_bands.push_back({&c, closest_band});
+        chunks_with_bands.push_back({&c, &*closest_band});
     }
 
     // Find which band is the median.
-    const auto median_band_value =
-        std::max_element(value_bands.begin(), value_bands.end(),
-                         [](const auto &a, const auto &b) { return a.count < b.count; });
+    const auto &median_band_value =
+        *std::max_element(value_bands.begin(), value_bands.end(),
+                          [](const auto &a, const auto &b) { return a.count < b.count; });
 
     // Calculate the mean of all of the detected pitches that are in the median band.
     return std::accumulate(chunks_with_bands.begin(), chunks_with_bands.end(), 0.0,
-                           [&](double value, const auto &it) {
-                               if (it.band != median_band_value) return value;
+                           [&](double value, const ChunkWithBand &it) {
+                               if (it.band != &median_band_value) return value;
                                return it.chunk->detected_pitch + value;
                            }) /
-           (double)median_band_value->count;
+           (double)median_band_value.count;
 }
 
 void MarkTargetPitches(std::vector<Chunk> &chunks) {

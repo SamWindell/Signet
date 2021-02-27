@@ -17,12 +17,13 @@ CLI::App *FixPitchDriftCommand::CreateCommandCLI(CLI::App &app) {
 
 void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
-        PitchDriftCorrector pitch_drift_corrector(f.GetAudio());
+        PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName());
         if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
             MessageWithNewLine(GetName(), "File cannot be pitch-drift corrected");
         } else {
-            pitch_drift_corrector.ProcessFile(f.GetWritableAudio());
-            MessageWithNewLine(GetName(), "File successfully auto-tuned.");
+            if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio())) {
+                MessageWithNewLine(GetName(), "File successfully auto-tuned.");
+            }
         }
     }
 }

@@ -72,13 +72,13 @@ void AudioData::AddOther(const AudioData &other) {
     }
 }
 
-static std::vector<double> MixDownToMono(const AudioData &audio) {
+std::vector<double> AudioData::MixDownToMono() const {
     std::vector<double> mono_signal;
-    mono_signal.reserve(audio.NumFrames());
-    for (usize frame = 0; frame < audio.NumFrames(); ++frame) {
+    mono_signal.reserve(NumFrames());
+    for (usize frame = 0; frame < NumFrames(); ++frame) {
         double v = 0;
-        for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-            v += audio.GetSample(chan, frame);
+        for (unsigned chan = 0; chan < num_channels; ++chan) {
+            v += GetSample(chan, frame);
         }
         mono_signal.push_back(v);
     }
@@ -86,7 +86,7 @@ static std::vector<double> MixDownToMono(const AudioData &audio) {
 }
 
 static std::optional<double> DetectSinglePitch(const AudioData &audio) {
-    auto mono_signal = MixDownToMono(audio);
+    auto mono_signal = audio.MixDownToMono();
     NormaliseToTarget(mono_signal, 1);
 
     struct ChunkData {

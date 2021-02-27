@@ -12,12 +12,12 @@
 #include "commands/embed_sampler_info/embed_sampler_info.h"
 #include "commands/fade/fade.h"
 #include "commands/filter/filters.h"
+#include "commands/fix_pitch_drift/fix_pitch_drift_command.h"
 #include "commands/folderise/folderise.h"
 #include "commands/gain/gain.h"
 #include "commands/move/move.h"
 #include "commands/normalise/normalise.h"
 #include "commands/print_info/print_info.h"
-#include "commands/realtime_auto_tune/realtime_auto_tune.h"
 #include "commands/remove_silence/remove_silence.h"
 #include "commands/rename/rename.h"
 #include "commands/sample_blend/sample_blend.h"
@@ -41,7 +41,7 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<MoveCommand>());
     m_commands.push_back(std::make_unique<NormaliseCommand>());
     m_commands.push_back(std::make_unique<DetectPitchCommand>());
-    m_commands.push_back(std::make_unique<RealTimeAutoTuneCommand>());
+    m_commands.push_back(std::make_unique<FixPitchDriftCommand>());
     m_commands.push_back(std::make_unique<RenameCommand>());
     m_commands.push_back(std::make_unique<SampleBlendCommand>());
     m_commands.push_back(std::make_unique<SeamlessLoopCommand>());

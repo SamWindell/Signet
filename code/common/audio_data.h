@@ -44,6 +44,8 @@ struct AudioData {
     void ChangePitch(double cents);
     std::optional<double> DetectPitch() const;
 
+    std::vector<double> MixDownToMono() const;
+
     //
     //
     void FramesWereRemovedFromStart(size_t num_frames);

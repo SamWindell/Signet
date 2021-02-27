@@ -18,8 +18,7 @@ CLI::App *RealTimeAutoTuneCommand::CreateCommandCLI(CLI::App &app) {
     return auto_tune;
 }
 
-// A chunk represents
-struct Chunk {
+struct AnalysisChunk {
     usize frame_start {};
     int frame_size {};
     double detected_pitch {};
@@ -32,11 +31,11 @@ struct Chunk {
 };
 
 template <>
-struct fmt::formatter<Chunk> {
+struct fmt::formatter<AnalysisChunk> {
     constexpr auto parse(format_parse_context &ctx) { return ctx.end(); }
 
     template <typename FormatContext>
-    auto format(const Chunk &c, FormatContext &ctx) {
+    auto format(const AnalysisChunk &c, FormatContext &ctx) {
         return format_to(ctx.out(), "{},{},{},{},{}", c.detected_pitch, c.is_invalid, c.ignore_tuning,
                          c.target_pitch, c.pitch_ratio_for_print);
     }
@@ -55,11 +54,8 @@ class RingBuffer {
     }
     double Mean() const {
         assert(num_added);
-        if (num_added < buffer.size()) {
-            return std::accumulate(buffer.begin(), buffer.begin() + num_added, 0.0) / (double)num_added;
-        } else {
-            return std::accumulate(buffer.begin(), buffer.end(), 0.0) / (double)buffer.size();
-        }
+        const auto size = std::min(num_added, buffer.size());
+        return std::accumulate(buffer.begin(), buffer.begin() + size, 0.0) / (double)size;
     }
 
   private:
@@ -72,7 +68,7 @@ bool PitchesAreRoughlyEqual(double a, double b, double cents_deviation_threshold
     return std::abs(GetCentsDifference(a, b)) < cents_deviation_threshold;
 }
 
-void FixObviousOutliers(std::vector<Chunk> &chunks) {
+void FixObviousOutliers(std::vector<AnalysisChunk> &chunks) {
     assert(chunks.size() > 2);
     for (usize i = 2; i < chunks.size(); ++i) {
         auto &chunk = chunks[i];
@@ -91,7 +87,7 @@ void FixObviousOutliers(std::vector<Chunk> &chunks) {
     }
 }
 
-void MarkInvalidChunks(std::vector<Chunk> &chunks) {
+void MarkInvalidAnalysisChunks(std::vector<AnalysisChunk> &chunks) {
     RingBuffer moving_average;
     moving_average.Add(chunks[0].detected_pitch);
 
@@ -108,7 +104,7 @@ void MarkInvalidChunks(std::vector<Chunk> &chunks) {
     }
 }
 
-bool DoesFileHaveReliablePitchData(std::vector<Chunk> &chunks) {
+bool DoesFileHaveReliablePitchData(std::vector<AnalysisChunk> &chunks) {
     const auto num_detected_pitch_chunks =
         std::count_if(chunks.begin(), chunks.end(), [](const auto &c) { return c.detected_pitch != 0; });
     constexpr auto minimum_percent_detected = 75.0;
@@ -122,16 +118,16 @@ bool DoesFileHaveReliablePitchData(std::vector<Chunk> &chunks) {
     return result;
 }
 
-void MarkRegionsToIgnore(const std::vector<Chunk> &chunks) {
-    const auto NextInvalidChunk = [&](std::vector<Chunk>::const_iterator start) {
+void MarkRegionsToIgnore(const std::vector<AnalysisChunk> &chunks) {
+    const auto NextInvalidAnalysisChunk = [&](std::vector<AnalysisChunk>::const_iterator start) {
         return std::find_if(start, chunks.end(), [](const auto &c) { return c.is_invalid; });
     };
 
     constexpr std::ptrdiff_t min_consecutive_good_chunks = 7;
     constexpr std::ptrdiff_t min_ignore_region_size = 4;
 
-    std::vector<Chunk>::const_iterator ignore_region_start;
-    const auto first_invalid_chunk = NextInvalidChunk(chunks.begin());
+    std::vector<AnalysisChunk>::const_iterator ignore_region_start;
+    const auto first_invalid_chunk = NextInvalidAnalysisChunk(chunks.begin());
     if (first_invalid_chunk == chunks.end()) {
         return;
     }
@@ -142,10 +138,10 @@ void MarkRegionsToIgnore(const std::vector<Chunk> &chunks) {
         ignore_region_start = first_invalid_chunk;
     }
 
-    std::vector<tcb::span<Chunk>> ignore_regions;
-    std::vector<Chunk>::const_iterator cursor = ignore_region_start + 1;
+    std::vector<tcb::span<AnalysisChunk>> ignore_regions;
+    auto cursor = ignore_region_start + 1;
     while (true) {
-        const auto next_invalid_chunk = NextInvalidChunk(cursor);
+        const auto next_invalid_chunk = NextInvalidAnalysisChunk(cursor);
         const auto distance_to_next_invalid_chunk = std::distance(cursor, next_invalid_chunk);
 
         if (distance_to_next_invalid_chunk >= min_consecutive_good_chunks ||
@@ -154,7 +150,8 @@ void MarkRegionsToIgnore(const std::vector<Chunk> &chunks) {
             const auto ignore_region_size = std::distance(ignore_region_start, cursor);
             if (ignore_region_size >= min_ignore_region_size) {
                 // if the ignore-region is not too small, we register
-                ignore_regions.push_back({(Chunk *)&*ignore_region_start, (size_t)ignore_region_size});
+                ignore_regions.push_back(
+                    {(AnalysisChunk *)&*ignore_region_start, (size_t)ignore_region_size});
             }
             ignore_region_start = next_invalid_chunk;
         }
@@ -172,7 +169,7 @@ void MarkRegionsToIgnore(const std::vector<Chunk> &chunks) {
     }
 }
 
-double TargetPitchForChunkRegion(tcb::span<const Chunk> chunks) {
+double TargetPitchForAnalysisChunkRegion(tcb::span<const AnalysisChunk> chunks) {
     // Get the min and max detected_pitch of the chunk region, these should be reasonably close toegether due
     // to our previous work in detecting 'good' regions.
     const auto max = std::max_element(chunks.begin(), chunks.end(), [](const auto &a, const auto &b) {
@@ -182,51 +179,53 @@ double TargetPitchForChunkRegion(tcb::span<const Chunk> chunks) {
                          return a.detected_pitch < b.detected_pitch;
                      })->detected_pitch;
 
-    // Next, we find the median of the detected pitches. The detected pitches are on a continuous scale. So
+    // Next, we find the mode of the detected pitches. The detected pitches are on a continuous scale. So
     // for this calculation, we break range (max - min) into an arbitrary number of bands. And then test each
     // pitch to find which band it is closest too.
     constexpr size_t num_value_bands = 5;
     struct ValueBand {
         double value;
-        int count;
+        int chunks_within_band;
     };
 
     std::array<ValueBand, num_value_bands> value_bands;
     for (usize i = 0; i < num_value_bands; ++i) {
         value_bands[i].value = min + (max - min) * (double)i;
-        value_bands[i].count = 0;
+        value_bands[i].chunks_within_band = 0;
     }
 
-    struct ChunkWithBand {
-        const Chunk *chunk;
+    struct AnalysisChunkWithBand {
+        const AnalysisChunk *chunk;
         const ValueBand *band;
     };
 
-    std::vector<ChunkWithBand> chunks_with_bands;
+    std::vector<AnalysisChunkWithBand> chunks_with_bands;
+    chunks_with_bands.reserve(chunks.size());
 
     for (const auto &c : chunks) {
         auto closest_band = std::lower_bound(value_bands.begin(), value_bands.end(), c.detected_pitch,
                                              [](const auto &a, const auto &b) { return a.value < b; });
         assert(closest_band != value_bands.end());
-        ++closest_band->count;
+        ++closest_band->chunks_within_band;
         chunks_with_bands.push_back({&c, &*closest_band});
     }
 
-    // Find which band is the median.
-    const auto &median_band_value =
-        *std::max_element(value_bands.begin(), value_bands.end(),
-                          [](const auto &a, const auto &b) { return a.count < b.count; });
+    // Find which band is the mode.
+    const auto &mode_band_value =
+        *std::max_element(value_bands.begin(), value_bands.end(), [](const auto &a, const auto &b) {
+            return a.chunks_within_band < b.chunks_within_band;
+        });
 
-    // Calculate the mean of all of the detected pitches that are in the median band.
+    // Calculate the mean of all of the detected pitches that are in the mode band.
     return std::accumulate(chunks_with_bands.begin(), chunks_with_bands.end(), 0.0,
-                           [&](double value, const ChunkWithBand &it) {
-                               if (it.band != &median_band_value) return value;
+                           [&](double value, const AnalysisChunkWithBand &it) {
+                               if (it.band != &mode_band_value) return value;
                                return it.chunk->detected_pitch + value;
                            }) /
-           (double)median_band_value.count;
+           (double)mode_band_value.chunks_within_band;
 }
 
-void MarkTargetPitches(std::vector<Chunk> &chunks) {
+void MarkTargetPitches(std::vector<AnalysisChunk> &chunks) {
     for (auto it = chunks.begin(); it != chunks.end();) {
         if (it->ignore_tuning) {
             ++it;
@@ -239,8 +238,8 @@ void MarkTargetPitches(std::vector<Chunk> &chunks) {
                 ++it;
             }
             auto region_end = it;
-            const auto target_pitch =
-                TargetPitchForChunkRegion({&*region_start, (size_t)std::distance(region_start, region_end)});
+            const auto target_pitch = TargetPitchForAnalysisChunkRegion(
+                {&*region_start, (size_t)std::distance(region_start, region_end)});
             for (auto sub_it = region_start; sub_it != region_end; ++sub_it) {
                 sub_it->target_pitch = target_pitch;
             }
@@ -278,7 +277,7 @@ inline double InterpolateCubic(double f0, double f1, double f2, double fm1, doub
                      t / 6.0);
 }
 
-std::vector<double> Retune(std::vector<Chunk> &chunks, const std::vector<double> &input_data) {
+std::vector<double> Retune(std::vector<AnalysisChunk> &chunks, const std::vector<double> &input_data) {
     SmoothingFilter pitch_ratio;
     constexpr double smoothing_filter_cutoff = 0.00007; // very smooth
 
@@ -345,7 +344,7 @@ void RealTimeAutoTuneCommand::ProcessFiles(AudioFiles &files) {
                     return;
                 }
 
-                std::vector<Chunk> chunks;
+                std::vector<AnalysisChunk> chunks;
                 constexpr auto chunk_seconds = 0.05;
                 const auto chunk_frames = (usize)(chunk_seconds * audio.sample_rate);
                 for (usize frame = 0; frame < data.size(); frame += chunk_frames) {
@@ -369,7 +368,7 @@ void RealTimeAutoTuneCommand::ProcessFiles(AudioFiles &files) {
                     return;
                 }
                 FixObviousOutliers(chunks);
-                MarkInvalidChunks(chunks);
+                MarkInvalidAnalysisChunks(chunks);
                 MarkRegionsToIgnore(chunks);
                 MarkTargetPitches(chunks);
                 auto result = Retune(chunks, data);

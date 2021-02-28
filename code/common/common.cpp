@@ -52,6 +52,9 @@ void ForEachDeinterleavedChannel(
 }
 
 double GetCentsDifference(const double pitch1_hz, const double pitch2_hz) {
+    if (pitch1_hz == 0) {
+        return 0;
+    }
     constexpr double cents_in_octave = 100 * 12;
     const double cents = std::log2(pitch2_hz / pitch1_hz) * cents_in_octave;
     return cents;

@@ -21,7 +21,7 @@ struct AnalysisChunk {
 
 class PitchDriftCorrector {
   public:
-    PitchDriftCorrector(const AudioData &data, std::string_view print_heading);
+    PitchDriftCorrector(const AudioData &data, std::string_view message_heading);
     bool CanFileBePitchCorrected() const;
     bool ProcessFile(AudioData &data);
 
@@ -35,6 +35,6 @@ class PitchDriftCorrector {
     int MarkTargetPitches();
     std::vector<double> CalculatePitchCorrectedInterleavedSamples(const AudioData &data);
 
-    std::string m_print_heading;
+    std::string m_message_heading;
     std::vector<AnalysisChunk> m_chunks;
 };

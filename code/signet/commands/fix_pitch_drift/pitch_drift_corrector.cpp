@@ -10,40 +10,6 @@
 #include "test_helpers.h"
 #include "tests_config.h"
 
-template <>
-struct fmt::formatter<AnalysisChunk> {
-    constexpr auto parse(format_parse_context &ctx) { return ctx.end(); }
-
-    template <typename FormatContext>
-    auto format(const AnalysisChunk &c, FormatContext &ctx) {
-        return format_to(ctx.out(), "{},{},{},{},{}", c.detected_pitch, c.is_detected_pitch_outlier,
-                         c.ignore_tuning, c.target_pitch, c.pitch_ratio_for_print);
-    }
-};
-
-class RingBuffer {
-  public:
-    void Fill(double value) { std::fill(buffer.begin(), buffer.end(), value); }
-    void Add(double value) {
-        num_added++;
-        buffer[current_index] = value;
-        ++current_index;
-        if (current_index == buffer.size()) {
-            current_index = 0;
-        }
-    }
-    double Mean() const {
-        assert(num_added);
-        const auto size = std::min(num_added, buffer.size());
-        return std::accumulate(buffer.begin(), buffer.begin() + size, 0.0) / (double)size;
-    }
-
-  private:
-    usize num_added = 0;
-    usize current_index {};
-    std::array<double, 5> buffer {};
-};
-
 class SmoothingFilter {
   public:
     void SetValue(double v, bool hard_reset) {
@@ -133,6 +99,11 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
 
     auto new_interleaved_samples = CalculatePitchCorrectedInterleavedSamples(data);
 
+    for (const auto &c : m_chunks) {
+        fmt::print("{:7.2f},{},{},{:7.2f},{}\n", c.detected_pitch, (int)c.is_detected_pitch_outlier,
+                   (int)c.ignore_tuning, c.target_pitch, c.pitch_ratio_for_print);
+    }
+
     const auto size_change_ratio =
         (double)new_interleaved_samples.size() / (double)data.interleaved_samples.size();
     data.interleaved_samples = std::move(new_interleaved_samples);
@@ -142,6 +113,9 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
 }
 
 void PitchDriftCorrector::FixObviousDetectedPitchOutliers() {
+    // Do a super simple pass where we replace the detected pitch of chunks that were obvious very difference
+    // from its previous 2 chunks.
+
     assert(m_chunks.size() > 2);
     for (usize i = 2; i < m_chunks.size(); ++i) {
         auto &chunk = m_chunks[i];
@@ -161,30 +135,65 @@ void PitchDriftCorrector::FixObviousDetectedPitchOutliers() {
 }
 
 void PitchDriftCorrector::MarkOutlierChunks() {
-    RingBuffer moving_average;
-    moving_average.Add(m_chunks[0].detected_pitch);
+    // To detect outliers we work out the most frequent cents-difference between chunks detected pitch (AKA
+    // the modal value). However, this is a continuos scale, so we can't just use floating point comparison.
+    // Instead, we work out what 'band' each cents-difference is closest too. These bands are set to a
+    // reasonable size as specified by cents_band_size. Then we work out the mean cents-difference of all
+    // values in the most frequent band. Finally, we use this value to determine if any cents-difference is an
+    // outlier, and mark it as such.
 
-    for (auto &chunk : m_chunks) {
-        // If the chunk's detected pitch is too different from a moving average, mark it as potentially
-        // erroneous
-        const auto mean_pitch = moving_average.Mean();
-        constexpr double max_cents_deviation_from_mean = 3;
-        if (!PitchesAreRoughlyEqual(chunk.detected_pitch, mean_pitch, max_cents_deviation_from_mean)) {
-            chunk.is_detected_pitch_outlier = true;
+    constexpr int cents_band_size = 8;
+
+    struct ChunkDiff {
+        ChunkDiff(std::vector<AnalysisChunk>::const_iterator it) {
+            const auto curr = it->detected_pitch;
+            const auto prev = (it - 1)->detected_pitch;
+            cents_diff = GetCentsDifference(prev, curr);
+            nearest_band = std::round(cents_diff / (double)cents_band_size) * cents_band_size;
         }
+        double cents_diff;
+        int nearest_band;
+    };
 
-        moving_average.Add(chunk.detected_pitch);
+    std::map<int, int> diff_band_counts;
+    for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
+        ++diff_band_counts[(int)ChunkDiff(it).nearest_band];
+    }
+
+    const auto mode_band = std::max_element(diff_band_counts.begin(), diff_band_counts.end(),
+                                            [](const auto &a, const auto &b) { return a.second < b.second; });
+
+    double sum = 0.0;
+    for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
+        ChunkDiff diff(it);
+        if (diff.nearest_band != mode_band->first) continue;
+        sum += std::abs(diff.cents_diff);
+    }
+
+    const auto mean_diff_of_mode_band = sum / (double)mode_band->second;
+    constexpr double threshold_cents_multiplier = 3; // seems like a reasonable number
+    const auto threshold_cents_diff = mean_diff_of_mode_band * threshold_cents_multiplier;
+
+    for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
+        const auto prev = (it - 1)->detected_pitch;
+        if (!PitchesAreRoughlyEqual(prev, it->detected_pitch, threshold_cents_diff)) {
+            it->is_detected_pitch_outlier = true;
+        }
     }
 }
 
 void PitchDriftCorrector::MarkRegionsToIgnore() {
+    // Here we analyse the sequence of chunks for regions where there are lots of outliers and mark that whole
+    // region as something we should ignore. The detection of 'good' regions and 'bad' regions are determined
+    // by the these 2 constexprs.
+
+    constexpr std::ptrdiff_t min_consecutive_good_chunks = 7;
+    constexpr std::ptrdiff_t min_ignore_region_size = 4;
+
     const auto NextInvalidAnalysisChunk = [&](std::vector<AnalysisChunk>::const_iterator start) {
         return std::find_if(start, m_chunks.cend(),
                             [](const auto &c) { return c.is_detected_pitch_outlier; });
     };
-
-    constexpr std::ptrdiff_t min_consecutive_good_chunks = 7;
-    constexpr std::ptrdiff_t min_ignore_region_size = 4;
 
     std::vector<AnalysisChunk>::const_iterator ignore_region_start;
     const auto first_invalid_chunk = NextInvalidAnalysisChunk(m_chunks.begin());
@@ -240,7 +249,7 @@ double PitchDriftCorrector::FindTargetPitchForChunkRegion(tcb::span<const Analys
                      })->detected_pitch;
 
     // Next, we find the mode of the detected pitches. The detected pitches are on a continuous scale. So
-    // for this calculation, we break range (max - min) into an arbitrary number of bands. And then test
+    // for this calculation, we break the range (max - min) into an arbitrary number of bands. And then test
     // each pitch to find which band it is closest too.
     constexpr size_t num_value_bands = 5;
     struct ValueBand {
@@ -313,7 +322,7 @@ int PitchDriftCorrector::MarkTargetPitches() {
 
 std::vector<double> PitchDriftCorrector::CalculatePitchCorrectedInterleavedSamples(const AudioData &data) {
     SmoothingFilter pitch_ratio;
-    constexpr double smoothing_filter_cutoff = 0.00007; // very smooth
+    constexpr double smoothing_filter_cutoff = 0.00006; // very smooth
 
     auto current_chunk_it = m_chunks.begin();
     const auto UpdatePitchRatio = [&](bool hard_reset) {
@@ -322,7 +331,8 @@ std::vector<double> PitchDriftCorrector::CalculatePitchCorrectedInterleavedSampl
         } else {
             const auto cents_from_target =
                 GetCentsDifference(current_chunk_it->detected_pitch, current_chunk_it->target_pitch);
-            const auto new_pitch_ratio = std::exp2((cents_from_target / 100.0) / 12.0);
+            constexpr double cents_in_octave = 1200;
+            const auto new_pitch_ratio = std::exp2(cents_from_target / cents_in_octave);
             pitch_ratio.SetValue(new_pitch_ratio, hard_reset);
         }
         current_chunk_it->pitch_ratio_for_print =

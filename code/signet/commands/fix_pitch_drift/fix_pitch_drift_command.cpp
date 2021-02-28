@@ -28,7 +28,7 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
     }
 }
 
-AudioData CreateSineWaveDriftingPitch() {
+AudioData CreateSineWaveDriftingPitch(double multiplier) {
     const unsigned sample_rate = 44410;
     const unsigned num_frames = sample_rate * 2;
     const double frequency_hz = 440;
@@ -46,17 +46,27 @@ AudioData CreateSineWaveDriftingPitch() {
     for (size_t frame = 0; frame < num_frames; ++frame) {
         const double value = (double)std::sin(phase);
         phase += taus_per_sample;
-        phase *= 1.0000002;
+        phase *= multiplier;
         buf.interleaved_samples[frame] = value;
     }
     return buf;
 }
 
 TEST_CASE("RealTimeAutoTune") {
-    const auto buf = CreateSineWaveDriftingPitch();
-    WriteAudioFile(fs::path(BUILD_DIRECTORY) / "drifting-pitch-sine.wav", buf, {});
+    {
+        const auto buf = CreateSineWaveDriftingPitch(1.0000008);
+        WriteAudioFile(fs::path(BUILD_DIRECTORY) / "subtle-drifting-pitch-sine.wav", buf, {});
 
-    const auto out = TestHelpers::ProcessBufferWithCommand<FixPitchDriftCommand>("fix-pitch-drift", buf);
-    REQUIRE(out);
-    WriteAudioFile(fs::path(BUILD_DIRECTORY) / "drifting-pitch-sine-processed.wav", *out, {});
+        const auto out = TestHelpers::ProcessBufferWithCommand<FixPitchDriftCommand>("fix-pitch-drift", buf);
+        REQUIRE(out);
+        WriteAudioFile(fs::path(BUILD_DIRECTORY) / "subtle-drifting-pitch-sine-processed.wav", *out, {});
+    }
+    {
+        const auto buf = CreateSineWaveDriftingPitch(1.000002);
+        WriteAudioFile(fs::path(BUILD_DIRECTORY) / "obvious-drifting-pitch-sine.wav", buf, {});
+
+        const auto out = TestHelpers::ProcessBufferWithCommand<FixPitchDriftCommand>("fix-pitch-drift", buf);
+        REQUIRE(out);
+        WriteAudioFile(fs::path(BUILD_DIRECTORY) / "obvious-drifting-pitch-sine-processed.wav", *out, {});
+    }
 }

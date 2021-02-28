@@ -239,59 +239,36 @@ void PitchDriftCorrector::MarkRegionsToIgnore() {
 }
 
 double PitchDriftCorrector::FindTargetPitchForChunkRegion(tcb::span<const AnalysisChunk> chunks) {
-    // Get the min and max detected_pitch of the chunk region, these should be reasonably close toegether
-    // due to our previous work in detecting 'good' regions.
-    const auto max = std::max_element(chunks.begin(), chunks.end(), [](const auto &a, const auto &b) {
-                         return a.detected_pitch < b.detected_pitch;
-                     })->detected_pitch;
-    const auto min = std::min_element(chunks.begin(), chunks.end(), [](const auto &a, const auto &b) {
-                         return a.detected_pitch < b.detected_pitch;
-                     })->detected_pitch;
+    // We work out the most-frequent detected pitch by puting them into 'bands' of size cents_band_size, and
+    // determining the band with the largest number of entries. The band is based on cents rather than hertz
+    // so that we are working on the logarithmic scale which is more useful in this context. Finally, we
+    // return the mean pitch of all pitches in the most-frequent band - hopefully recreating what is the most
+    // prominent pitch to our ear over time.
 
-    // Next, we find the mode of the detected pitches. The detected pitches are on a continuous scale. So
-    // for this calculation, we break the range (max - min) into an arbitrary number of bands. And then test
-    // each pitch to find which band it is closest too.
-    constexpr size_t num_value_bands = 5;
-    struct ValueBand {
-        double value;
-        int chunks_within_band;
+    constexpr int cents_band_size = 3;
+    std::map<int, int> pitch_band_counts;
+
+    const auto CalcCentsBand = [&](double freq) {
+        return (int)(std::round(GetCentsDifference(1, freq) / (double)cents_band_size) * cents_band_size);
     };
-
-    std::array<ValueBand, num_value_bands> value_bands;
-    for (usize i = 0; i < num_value_bands; ++i) {
-        value_bands[i].value = min + (max - min) * (double)i;
-        value_bands[i].chunks_within_band = 0;
-    }
-
-    struct AnalysisChunkWithBand {
-        const AnalysisChunk *chunk;
-        const ValueBand *band;
-    };
-
-    std::vector<AnalysisChunkWithBand> chunks_with_bands;
-    chunks_with_bands.reserve(chunks.size());
 
     for (const auto &c : chunks) {
-        auto closest_band = std::lower_bound(value_bands.begin(), value_bands.end(), c.detected_pitch,
-                                             [](const auto &a, const auto &b) { return a.value < b; });
-        assert(closest_band != value_bands.end());
-        ++closest_band->chunks_within_band;
-        chunks_with_bands.push_back({&c, &*closest_band});
+        if (c.detected_pitch == 0) continue;
+        ++pitch_band_counts[CalcCentsBand(c.detected_pitch)];
     }
 
-    // Find which band is the mode.
-    const auto &mode_band_value =
-        *std::max_element(value_bands.begin(), value_bands.end(), [](const auto &a, const auto &b) {
-            return a.chunks_within_band < b.chunks_within_band;
-        });
+    if (!pitch_band_counts.size()) return 1;
 
-    // Calculate the mean of all of the detected pitches that are in the mode band.
-    return std::accumulate(chunks_with_bands.begin(), chunks_with_bands.end(), 0.0,
-                           [&](double value, const AnalysisChunkWithBand &it) {
-                               if (it.band != &mode_band_value) return value;
-                               return it.chunk->detected_pitch + value;
+    const auto mode_band = std::max_element(pitch_band_counts.begin(), pitch_band_counts.end(),
+                                            [](const auto &a, const auto &b) { return a.second < b.second; });
+
+    return std::accumulate(chunks.begin(), chunks.end(), 0.0,
+                           [&](double value, const auto &chunk) {
+                               const auto cents_band = CalcCentsBand(chunk.detected_pitch);
+                               if (cents_band != mode_band->first) return value;
+                               return value + chunk.detected_pitch;
                            }) /
-           (double)mode_band_value.chunks_within_band;
+           (double)mode_band->second;
 }
 
 int PitchDriftCorrector::MarkTargetPitches() {

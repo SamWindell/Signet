@@ -27,7 +27,7 @@ jobs:
     - name: Configure CMake Using GCC
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DDEPLOYMENT_BUILD
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DDEPLOYMENT_BUILD:BOOL=YES
       env:
         CC: gcc-9
         CXX: g++-9

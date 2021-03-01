@@ -11,7 +11,9 @@
 #include "tests_config.h"
 
 CLI::App *FixPitchDriftCommand::CreateCommandCLI(CLI::App &app) {
-    auto auto_tune = app.add_subcommand("fix-pitch-drift", "");
+    auto auto_tune = app.add_subcommand(
+        "fix-pitch-drift",
+        "Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for recordings of single-note instruments that subtly drift out of pitch. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that.");
     return auto_tune;
 }
 
@@ -19,10 +21,12 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
         PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName());
         if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
-            MessageWithNewLine(GetName(), "File cannot be pitch-drift corrected");
+            WarningWithNewLine(GetName(), "{}: cannot be pitch-drift corrected", f.OriginalFilename());
         } else {
+            MessageWithNewLine(GetName(), "{}: correcting pitch-drift", f.OriginalFilename());
             if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio())) {
-                MessageWithNewLine(GetName(), "File successfully auto-tuned.");
+                MessageWithNewLine(GetName(), "{}: successfully pitch-drift corrected.",
+                                   f.OriginalFilename());
             }
         }
     }

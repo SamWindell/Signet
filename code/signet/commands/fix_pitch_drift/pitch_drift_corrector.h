@@ -27,6 +27,7 @@ class PitchDriftCorrector {
 
   private:
     static constexpr double k_chunk_length_milliseconds = 50;
+    static constexpr bool k_print_csv = false;
 
     void FixObviousDetectedPitchOutliers();
     void MarkOutlierChunks();
@@ -37,4 +38,5 @@ class PitchDriftCorrector {
 
     std::string m_message_heading;
     std::vector<AnalysisChunk> m_chunks;
+    unsigned m_sample_rate;
 };

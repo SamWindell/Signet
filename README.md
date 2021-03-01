@@ -25,9 +25,11 @@ Signet makes sample library development (multi-sampling) easier and more effecti
 - Bulk editing audio files
 - Bulk renaming audio files
 - Bulk organising files (moving them into folders)
-- Generating files based off of existing files
+- And in one case, generate new files based on other files
 
 Signet is not exclusively useful for sample library development though. The editing features in particular could be useful to anyone working with large sets of audio files.
+
+I'm a full-time audio plugin and sample library developer. I created this tool to improve and speed-up my workflow. I'm happy to take bug reports and provide help. And I'm available to hire if you want custom features to speed-up your workflow too!
 
 ## Limitations
 Currently only supports reading and writing WAV and FLAC files.
@@ -35,10 +37,10 @@ Currently only supports reading and writing WAV and FLAC files.
 ## Building
 To get Signet, you currently have to build it from the source code. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.
 
-A C++17 compiler is required. The compiler must also be [compatible with the magic_enum library](https://github.com/Neargye/magic_enum#compiler-compatibility) which is used by Signet. Signet has been tested with MSVC 16.5.1, Apple Clang 11.0.0, GCC 9.3.0 and Clang 10.
+A C++17 compiler is required. The compiler must also be [compatible with the magic_enum library](https://github.com/Neargye/magic_enum#compiler-compatibility) which is used by Signet. Signet has been tested with MSVC 16.5.1, Apple Clang 11.0.0, GCC 9.3.0 and Clang 10 on Linux.
 
 ## Examples
-The general pattern is `signet <input-files> <command>`. You can have one or more commands, in which case each command will process the set of input-files one after each other in the order that you specify them.
+The general pattern is `signet <input-file(s)> <command>`. You can have one or more commands, in which case each command will process the set of input-files in the order that you specify them.
 
 Adds a fade-in of 1 second to filename.wav
 
@@ -103,6 +105,7 @@ Files that were overwritten are restored, new files that were created are destro
 There are lots of ways to process audio files using Signet. See the [documentation](docs/usage.md) for the full list. Here some of them:
 - Detect the pitch of the files and print it out
 - Auto-tune files to their nearest musical pitch
+- Fix audio that drifts out of tune
 - Convert sample-rate, bit-depth and file-format
 - Embed sampler metadata to the wav/flac file - the root note can be auto detected
 - Rename files - including auto-mapping MIDI regions

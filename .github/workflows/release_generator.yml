@@ -1,51 +1,51 @@
 name: Release generator
 
-on: [push]
+# on: [push]
 
-# on:
-#   push:
-#     tags:
-#       - "v*"
+on:
+  push:
+    tags:
+      - "v*"
 
 jobs:
-  # linux:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
 
-  #   - name: Get required GCC version
-  #     shell: bash
-  #     run: sudo apt install gcc-9 g++-9
+    - name: Get required GCC version
+      shell: bash
+      run: sudo apt install gcc-9 g++-9
 
-  #   - name: Get zip
-  #     shell: bash
-  #     run: sudo apt install zip
+    - name: Get zip
+      shell: bash
+      run: sudo apt install zip
 
-  #   - name: Create Build Environment
-  #     run: cmake -E make_directory ${{github.workspace}}/build
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
 
-  #   - name: Configure CMake Using GCC
-  #     shell: bash
-  #     working-directory: ${{github.workspace}}/build
-  #     run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
-  #     env:
-  #       CC: gcc-9
-  #       CXX: g++-9
+    - name: Configure CMake Using GCC
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
+      env:
+        CC: gcc-9
+        CXX: g++-9
 
-  #   - name: Build
-  #     working-directory: ${{github.workspace}}/build
-  #     shell: bash
-  #     run: cmake --build . --config Debug --target signet
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config Debug --target signet
     
-  #   - name: Zip executable
-  #     working-directory: ${{github.workspace}}/build
-  #     shell: bash
-  #     run: zip signet_linux signet
+    - name: Zip executable
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: zip signet_linux signet
 
-  #   - uses: actions/upload-artifact@v2
-  #     with:
-  #       name: signet_linux.zip
-  #       path: build/signet_linux.zip
+    - uses: actions/upload-artifact@v2
+      with:
+        name: signet_linux.zip
+        path: build/signet_linux.zip
 
   # macos:
   #   runs-on: macos-latest
@@ -75,58 +75,56 @@ jobs:
   #       name: signet_macos.zip
   #       path: build/signet_macos.zip
 
-  windows:
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Create Build Environment
-      run: cmake -E make_directory ${{github.workspace}}/build
-
-    - name: Configure CMake Using Default Compiler
-      working-directory: ${{github.workspace}}/build
-      run: cmake ../ -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
-
-    - name: Build
-      working-directory: ${{github.workspace}}/build
-      run: cmake --build . --config Debug --target signet
-
-    - name: Zip executable
-      working-directory: ${{github.workspace}}/build
-      run: 7z a signet_windows.zip signet.exe
-
-    - uses: actions/upload-artifact@v2
-      with:
-        name: signet_windows.zip
-        path: build/signet_windows.zip
-
-  # deploy:
-  #   runs-on: ubuntu-latest
-  #   needs: [linux, windows, macos]
+  # windows:
+  #   runs-on: windows-latest
   #   steps:
-  #   - name: Get Artifacts
-  #     uses: actions/download-artifact@v2
-  #     with:
-  #       path: ./
+  #   - uses: actions/checkout@v2
 
-  #   - name: Display structure of downloaded files
-  #     run: ls -la
+  #   - name: Create Build Environment
+  #     run: cmake -E make_directory ${{github.workspace}}/build
+
+  #   - name: Configure CMake Using Default Compiler
+  #     working-directory: ${{github.workspace}}/build
+  #     run: cmake ../ -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
+
+  #   - name: Build
+  #     working-directory: ${{github.workspace}}/build
+  #     run: cmake --build . --config Debug --target signet
+
+  #   - name: Zip executable
+  #     working-directory: ${{github.workspace}}/build
+  #     run: 7z a signet_windows.zip signet.exe
+
+  #   - uses: actions/upload-artifact@v2
+  #     with:
+  #       name: signet_windows.zip
+  #       path: build/signet_windows.zip
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [linux, windows, macos]
+    steps:
+    - name: Get Artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: ./
+
+    - name: Display structure of downloaded files
+      run: ls -la
   
-  #   - name: Set tag name variable
-  #     run: |
-  #       REF=${GITHUB_REF}
-  #       echo ::set-env name=TAG_NAME::${REF##*/}
-  #     shell: bash        
+    - name: Set tag name variable
+      run: |
+        REF=${GITHUB_REF}
+        echo ::set-env name=TAG_NAME::${REF##*/}
+      shell: bash        
 
-  #   - name: Create Release
-  #     uses: softprops/action-gh-release@v1
-  #     with:
-  #       tag_name: ${{ env.TAG_NAME }}
-  #       name: ${{ env.TAG_NAME }}
-  #       draft: true
-  #       files: |
-  #         signet_linux.zip/*
-  #         signet_macos.zip/*
-  #         signet_windows.zip/*
-  #     env:
-  #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ env.TAG_NAME }}
+        name: ${{ env.TAG_NAME }}
+        draft: true
+        files: |
+          signet_linux.zip/*
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

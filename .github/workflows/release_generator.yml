@@ -27,7 +27,7 @@ jobs:
     - name: Configure CMake Using GCC
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DDEPLOYMENT_BUILD:BOOL=YES
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
       env:
         CC: gcc-9
         CXX: g++-9
@@ -35,16 +35,67 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --build . --config Release --target signet
+      run: cmake --build . --config Debug --target signet
     
     - name: Zip executable
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: zip signet_linux.zip signet
+      run: zip signet_linux signet
 
     - uses: actions/upload-artifact@v2
       with:
         name: signet_linux.zip
         path: build/signet_linux.zip
 
+  macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
 
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake Using Default Compiler
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config Debug --target signet
+
+    - name: Zip executable
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: zip signet_macos signet
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: signet_macos.zip
+        path: build/signet_macos.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake Using Default Compiler
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      run: cmake --build . --config Debug --target signet
+
+    - name: Zip executable
+      working-directory: ${{github.workspace}}/build
+      run: 7z a signet_windows.zip signet.exe
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: signet_windows.zip
+        path: build/signet_windows.zip

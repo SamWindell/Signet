@@ -5,7 +5,7 @@ name: Release generator
 on:
   push:
     tags:
-      - "v*"
+      - "v*.*.*"
 
 jobs:
   linux:
@@ -109,22 +109,11 @@ jobs:
       with:
         path: ./
 
-    - name: Display structure of downloaded files
-      run: ls -la
-  
-    - name: Set tag name variable
-      run: |
-        REF=${GITHUB_REF}
-        echo ::set-env name=TAG_NAME::${REF##*/}
-      shell: bash        
-
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ env.TAG_NAME }}
-        name: ${{ env.TAG_NAME }}
         draft: true
         files: |
-          signet_linux.zip/*
+          signet_linux.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

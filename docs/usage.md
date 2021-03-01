@@ -56,6 +56,9 @@ The audio files to process. You can specify more than one of these. Each input-f
 `--undo`
 Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
+`--version`
+Prints the version of Signet.
+
 `--clear-backup`
 Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the backup.
 

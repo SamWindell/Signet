@@ -1,8 +1,14 @@
 cmake_minimum_required(VERSION 3.16.0)
-project(Signet)
+project(Signet VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+option(DEPLOYMENT_BUILD "A build for deployment to end-users" NO)
+
+if (${DEPLOYMENT_BUILD})
+    add_definitions(-DDOCTEST_CONFIG_DISABLE)
+endif ()
 
 # 3rd party libs
 add_library(
@@ -144,6 +150,8 @@ target_link_libraries(common PUBLIC third_party_libs)
 # Tests config header
 configure_file(${PROJECT_SOURCE_DIR}/code/tests/tests_config.h.in
                ${PROJECT_SOURCE_DIR}/code/tests/tests_config.h)
+
+configure_file(${PROJECT_SOURCE_DIR}/code/signet/version.h.in ${PROJECT_SOURCE_DIR}/code/signet/version.h)
 
 # Signet
 add_executable(signet code/signet/signet_main.cpp)

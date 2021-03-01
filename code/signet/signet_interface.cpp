@@ -27,6 +27,7 @@
 #include "commands/zcross_offset/zcross_offset.h"
 #include "test_helpers.h"
 #include "tests_config.h"
+#include "version.h"
 
 SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<AutoTuneCommand>());
@@ -61,15 +62,27 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.name("signet");
     app.group("Commands");
 
+    bool success_thrown = false;
+
     app.add_flag_callback(
         "--undo",
-        [this]() {
+        [&]() {
             MessageWithNewLine("Signet", "Undoing changes made by the last run of Signet...");
             m_backup.LoadBackup();
             MessageWithNewLine("Signet", "Done.");
+            success_thrown = true;
             throw CLI::Success();
         },
         "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.");
+
+    app.add_flag_callback(
+        "--version",
+        [&]() {
+            MessageWithNewLine("Signet", "Version is {}", SIGNET_VERSION);
+            success_thrown = true;
+            throw CLI::Success();
+        },
+        "Prints the version of Signet.");
 
     {
         fs::path make_docs_filepath {};
@@ -137,16 +150,18 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 global_formatter_indent = 0;
             }
 
+            success_thrown = true;
             throw CLI::Success();
         });
     }
 
     app.add_flag_callback(
         "--clear-backup",
-        [this]() {
+        [&]() {
             MessageWithNewLine("Signet", "Clearing all backed-up files...");
             m_backup.ClearBackup();
             MessageWithNewLine("Signet", "Done.");
+            success_thrown = true;
             throw CLI::Success();
         },
         "Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the backup.");
@@ -164,7 +179,6 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
 
-    std::vector<CLI::App *> subcommand_clis;
     for (auto &command : m_commands) {
         auto s = command->CreateCommandCLI(app);
         s->needs(input_files_option);
@@ -198,7 +212,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     try {
         app.parse(argc, argv);
     } catch (const CLI::ParseError &e) {
-        PrintSignetHeading();
+        if (!success_thrown) PrintSignetHeading();
         if (e.get_exit_code() != 0) {
             std::stringstream out;
             std::stringstream error;
@@ -209,7 +223,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         } else {
             std::stringstream help_text_stream;
             const auto result = app.exit(e, help_text_stream);
-            std::cout << (help_text_stream.str());
+            fmt::print("{}", help_text_stream.str());
             return result;
         }
     }

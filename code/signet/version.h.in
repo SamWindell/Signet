@@ -1,0 +1,2 @@
+#pragma once
+#define SIGNET_VERSION "@PROJECT_VERSION@"

@@ -352,6 +352,7 @@ class WaveMetadataToNonSpecificMetadata {
         assert(found_cue);
         assert(result.start_frame < m_audio.NumFrames());
         assert((result.start_frame + result.num_frames) <= m_audio.NumFrames());
+        (void)found_cue;
 
         return result;
     }

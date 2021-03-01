@@ -161,7 +161,7 @@ static std::optional<double> DetectSinglePitch(const AudioData &audio) {
     if (most_suitable_chunk->detected_pitch != 0.0) {
         return most_suitable_chunk->detected_pitch;
     }
-    return {};
+    return std::nullopt;
 }
 
 static bool ApproxEqual(double a, double b, double epsilon) {

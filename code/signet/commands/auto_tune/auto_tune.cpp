@@ -9,8 +9,8 @@
 
 CLI::App *AutoTuneCommand::CreateCommandCLI(CLI::App &app) {
     auto auto_tune = app.add_subcommand(
-        "auto-tune", "Tunes the file(s) to their nearest detected musical pitch. For example, a "
-                     "file with a detected pitch of 450Hz will be tuned to 440Hz (A4).");
+        "auto-tune",
+        "Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command.");
     return auto_tune;
 }
 

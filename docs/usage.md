@@ -69,7 +69,7 @@ When the input is a directory, scan for files in it recursively
 # Signet Commands
 ## auto-tune
 ### Description:
-Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4).
+Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command.
 
 ### Usage:
   `auto-tune`
@@ -247,6 +247,8 @@ The shape of the fade-out curve. The default is the 'sine' shape.
 
 ## fix-pitch-drift
 ### Description:
+Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for recordings of single-note instruments that subtly drift out of pitch. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that.
+
 ### Usage:
   `fix-pitch-drift`
 

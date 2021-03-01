@@ -85,11 +85,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         "Prints the version of Signet.");
 
     {
-        fs::path make_docs_filepath {};
         auto make_docs = app.add_subcommand(
             "make-docs", "Creates a markdown file containing the full CLI - based on running signet --help.");
         make_docs
-            ->add_option("output-file", make_docs_filepath, "The filepath for the generated markdown file.")
+            ->add_option("output-file", m_make_docs_filepath, "The filepath for the generated markdown file.")
             ->required();
         make_docs->final_callback([&]() {
             // Clear anything that was parsed, we want to fetch all of the subcommands, not just ones that
@@ -100,7 +99,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             SetFormatterRecursively(
                 &app, std::make_shared<SignetCLIHelpFormatter>(SignetCLIHelpFormatter::OutputMode::Markdown));
 
-            std::ofstream os(make_docs_filepath);
+            std::ofstream os(m_make_docs_filepath);
 
             os << "# Signet Usage\n";
             os << "\nThis is an auto-generated file based on the output of `signet --help`. It contains information about every feature of Signet.\n\n";
@@ -151,6 +150,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             }
 
             success_thrown = true;
+            MessageWithNewLine("Signet", "Successfully written docs file");
             throw CLI::Success();
         });
     }

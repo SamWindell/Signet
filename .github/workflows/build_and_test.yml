@@ -27,13 +27,13 @@ jobs:
       if: matrix.os != 'ubuntu-latest'
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DENABLE_SANITIZERS:BOOL=YES
     
     - name: Configure CMake Using GCC
       if: matrix.os == 'ubuntu-latest'
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DENABLE_SANITIZERS:BOOL=YES
       env:
         CC: gcc-9
         CXX: g++-9

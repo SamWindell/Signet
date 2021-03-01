@@ -5,8 +5,9 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(DEPLOYMENT_BUILD "A build for deployment to end-users" NO)
+option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)
 
-if (${DEPLOYMENT_BUILD})
+if (DEPLOYMENT_BUILD)
     add_definitions(-DDOCTEST_CONFIG_DISABLE)
 endif ()
 
@@ -134,16 +135,15 @@ else ()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(common PUBLIC -fdiagnostics-absolute-paths)
     endif ()
-    target_compile_options(
-        common
-        PUBLIC -Wall
-               -Wextra
-               -Wpedantic
-               -Wshadow
-               -Wnon-virtual-dtor
-               -Woverloaded-virtual
-               -Wno-switch
-               -Wno-unused-variable)
+    target_compile_options(common PUBLIC -Wall -Wextra -Wnon-virtual-dtor -Woverloaded-virtual -Wno-switch
+                                         -Wno-unused-variable)
+    # It would be good to enable -Wpedantic -Wshadow too, but some of the library headers have warnings
+
+    if (ENABLE_SANITIZERS)
+        set(SANITIZERS -fsanitize=address -fsanitize=undefined)
+        target_compile_options(common PUBLIC ${SANITIZERS})
+        target_link_options(common PUBLIC ${SANITIZERS})
+    endif ()
 endif ()
 target_link_libraries(common PUBLIC third_party_libs)
 

@@ -1,0 +1,50 @@
+name: Release generator
+
+on: [push]
+
+# on:
+#   push:
+#     tags:
+#       - "v*"
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Get required GCC version
+      shell: bash
+      run: sudo apt install gcc-9 g++-9
+
+    - name: Get zip
+      shell: bash
+      run: sudo apt install zip
+
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
+
+    - name: Configure CMake Using GCC
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DDEPLOYMENT_BUILD
+      env:
+        CC: gcc-9
+        CXX: g++-9
+
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config Release --target signet
+    
+    - name: Zip executable
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: zip signet_linux.zip signet
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: signet_linux.zip
+        path: build/signet_linux.zip
+
+

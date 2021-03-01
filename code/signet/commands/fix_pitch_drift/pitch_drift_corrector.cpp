@@ -152,7 +152,7 @@ void PitchDriftCorrector::MarkOutlierChunks() {
             const auto curr = it->detected_pitch;
             const auto prev = (it - 1)->detected_pitch;
             cents_diff = GetCentsDifference(prev, curr);
-            nearest_band = std::round(cents_diff / (double)cents_band_size) * cents_band_size;
+            nearest_band = (int)std::round(cents_diff / (double)cents_band_size) * cents_band_size;
         }
         double cents_diff;
         int nearest_band;

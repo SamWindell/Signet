@@ -95,8 +95,7 @@ jobs:
 
     - name: Zip executable
       working-directory: ${{github.workspace}}/build
-      run: dir
-      run: 7z a signet_windows.zip signet.exe
+      run: dir && 7z a signet_windows.zip signet.exe
 
     - uses: actions/upload-artifact@v2
       with:

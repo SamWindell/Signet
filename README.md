@@ -1,16 +1,16 @@
 # Signet
-## Command-line program for editing audio files, and assisting sample library development (still a work-in-progress)
+## Command-line program for editing audio files, and assisting sample library development
 
 ![Build Status](https://github.com/SamWindell/Signet/workflows/Build%20and%20Test/badge.svg)
 
 ## Table of Contents
 
 - [Signet](#signet)
-  - [Command-line program for editing audio files, and assisting sample library development (still a work-in-progress)](#command-line-program-for-editing-audio-files-and-assisting-sample-library-development-still-a-work-in-progress)
+  - [Command-line program for editing audio files, and assisting sample library development](#command-line-program-for-editing-audio-files-and-assisting-sample-library-development)
   - [Table of Contents](#table-of-contents)
   - [Overview](#overview)
   - [Limitations](#limitations)
-  - [Building](#building)
+  - [How to get Signet](#how-to-get-signet)
   - [Examples](#examples)
   - [Key Features](#key-features)
     - [Process files, whole folders or pattern-matching filenames](#process-files-whole-folders-or-pattern-matching-filenames)
@@ -29,13 +29,17 @@ Signet makes sample library development (multi-sampling) easier and more effecti
 
 Signet is not exclusively useful for sample library development though. The editing features in particular could be useful to anyone working with large sets of audio files.
 
-I'm a full-time audio plugin and sample library developer. I created this tool to improve and speed-up my workflow. I'm happy to take bug reports and provide help. And I'm available to hire if you want custom features to speed-up your workflow too!
+This tool is currently in-development. There are no guarantees that the commands will stay the same, or that the tools will continue to function in the same way.
+
+I'm a full-time audio plugin and sample library developer. I created this tool to improve and speed-up my workflow. I'm happy to take bug reports and provide Signet-support. If you would like substantial custom features, I'm available to hire to help speed up your workflow too! Please get in touch.
 
 ## Limitations
 Currently only supports reading and writing WAV and FLAC files.
 
-## Building
-To get Signet, you currently have to build it from the source code. However, this process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.
+## How to get Signet
+There are experimental binaries available for Signet in the Releases section of the Github page. The Mac version in all likelihood will not work due to not being codesigned or notarized.
+
+Alternatively, you can build Signet from the source code. This process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.
 
 A C++17 compiler is required. The compiler must also be [compatible with the magic_enum library](https://github.com/Neargye/magic_enum#compiler-compatibility) which is used by Signet. Signet has been tested with MSVC 16.5.1, Apple Clang 11.0.0, GCC 9.3.0 and Clang 10 on Linux.
 

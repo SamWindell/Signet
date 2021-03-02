@@ -1014,6 +1014,10 @@ static void PrintFlacStatusCode(const FLAC__StreamEncoderInitStatus code) {
     }
 }
 
+static void SafeMetadataDelete(FLAC__StreamMetadata *obj) {
+    if (obj) FLAC__metadata_object_delete(obj);
+}
+
 static bool
 WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsigned bits_per_sample) {
     if (std::find(std::begin(valid_flac_bit_depths), std::end(valid_flac_bit_depths), bits_per_sample) ==
@@ -1041,7 +1045,8 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
     }
 
     // Add in our metadata to a custom FLAC block
-    FLAC__StreamMetadata signet_metadata {};
+    std::unique_ptr<FLAC__StreamMetadata, decltype(&SafeMetadataDelete)> signet_metadata {
+        nullptr, &SafeMetadataDelete};
     {
         std::stringstream ss;
         try {
@@ -1052,11 +1057,11 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
         }
         const auto str = ss.str();
         if (str.size()) {
-            signet_metadata.type = FLAC__METADATA_TYPE_APPLICATION;
-            memcpy(signet_metadata.data.application.id, flac_custom_signet_application_id, 4);
-            FLAC__metadata_object_application_set_data(&signet_metadata, (FLAC__byte *)str.data(),
+            signet_metadata.reset(FLAC__metadata_object_new(FLAC__METADATA_TYPE_APPLICATION));
+            memcpy(signet_metadata->data.application.id, flac_custom_signet_application_id, 4);
+            FLAC__metadata_object_application_set_data(signet_metadata.get(), (FLAC__byte *)str.data(),
                                                        (unsigned)str.size(), true);
-            metadata.push_back(&signet_metadata);
+            metadata.push_back(signet_metadata.get());
         }
     }
 

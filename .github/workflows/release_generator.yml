@@ -106,14 +106,15 @@ jobs:
     steps:
     - name: Get Artifacts
       uses: actions/download-artifact@v2
-      with:
-        path: ./
+
+    - name: Display structure of downloaded files
+      run: ls -la
 
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         draft: true
         files: |
-          signet_linux.zip
+          signet_linux.zip/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

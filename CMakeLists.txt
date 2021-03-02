@@ -131,6 +131,7 @@ if (MSVC)
         /wd4324
         /wd4127)
     target_compile_options(common PUBLIC /diagnostics:column /FC ${WARNINGS_TO_DISABLE} ${WARNINGS_TO_ENABLE})
+    target_compile_definitions(common PUBLIC WINVER=0x0601 _WIN32_WINNT=0x0601)
 else ()
     if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
         target_compile_options(common PUBLIC -fdiagnostics-absolute-paths)

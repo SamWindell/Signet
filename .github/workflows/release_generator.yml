@@ -7,6 +7,9 @@ on:
     tags:
       - "v*.*.*"
 
+env:
+  CMAKE_BUILD_TYPE: RelWithDebInfo
+
 jobs:
   linux:
     runs-on: ubuntu-latest
@@ -27,7 +30,7 @@ jobs:
     - name: Configure CMake Using GCC
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Debug -DDEPLOYMENT_BUILD:BOOL=YES
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DDEPLOYMENT_BUILD:BOOL=YES
       env:
         CC: gcc-9
         CXX: g++-9
@@ -35,7 +38,7 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --build . --config Debug --target signet
+      run: cmake --build . --config $CMAKE_BUILD_TYPE --target signet
     
     - name: Zip executable
       working-directory: ${{github.workspace}}/build
@@ -46,6 +49,11 @@ jobs:
       with:
         name: signet_linux.zip
         path: build/signet_linux.zip
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: RELEASE.md
+        path: ./RELEASE.md
 
   # macos:
   #   runs-on: macos-latest
@@ -114,7 +122,9 @@ jobs:
       uses: softprops/action-gh-release@v1
       with:
         draft: true
+        body_path: RELEASE.md/RELEASE.md
         files: |
+          RELEASE.md/*
           signet_linux.zip/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

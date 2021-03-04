@@ -10,6 +10,8 @@ class EmbedSamplerInfo : public Command {
     std::string GetName() const override { return "Sample Info Embedder"; }
 
   private:
+    bool m_remove_embedded_info {false};
+
     std::optional<int> m_root_number;
     std::optional<std::string> m_root_regex_pattern;
     std::optional<std::string> m_root_auto_detect_name;

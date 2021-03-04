@@ -107,6 +107,9 @@ CLI::App *EmbedSamplerInfo::CreateCommandCLI(CLI::App &app) {
                               "the root note, the velocity mapping range and the note mapping range.");
     embedder->require_subcommand();
 
+    auto remove = embedder->add_subcommand("remove", "Remove all sampler metadata from the file(s)")
+                      ->final_callback([this]() { m_remove_embedded_info = true; });
+
     auto root = embedder->add_subcommand("root", "Embed the root note of the audio file");
     root->add_option_function<std::string>(
             "Root note value",
@@ -218,6 +221,16 @@ DESCRIPTION
 }
 
 void EmbedSamplerInfo::ProcessFiles(AudioFiles &files) {
+    if (m_remove_embedded_info) {
+        MessageWithNewLine(
+            GetName(), "Remove command was specified, removing all sampler metadata from all given files");
+        for (auto &f : files) {
+            auto &metadata = f.GetWritableAudio().metadata;
+            metadata.midi_mapping = std::nullopt;
+        }
+        return;
+    }
+
     for (auto &f : files) {
         const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
         auto &metadata = f.GetWritableAudio().metadata;
@@ -504,6 +517,16 @@ TEST_CASE("EmbedSamplerInfo") {
             const MetadataItems::SamplerMapping default_sampler_mapping_vals {};
             REQUIRE(out->metadata.midi_mapping->sampler_mapping->high_velocity ==
                     default_sampler_mapping_vals.high_velocity);
+        }
+
+        SUBCASE("remove works") {
+            auto buf_with_meta = buf;
+            buf_with_meta.metadata.midi_mapping.emplace();
+            buf_with_meta.metadata.midi_mapping->root_midi_note = 60;
+            auto out =
+                TestHelpers::ProcessBufferWithCommand<EmbedSamplerInfo>("embed-sampler-info remove", buf);
+            REQUIRE(out);
+            REQUIRE(!out->metadata.midi_mapping.has_value());
         }
     }
 }

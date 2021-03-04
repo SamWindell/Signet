@@ -11,6 +11,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
     - [file-format](#file-format)
   - [detect-pitch](#detect-pitch)
   - [embed-sampler-info](#embed-sampler-info)
+    - [remove](#remove)
     - [root](#root)
     - [note-range](#note-range)
     - [velocity-range](#velocity-range)
@@ -131,6 +132,11 @@ Embeds sampler metadata into the audio file(s), such as the root note, the veloc
   `embed-sampler-info` `COMMAND`
 
 ### Commands:
+#### remove
+##### Description:
+Remove all sampler metadata from the file(s)
+
+
 #### root
 ##### Description:
 Embed the root note of the audio file

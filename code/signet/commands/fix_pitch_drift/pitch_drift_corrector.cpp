@@ -358,6 +358,46 @@ int PitchDriftCorrector::MarkTargetPitches() {
             ++num_valid_pitch_regions;
         }
     }
+
+    if (num_valid_pitch_regions) {
+        std::vector<double> target_pitches;
+        for (auto it = m_chunks.begin(); it != m_chunks.end();) {
+            if (!it->ignore_tuning) {
+                target_pitches.push_back(it->target_pitch);
+                while (it != m_chunks.end() && !it->ignore_tuning) {
+                    ++it;
+                }
+            } else {
+                ++it;
+            }
+        }
+
+        constexpr double cents_threshold = 8;
+        bool all_regions_are_same_pitch = true;
+        for (const auto &p : target_pitches) {
+            for (const auto &p2 : target_pitches) {
+                if (&p == &p2) continue;
+                if (std::abs(GetCentsDifference(p, p2)) > cents_threshold) {
+                    all_regions_are_same_pitch = false;
+                    break;
+                }
+            }
+            if (!all_regions_are_same_pitch) break;
+        }
+
+        if (all_regions_are_same_pitch) {
+            const auto mean_target_pitch =
+                std::accumulate(target_pitches.begin(), target_pitches.end(), 0.0) /
+                (double)target_pitches.size();
+
+            DebugWithNewLine("Setting whole file to the same target pitch of {}", mean_target_pitch);
+
+            for (auto &chunk : m_chunks) {
+                if (!chunk.ignore_tuning) chunk.target_pitch = mean_target_pitch;
+            }
+        }
+    }
+
     MessageWithNewLine(m_message_heading, "Found {} regions of consistent pitch", num_valid_pitch_regions);
     return num_valid_pitch_regions;
 }

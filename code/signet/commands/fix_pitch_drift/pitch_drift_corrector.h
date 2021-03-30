@@ -28,6 +28,7 @@ class PitchDriftCorrector {
   private:
     static constexpr double k_chunk_length_milliseconds = 50;
     static constexpr bool k_print_csv = false;
+    static constexpr bool k_brute_force_fix_octave_errors = false;
 
     void FixObviousDetectedPitchOutliers();
     void MarkOutlierChunks();

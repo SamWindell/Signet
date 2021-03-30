@@ -46,7 +46,13 @@ inline double InterpolateCubic(double f0, double f1, double f2, double fm1, doub
 
 PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view message_heading)
     : m_message_heading(message_heading), m_sample_rate(data.sample_rate) {
-    const auto mono_signal = data.MixDownToMono();
+
+    AudioData mono_data;
+    mono_data.num_channels = 1;
+    mono_data.sample_rate = data.sample_rate;
+    mono_data.bits_per_sample = data.bits_per_sample;
+    mono_data.interleaved_samples = data.MixDownToMono();
+    const auto &mono_signal = mono_data.interleaved_samples;
 
     const auto chunk_seconds = k_chunk_length_milliseconds / 1000.0;
     const auto chunk_frames = (usize)(chunk_seconds * data.sample_rate);
@@ -62,6 +68,24 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view
             chunk_size,
             detected_pitch,
         });
+    }
+
+    if constexpr (k_brute_force_fix_octave_errors) {
+        if (const auto whole_file_pitch = mono_data.DetectPitch(); whole_file_pitch) {
+            fmt::print("whole file pitch is {}\n", *whole_file_pitch);
+            for (auto &chunk : m_chunks) {
+                if (!chunk.detected_pitch) continue;
+                for (double ratio = 4.0; ratio >= 0.25; ratio /= 2.0) {
+                    if (ratio == 1.0) continue;
+                    if (PitchesAreRoughlyEqual(chunk.detected_pitch * ratio, *whole_file_pitch, 30)) {
+                        fmt::print("fixing octave-error by multiplying pitch {} by {}\n",
+                                   chunk.detected_pitch, ratio);
+                        chunk.detected_pitch *= ratio;
+                        break;
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -146,11 +170,14 @@ void PitchDriftCorrector::MarkOutlierChunks() {
     // outlier, and mark it as such.
 
     constexpr int cents_band_size = 8;
+    constexpr double maximum_cents_difference_between_chunks = 50;
 
     struct ChunkDiff {
         ChunkDiff(std::vector<AnalysisChunk>::const_iterator it) {
             const auto curr = it->detected_pitch;
             const auto prev = (it - 1)->detected_pitch;
+            assert(curr != 0);
+            assert(prev != 0);
             cents_diff = GetCentsDifference(prev, curr);
             nearest_band = (int)std::round(cents_diff / (double)cents_band_size) * cents_band_size;
         }
@@ -160,6 +187,7 @@ void PitchDriftCorrector::MarkOutlierChunks() {
 
     std::map<int, int> diff_band_counts;
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
+        if (it->detected_pitch == 0 || (it - 1)->detected_pitch == 0) continue;
         ++diff_band_counts[(int)ChunkDiff(it).nearest_band];
     }
 
@@ -168,6 +196,9 @@ void PitchDriftCorrector::MarkOutlierChunks() {
 
     double sum = 0.0;
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
+        if (it->detected_pitch == 0) continue;
+        if ((it + 1)->detected_pitch == 0) continue;
+
         ChunkDiff diff(it);
         if (diff.nearest_band != mode_band->first) continue;
         sum += std::abs(diff.cents_diff);
@@ -175,7 +206,8 @@ void PitchDriftCorrector::MarkOutlierChunks() {
 
     const auto mean_diff_of_mode_band = sum / (double)mode_band->second;
     constexpr double threshold_cents_multiplier = 3; // seems like a reasonable number
-    const auto threshold_cents_diff = mean_diff_of_mode_band * threshold_cents_multiplier;
+    const auto threshold_cents_diff = std::min(mean_diff_of_mode_band * threshold_cents_multiplier,
+                                               maximum_cents_difference_between_chunks);
 
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
         const auto prev = (it - 1)->detected_pitch;

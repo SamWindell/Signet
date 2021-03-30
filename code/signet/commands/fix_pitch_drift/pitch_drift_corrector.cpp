@@ -374,13 +374,16 @@ std::vector<double> PitchDriftCorrector::CalculatePitchCorrectedInterleavedSampl
         if (current_chunk_it->ignore_tuning) {
             pitch_ratio.SetValue(1.0, hard_reset);
         } else {
-            if (!current_chunk_it->is_detected_pitch_outlier || hard_reset) {
+            if (!current_chunk_it->is_detected_pitch_outlier) {
                 const auto cents_from_target =
                     GetCentsDifference(current_chunk_it->detected_pitch, current_chunk_it->target_pitch);
                 constexpr double cents_in_octave = 1200;
                 const auto new_pitch_ratio = std::exp2(cents_from_target / cents_in_octave);
                 pitch_ratio.SetValue(new_pitch_ratio, hard_reset);
             } else {
+                if (hard_reset) {
+                    pitch_ratio.SetValue(1, hard_reset);
+                }
                 // We just don't reset the pitch ratio if this chunk is an outlier in a good region; we are
                 // therefore saying that the current pitch ratio should continue as if the outlier did not
                 // exist.

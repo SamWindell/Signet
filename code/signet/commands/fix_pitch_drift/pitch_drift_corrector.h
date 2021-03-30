@@ -36,6 +36,8 @@ class PitchDriftCorrector {
     int MarkTargetPitches();
     std::vector<double> CalculatePitchCorrectedInterleavedSamples(const AudioData &data);
 
+    void PrintChunkCSV() const;
+
     std::string m_message_heading;
     std::vector<AnalysisChunk> m_chunks;
     unsigned m_sample_rate;

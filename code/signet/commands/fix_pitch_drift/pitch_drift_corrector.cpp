@@ -89,6 +89,16 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view
     }
 }
 
+void PitchDriftCorrector::PrintChunkCSV() const {
+    if constexpr (k_print_csv) {
+        fmt::print("detected-pitch,is-outlier,ignore-tuning,target-pitch,pitch-ratio\n");
+        for (const auto &c : m_chunks) {
+            fmt::print("{:7.2f},{},{},{:7.2f},{:.3f}\n", c.detected_pitch, (int)c.is_detected_pitch_outlier,
+                       (int)c.ignore_tuning, c.target_pitch, c.pitch_ratio_for_print);
+        }
+    }
+}
+
 bool PitchDriftCorrector::CanFileBePitchCorrected() const {
     if (m_chunks.size() < 3) {
         MessageWithNewLine(m_message_heading,
@@ -117,24 +127,18 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
     if (!num_good_regions) {
         WarningWithNewLine(m_message_heading,
                            "Failed to process the audio because there are no regions of consistent pitch");
+        PrintChunkCSV();
         return false;
     }
 
     auto new_interleaved_samples = CalculatePitchCorrectedInterleavedSamples(data);
-
-    if constexpr (k_print_csv) {
-        fmt::print("detected-pitch,is-outlier,ignore-tuning,target-pitch,pitch-ratio\n");
-        for (const auto &c : m_chunks) {
-            fmt::print("{:7.2f},{},{},{:7.2f},{:.3f}\n", c.detected_pitch, (int)c.is_detected_pitch_outlier,
-                       (int)c.ignore_tuning, c.target_pitch, c.pitch_ratio_for_print);
-        }
-    }
 
     const auto size_change_ratio =
         (double)new_interleaved_samples.size() / (double)data.interleaved_samples.size();
     data.interleaved_samples = std::move(new_interleaved_samples);
     data.AudioDataWasStretched(size_change_ratio);
 
+    PrintChunkCSV();
     return true;
 }
 
@@ -146,7 +150,7 @@ void PitchDriftCorrector::MarkOutlierChunks() {
     // values in the most frequent band. Finally, we use this value to determine if any cents-difference is an
     // outlier, and mark it as such.
 
-    constexpr int cents_band_size = 8;
+    constexpr int cents_band_size = 10;
     constexpr double maximum_cents_difference_between_chunks = 50;
 
     struct ChunkDiff {
@@ -176,6 +180,7 @@ void PitchDriftCorrector::MarkOutlierChunks() {
 
     const auto mode_band = std::max_element(diff_band_counts.begin(), diff_band_counts.end(),
                                             [](const auto &a, const auto &b) { return a.second < b.second; });
+    if (mode_band == diff_band_counts.end()) return;
 
     double sum = 0.0;
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
@@ -185,9 +190,11 @@ void PitchDriftCorrector::MarkOutlierChunks() {
     }
 
     const auto mean_diff_of_mode_band = sum / (double)mode_band->second;
-    constexpr double threshold_cents_multiplier = 3; // seems like a reasonable number
+    constexpr double threshold_cents_multiplier = 5; // seems like a reasonable number
     const auto threshold_cents_diff = std::min(mean_diff_of_mode_band * threshold_cents_multiplier,
                                                maximum_cents_difference_between_chunks);
+    DebugWithNewLine("outlier detection is checking if adjacent detected pitches are withing {} cents",
+                     threshold_cents_diff);
 
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
         const auto prev = (it - 1)->detected_pitch;
@@ -206,7 +213,13 @@ void PitchDriftCorrector::MarkRegionsToIgnore() {
     // region as something we should ignore. The detection of 'good' regions and 'bad' regions are determined
     // by the these 2 constexprs.
 
+    // The minimum number of chunks in a row without outliers that should be considered a region for tuning.
     constexpr std::ptrdiff_t min_consecutive_good_chunks = 7;
+
+    // The minimum size of a region to ignore. Long stretches of good audio data may contain a few outliers.
+    // Rather than stop and start the tuning for each outlier, we only stop if there is a substantial region
+    // of poor pitch data, as specified by this constant. Note this size is not the same as min number of
+    // consective outliers.
     constexpr std::ptrdiff_t min_ignore_region_size = 4;
 
     const auto NextInvalidAnalysisChunk = [&](std::vector<AnalysisChunk>::const_iterator start) {

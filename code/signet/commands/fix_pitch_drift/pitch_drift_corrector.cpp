@@ -173,22 +173,28 @@ void PitchDriftCorrector::MarkOutlierChunks() {
     constexpr double maximum_cents_difference_between_chunks = 50;
 
     struct ChunkDiff {
-        ChunkDiff(std::vector<AnalysisChunk>::const_iterator it) {
-            const auto curr = it->detected_pitch;
-            const auto prev = (it - 1)->detected_pitch;
-            assert(curr != 0);
-            assert(prev != 0);
-            cents_diff = GetCentsDifference(prev, curr);
-            nearest_band = (int)std::round(cents_diff / (double)cents_band_size) * cents_band_size;
-        }
         double cents_diff;
         int nearest_band;
     };
 
+    const auto CreateChunkDiff =
+        [&](std::vector<AnalysisChunk>::const_iterator it) -> std::optional<ChunkDiff> {
+        const auto curr = it->detected_pitch;
+        const auto prev = (it - 1)->detected_pitch;
+        if (curr == 0 || prev == 0) return {};
+        assert(curr != 0);
+        assert(prev != 0);
+        ChunkDiff result;
+        result.cents_diff = GetCentsDifference(prev, curr);
+        result.nearest_band = (int)std::round(result.cents_diff / (double)cents_band_size) * cents_band_size;
+        return result;
+    };
+
     std::map<int, int> diff_band_counts;
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
-        if (it->detected_pitch == 0 || (it - 1)->detected_pitch == 0) continue;
-        ++diff_band_counts[(int)ChunkDiff(it).nearest_band];
+        if (const auto diff = CreateChunkDiff(it); diff) {
+            ++diff_band_counts[diff->nearest_band];
+        }
     }
 
     const auto mode_band = std::max_element(diff_band_counts.begin(), diff_band_counts.end(),
@@ -196,12 +202,9 @@ void PitchDriftCorrector::MarkOutlierChunks() {
 
     double sum = 0.0;
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
-        if (it->detected_pitch == 0) continue;
-        if ((it + 1)->detected_pitch == 0) continue;
-
-        ChunkDiff diff(it);
-        if (diff.nearest_band != mode_band->first) continue;
-        sum += std::abs(diff.cents_diff);
+        if (const auto diff = CreateChunkDiff(it); diff && diff->nearest_band == mode_band->first) {
+            sum += std::abs(diff->cents_diff);
+        }
     }
 
     const auto mean_diff_of_mode_band = sum / (double)mode_band->second;
@@ -294,7 +297,7 @@ double PitchDriftCorrector::FindTargetPitchForChunkRegion(tcb::span<const Analys
         ++pitch_band_counts[CalcCentsBand(c.detected_pitch)];
     }
 
-    if (!pitch_band_counts.size()) return 1;
+    if (!pitch_band_counts.size()) return 0;
 
     const auto mode_band = std::max_element(pitch_band_counts.begin(), pitch_band_counts.end(),
                                             [](const auto &a, const auto &b) { return a.second < b.second; });
@@ -340,6 +343,7 @@ int PitchDriftCorrector::MarkTargetPitches() {
             auto region_end = it;
             const auto region_size_in_chunks = (size_t)std::distance(region_start, region_end);
             const auto target_pitch = FindTargetPitchForChunkRegion({&*region_start, region_size_in_chunks});
+            assert(target_pitch != 0);
 
             for (auto sub_it = region_start; sub_it != region_end; ++sub_it) {
                 sub_it->target_pitch = target_pitch;

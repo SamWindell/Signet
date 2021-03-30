@@ -13,7 +13,7 @@
 CLI::App *FixPitchDriftCommand::CreateCommandCLI(CLI::App &app) {
     auto auto_tune = app.add_subcommand(
         "fix-pitch-drift",
-        "Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for recordings of single-note instruments that subtly drift out of pitch. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that.");
+        "Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for samples of single-note instruments that subtly drift out of pitch, such as a human voice or a wind instrument. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that. As well as this, fix-pitch-drift is a bit more specialised and does not always work as ubiquitously as Signet's other auto-tune command.");
     return auto_tune;
 }
 

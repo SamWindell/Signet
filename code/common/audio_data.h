@@ -43,6 +43,7 @@ struct AudioData {
     void Resample(double new_sample_rate);
     void ChangePitch(double cents);
     std::optional<double> DetectPitch() const;
+    bool IsSilent() const;
 
     std::vector<double> MixDownToMono() const;
 

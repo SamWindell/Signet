@@ -212,6 +212,13 @@ std::optional<double> AudioData::DetectPitch() const {
     return GetFreqWithCentDifference(*most_suitable->detected_pitch, -most_suitable->cents);
 }
 
+bool AudioData::IsSilent() const {
+    for (const auto v : interleaved_samples) {
+        if (v != 0.0) return false;
+    }
+    return true;
+}
+
 //
 
 void AudioData::FramesWereRemovedFromStart(size_t num_frames) {

@@ -111,7 +111,6 @@ bool PitchDriftCorrector::CanFileBePitchCorrected() const {
 }
 
 bool PitchDriftCorrector::ProcessFile(AudioData &data) {
-    FixObviousDetectedPitchOutliers();
     MarkOutlierChunks();
     MarkRegionsToIgnore();
     const auto num_good_regions = MarkTargetPitches();
@@ -137,28 +136,6 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
     data.AudioDataWasStretched(size_change_ratio);
 
     return true;
-}
-
-void PitchDriftCorrector::FixObviousDetectedPitchOutliers() {
-    // Do a super simple pass where we replace the detected pitch of chunks that were obvious very difference
-    // from its previous 2 chunks.
-
-    assert(m_chunks.size() > 2);
-    for (usize i = 2; i < m_chunks.size(); ++i) {
-        auto &chunk = m_chunks[i];
-        const auto &prev = m_chunks[i - 1];
-        constexpr double deviation_threshold = 1.006;
-        const auto deviation = (chunk.detected_pitch == 0)
-                                   ? DBL_MAX
-                                   : (std::max(chunk.detected_pitch, prev.detected_pitch) /
-                                      std::min(chunk.detected_pitch, prev.detected_pitch));
-        if (deviation > deviation_threshold) {
-            constexpr double epsilon_cents = 3;
-            if (PitchesAreRoughlyEqual(prev.detected_pitch, m_chunks[i - 2].detected_pitch, epsilon_cents)) {
-                chunk.detected_pitch = prev.detected_pitch;
-            }
-        }
-    }
 }
 
 void PitchDriftCorrector::MarkOutlierChunks() {

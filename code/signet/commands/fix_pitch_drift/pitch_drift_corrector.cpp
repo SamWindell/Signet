@@ -360,6 +360,7 @@ int PitchDriftCorrector::MarkTargetPitches() {
     }
 
     if (num_valid_pitch_regions) {
+        // if all of the regions have roughly the same pitch, set the target to be the same
         std::vector<double> target_pitches;
         for (auto it = m_chunks.begin(); it != m_chunks.end();) {
             if (!it->ignore_tuning) {
@@ -372,7 +373,7 @@ int PitchDriftCorrector::MarkTargetPitches() {
             }
         }
 
-        constexpr double cents_threshold = 8;
+        constexpr double cents_threshold = 30;
         bool all_regions_are_same_pitch = true;
         for (const auto &p : target_pitches) {
             for (const auto &p2 : target_pitches) {

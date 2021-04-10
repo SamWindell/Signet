@@ -95,7 +95,10 @@ FILE *OpenFileRaw(const fs::path &path, const char *mode, std::error_code *ec_ou
 
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode) {
     static const auto SafeFClose = [](FILE *f) {
-        if (f) fclose(f);
+        if (f) {
+            const auto result = fclose(f);
+            assert(result == 0);
+        }
     };
 
     std::error_code ec {};

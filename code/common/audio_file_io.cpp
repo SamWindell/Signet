@@ -77,12 +77,12 @@ std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
     os << "  midiPitchFraction: " << s.midiPitchFraction << "\n";
     os << "  smpteFormat: " << s.smpteFormat << "\n";
     os << "  smpteOffset: " << s.smpteOffset << "\n";
-    os << "  numSampleLoops: " << s.numSampleLoops << "\n";
-    os << "  numBytesOfSamplerSpecificData: " << s.numBytesOfSamplerSpecificData << "\n";
+    os << "  sampleLoopCount: " << s.sampleLoopCount << "\n";
+    os << "  numBytesOfSamplerSpecificData: " << s.samplerSpecificDataSizeInBytes << "\n";
 
     os << "  loops: [\n";
-    for (u32 i = 0; i < s.numSampleLoops; ++i) {
-        auto &smpl_loop = s.loops[i];
+    for (u32 i = 0; i < s.sampleLoopCount; ++i) {
+        auto &smpl_loop = s.pLoops[i];
 
         os << "    {\n";
         os << "      cuePointId: " << smpl_loop.cuePointId << "\n";
@@ -100,11 +100,11 @@ std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
 
 std::ostream &operator<<(std::ostream &os, const drwav_cue &c) {
     os << "{\n";
-    os << "  numCuePoints: " << c.numCuePoints << "\n";
+    os << "  cuePointCount: " << c.cuePointCount << "\n";
 
     os << "  cuePoints: [\n";
-    for (u32 i = 0; i < c.numCuePoints; ++i) {
-        auto &cue = c.cuePoints[i];
+    for (u32 i = 0; i < c.cuePointCount; ++i) {
+        auto &cue = c.pCuePoints[i];
         os << "    {\n";
         os << "      id: " << cue.id << "\n";
         os << "      position: " << cue.playOrderPosition << "\n";
@@ -150,8 +150,8 @@ std::ostream &operator<<(std::ostream &os, const drwav_acid &a) {
 std::ostream &operator<<(std::ostream &os, const drwav_list_label_or_note &l) {
     os << "{\n";
     os << "  cuePointId: " << l.cuePointId << "\n";
-    os << "  stringSize: " << l.stringSize << "\n";
-    os << "  string: " << l.string << "\n";
+    os << "  stringSize: " << l.stringLength << "\n";
+    os << "  string: " << l.pString << "\n";
     os << "}\n";
     return os;
 }
@@ -166,9 +166,9 @@ std::ostream &operator<<(std::ostream &os, const drwav_list_labelled_cue_region 
     os << "  language: " << l.language << "\n";
     os << "  dialect: " << l.dialect << "\n";
     os << "  codePage: " << l.codePage << "\n";
-    os << "  stringSize: " << l.stringSize << "\n";
+    os << "  stringLength: " << l.stringLength << "\n";
     os << "  string: ";
-    if (l.string) os << l.string;
+    if (l.pString) os << l.pString;
     os << "\n";
     os << "}\n";
     return os;
@@ -176,8 +176,8 @@ std::ostream &operator<<(std::ostream &os, const drwav_list_labelled_cue_region 
 
 std::ostream &operator<<(std::ostream &os, const drwav_list_info_text &l) {
     os << "{\n";
-    os << "  stringSize: " << l.stringSize << "\n";
-    os << "  string: " << l.string << "\n";
+    os << "  stringSize: " << l.stringLength << "\n";
+    os << "  string: " << l.pString << "\n";
     os << "}\n";
     return os;
 }
@@ -199,11 +199,11 @@ std::ostream &operator<<(std::ostream &os, const drwav_unknown_metadata &u) {
 
 std::ostream &operator<<(std::ostream &os, const drwav_bext &b) {
     os << "{\n";
-    os << "  description: " << ((b.description) ? b.description : "") << "\n";
-    os << "  originatorName: " << ((b.originatorName) ? b.originatorName : "") << "\n";
-    os << "  originatorReference: " << ((b.originatorReference) ? b.originatorReference : "") << "\n";
-    os << "  originationDate: " << std::string_view(b.originationDate, sizeof(b.originationDate)) << "\n";
-    os << "  originationTime: " << std::string_view(b.originationTime, sizeof(b.originationTime)) << "\n";
+    os << "  description: " << ((b.pDescription) ? b.pDescription : "") << "\n";
+    os << "  originatorName: " << ((b.pOriginatorName) ? b.pOriginatorName : "") << "\n";
+    os << "  originatorReference: " << ((b.pOriginatorReference) ? b.pOriginatorReference : "") << "\n";
+    os << "  originationDate: " << std::string_view(b.pOriginationDate, sizeof(b.pOriginationDate)) << "\n";
+    os << "  originationTime: " << std::string_view(b.pOriginationTime, sizeof(b.pOriginationTime)) << "\n";
     os << "  timeReference: " << b.timeReference << "\n";
     os << "  version: " << b.version << "\n";
     os << "  loudnessValue: " << b.loudnessValue << "\n";
@@ -212,8 +212,8 @@ std::ostream &operator<<(std::ostream &os, const drwav_bext &b) {
     os << "  maxMomentaryLoudness: " << b.maxMomentaryLoudness << "\n";
     os << "  maxShortTermLoudness: " << b.maxShortTermLoudness << "\n";
     os << "  codingHistory: ";
-    if (b.codingHistory) {
-        os << b.codingHistory;
+    if (b.pCodingHistory) {
+        os << b.pCodingHistory;
     }
     os << "\n";
     os << "}\n";
@@ -240,8 +240,8 @@ class WaveMetadataToNonSpecificMetadata {
             switch (m.type) {
                 case drwav_metadata_type_smpl: {
                     std::vector<MetadataItems::Loop> loops;
-                    for (u32 i = 0; i < m.data.smpl.numSampleLoops; ++i) {
-                        loops.push_back(CreateSampleLoop(m.data.smpl.loops[i]));
+                    for (u32 i = 0; i < m.data.smpl.sampleLoopCount; ++i) {
+                        loops.push_back(CreateSampleLoop(m.data.smpl.pLoops[i]));
                     }
                     result.loops = loops;
                     break;
@@ -261,8 +261,8 @@ class WaveMetadataToNonSpecificMetadata {
                 }
                 case drwav_metadata_type_cue: {
                     std::vector<MetadataItems::Marker> markers;
-                    for (u32 i = 0; i < m.data.cue.numCuePoints; ++i) {
-                        markers.push_back(CreateMarker(m.data.cue.cuePoints[i]));
+                    for (u32 i = 0; i < m.data.cue.cuePointCount; ++i) {
+                        markers.push_back(CreateMarker(m.data.cue.pCuePoints[i]));
                     }
                     result.markers = markers;
                     break;
@@ -295,8 +295,8 @@ class WaveMetadataToNonSpecificMetadata {
 
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_list_label) {
-                if (m.data.labelOrNote.cuePointId == loop.cuePointId && m.data.labelOrNote.stringSize) {
-                    result.name = std::string(m.data.labelOrNote.string);
+                if (m.data.labelOrNote.cuePointId == loop.cuePointId && m.data.labelOrNote.stringLength) {
+                    result.name = std::string(m.data.labelOrNote.pString);
                 }
             }
         }
@@ -324,14 +324,14 @@ class WaveMetadataToNonSpecificMetadata {
 
     MetadataItems::Region CreateRegion(const drwav_list_labelled_cue_region &region) const {
         MetadataItems::Region result {};
-        if (region.stringSize) result.name = std::string(region.string);
+        if (region.stringLength) result.name = std::string(region.pString);
 
         bool found_cue = false;
 
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_cue) {
-                for (u32 i = 0; i < m.data.cue.numCuePoints; ++i) {
-                    const auto &cue_point = m.data.cue.cuePoints[i];
+                for (u32 i = 0; i < m.data.cue.cuePointCount; ++i) {
+                    const auto &cue_point = m.data.cue.pCuePoints[i];
                     if (cue_point.id == region.cuePointId) {
                         result.start_frame =
                             cue_point.sampleByteOffset / (m_audio.bits_per_sample / 8) / m_audio.num_channels;
@@ -340,8 +340,8 @@ class WaveMetadataToNonSpecificMetadata {
                     }
                 }
             } else if (m.type == drwav_metadata_type_list_label) {
-                if (m.data.labelOrNote.cuePointId == region.cuePointId && m.data.labelOrNote.stringSize) {
-                    result.initial_marker_name = std::string(m.data.labelOrNote.string);
+                if (m.data.labelOrNote.cuePointId == region.cuePointId && m.data.labelOrNote.stringLength) {
+                    result.initial_marker_name = std::string(m.data.labelOrNote.pString);
                 }
             }
         }
@@ -361,8 +361,8 @@ class WaveMetadataToNonSpecificMetadata {
         MetadataItems::Marker result {};
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_list_label) {
-                if (m.data.labelOrNote.cuePointId == cue_point.id && m.data.labelOrNote.stringSize) {
-                    result.name = std::string(m.data.labelOrNote.string);
+                if (m.data.labelOrNote.cuePointId == cue_point.id && m.data.labelOrNote.stringLength) {
+                    result.name = std::string(m.data.labelOrNote.pString);
                     break;
                 }
             }
@@ -478,8 +478,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         std::vector<float> f32_buf {};
         drwav wav;
 
-        if (!drwav_init_ex_with_metadata(&wav, OnReadFile, OnSeekFile, nullptr, file.get(), nullptr, 0,
-                                         nullptr, (u64)drwav_metadata_type_all)) {
+        if (!drwav_init_with_metadata(&wav, OnReadFile, OnSeekFile, file.get(), 0, nullptr)) {
             WarningWithNewLine("Wav", "could not init the WAV file {}", path);
             return {};
         }
@@ -488,8 +487,8 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         result.bits_per_sample = wav.bitsPerSample;
         result.interleaved_samples.resize(wav.totalPCMFrameCount * wav.channels);
 
-        if (wav.numMetadata) {
-            const auto num_metadata = wav.numMetadata; // drwav_take_ownership_of_metadata clears it
+        if (wav.metadataCount) {
+            const auto num_metadata = wav.metadataCount; // drwav_take_ownership_of_metadata clears it
             result.wave_metadata.Assign(drwav_take_ownership_of_metadata(&wav), num_metadata);
             // DebugPrintAllMetadata(result.wave_metadata);
             WaveMetadataToNonSpecificMetadata converter(result.wave_metadata, result);
@@ -696,13 +695,13 @@ class NonSpecificMetadataToWaveMetadata {
 
     void CopyInfoTextsFromOriginalWaveData() {
         for (const auto &m : m_audio_data.wave_metadata.Items()) {
-            if (m.type & drwav_metadata_type_list_all_info_strings && m.data.infoText.stringSize) {
+            if (m.type & drwav_metadata_type_list_all_info_strings && m.data.infoText.stringLength) {
                 drwav_metadata item {};
                 item.type = m.type;
-                item.data.infoText.stringSize = m.data.infoText.stringSize;
-                if (m.data.infoText.stringSize) {
-                    item.data.infoText.string =
-                        AllocateAndCopyString(m.data.infoText.string, m.data.infoText.stringSize);
+                item.data.infoText.stringLength = m.data.infoText.stringLength;
+                if (m.data.infoText.stringLength) {
+                    item.data.infoText.pString =
+                        AllocateAndCopyString(m.data.infoText.pString, m.data.infoText.stringLength);
                 }
                 m_wave_metadata.push_back(item);
             }
@@ -718,8 +717,8 @@ class NonSpecificMetadataToWaveMetadata {
             drwav_metadata item {};
             item.type = drwav_metadata_type_cue;
 
-            item.data.cue.numCuePoints = (u32)m_cue_points_buffer.size();
-            item.data.cue.cuePoints = AllocateObjects<drwav_cue_point>(m_cue_points_buffer.size());
+            item.data.cue.cuePointCount = (u32)m_cue_points_buffer.size();
+            item.data.cue.pCuePoints = AllocateObjects<drwav_cue_point>(m_cue_points_buffer.size());
 
             size_t index = 0;
             for (const auto &cue : m_cue_points_buffer) {
@@ -730,7 +729,7 @@ class NonSpecificMetadataToWaveMetadata {
                 p.dataChunkId[2] = 't';
                 p.dataChunkId[3] = 'a';
                 p.sampleByteOffset = FramePosToSampleBytes(cue.frame_position);
-                item.data.cue.cuePoints[index++] = p;
+                item.data.cue.pCuePoints[index++] = p;
             }
 
             m_wave_metadata.push_back(item);
@@ -741,9 +740,9 @@ class NonSpecificMetadataToWaveMetadata {
                 drwav_metadata item {};
                 item.type = drwav_metadata_type_list_label;
                 item.data.labelOrNote.cuePointId = c.id;
-                item.data.labelOrNote.string = AllocateObjects<char>(c.name->size());
-                memcpy(item.data.labelOrNote.string, c.name->data(), c.name->size());
-                item.data.labelOrNote.stringSize = (u32)c.name->size();
+                item.data.labelOrNote.pString = AllocateObjects<char>(c.name->size());
+                memcpy(item.data.labelOrNote.pString, c.name->data(), c.name->size());
+                item.data.labelOrNote.stringLength = (u32)c.name->size();
 
                 m_wave_metadata.push_back(item);
             }
@@ -808,12 +807,12 @@ class NonSpecificMetadataToWaveMetadata {
         }
 
         // if it exists, this data is opaque to us, so it's safer to just clear it
-        item.data.smpl.numBytesOfSamplerSpecificData = 0;
-        item.data.smpl.samplerSpecificData = nullptr;
+        item.data.smpl.samplerSpecificDataSizeInBytes = 0;
+        item.data.smpl.pSamplerSpecificData = nullptr;
 
-        item.data.smpl.numSampleLoops = (u32)loops.size();
-        if (item.data.smpl.numSampleLoops) {
-            item.data.smpl.loops = AllocateObjects<drwav_smpl_loop>(loops.size());
+        item.data.smpl.sampleLoopCount = (u32)loops.size();
+        if (item.data.smpl.sampleLoopCount) {
+            item.data.smpl.pLoops = AllocateObjects<drwav_smpl_loop>(loops.size());
             size_t smpl_loops_index = 0;
             for (const auto &loop : loops) {
                 drwav_smpl_loop smpl_loop {};
@@ -839,7 +838,7 @@ class NonSpecificMetadataToWaveMetadata {
                     0; // Note: we are discarding this value even if we have unchaged the loop
                 smpl_loop.playCount = loop.num_times_to_loop;
 
-                item.data.smpl.loops[smpl_loops_index++] = smpl_loop;
+                item.data.smpl.pLoops[smpl_loops_index++] = smpl_loop;
             }
         }
 
@@ -862,8 +861,8 @@ class NonSpecificMetadataToWaveMetadata {
             item.data.labelledCueRegion.purposeId[3] = 't';
 
             if (r.name) {
-                item.data.labelledCueRegion.stringSize = (u32)(r.name->size());
-                item.data.labelledCueRegion.string = AllocateAndCopyString(r.name->data(), r.name->size());
+                item.data.labelledCueRegion.stringLength = (u32)(r.name->size());
+                item.data.labelledCueRegion.pString = AllocateAndCopyString(r.name->data(), r.name->size());
             }
 
             m_wave_metadata.push_back(item);

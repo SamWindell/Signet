@@ -1,5 +1,3 @@
-# v0.1.1
-
 Changes:
 - Improved the quality of the fix-pitch-drift command
 - Added a command to embed-sample-info to remove metadata

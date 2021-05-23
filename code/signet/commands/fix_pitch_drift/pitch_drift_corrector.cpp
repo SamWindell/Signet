@@ -196,6 +196,10 @@ void PitchDriftCorrector::MarkOutlierChunks() {
     DebugWithNewLine("outlier detection is checking if adjacent detected pitches are withing {} cents",
                      threshold_cents_diff);
 
+    if (m_chunks.front().detected_pitch == 0) {
+        m_chunks.front().is_detected_pitch_outlier = true;
+    }
+
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
         const auto prev = (it - 1)->detected_pitch;
         if (!PitchesAreRoughlyEqual(prev, it->detected_pitch, threshold_cents_diff) ||

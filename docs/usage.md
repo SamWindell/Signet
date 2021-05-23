@@ -505,7 +505,7 @@ The name of the output file (excluding extension). This should contain substitut
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
 
 ### Usage:
-  `sample-blend` `root_note_regex semitone-interval out-filename`
+  `sample-blend` `[OPTIONS]` `root_note_regex semitone-interval out-filename`
 
 ### Arguments:
 `root_note_regex TEXT REQUIRED`
@@ -516,6 +516,11 @@ The semitone interval at which to generate new samples by
 
 `out-filename TEXT REQUIRED`
 The filename of the generated files (excluding extension). It should contain either the substitution variable `<root-num>` or `<root-note>` which will be replaced by the root note of the generated file. `<root-num>` is replaced by the MIDI note number, and `<root-name>` is replaced by the note name, such as C3.
+
+
+### Options:
+`--make-same-length`
+For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.
 
 
 ## seamless-loop

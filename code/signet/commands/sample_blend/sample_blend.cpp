@@ -39,6 +39,10 @@ CLI::App *SampleBlendCommand::CreateCommandCLI(CLI::App &app) {
             return "";
         });
 
+    cli->add_flag(
+        "--make-same-length", m_make_same_length,
+        "For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.");
+
     return cli;
 }
 
@@ -71,6 +75,11 @@ void SampleBlendCommand::GenerateSamplesByBlending(SignetBackup &backup,
         const auto pitch_change2 = (root_note - f2.root_note) * cents_in_semitone;
         other.ChangePitch(pitch_change2);
         other.MultiplyByScalar(distance_from_f2);
+
+        if (m_make_same_length) {
+            out.interleaved_samples.resize(
+                std::min(out.interleaved_samples.size(), other.interleaved_samples.size()));
+        }
 
         out.AddOther(other);
 

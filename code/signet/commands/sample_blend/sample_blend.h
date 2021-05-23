@@ -22,7 +22,8 @@ class SampleBlendCommand : public Command {
 
     void GenerateSamplesByBlending(SignetBackup &backup, BaseBlendFile &f1, BaseBlendFile &f2);
 
-    std::string m_regex;
-    int m_semitone_interval;
-    std::string m_out_filename;
+    bool m_make_same_length {false};
+    std::string m_regex {};
+    int m_semitone_interval {};
+    std::string m_out_filename {};
 };

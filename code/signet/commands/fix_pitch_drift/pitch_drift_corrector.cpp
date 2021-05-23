@@ -44,8 +44,14 @@ inline double InterpolateCubic(double f0, double f1, double f2, double fm1, doub
                      t / 6.0);
 }
 
-PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view message_heading)
-    : m_message_heading(message_heading), m_sample_rate(data.sample_rate) {
+PitchDriftCorrector::PitchDriftCorrector(const AudioData &data,
+                                         std::string_view message_heading,
+                                         double chunk_length_milliseconds,
+                                         bool print_csv)
+    : m_message_heading(message_heading)
+    , m_sample_rate(data.sample_rate)
+    , m_chunk_length_milliseconds(chunk_length_milliseconds)
+    , m_print_csv(print_csv) {
 
     AudioData mono_data;
     mono_data.num_channels = 1;
@@ -54,7 +60,7 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view
     mono_data.interleaved_samples = data.MixDownToMono();
     const auto &mono_signal = mono_data.interleaved_samples;
 
-    const auto chunk_seconds = k_chunk_length_milliseconds / 1000.0;
+    const auto chunk_seconds = m_chunk_length_milliseconds / 1000.0;
     const auto chunk_frames = (usize)(chunk_seconds * data.sample_rate);
     for (usize frame = 0; frame < mono_signal.size(); frame += chunk_frames) {
         const auto chunk_size = (int)std::min(chunk_frames, mono_signal.size() - frame);
@@ -90,7 +96,7 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view
 }
 
 void PitchDriftCorrector::PrintChunkCSV() const {
-    if constexpr (k_print_csv) {
+    if (m_print_csv) {
         fmt::print("detected-pitch,is-outlier,ignore-tuning,target-pitch,pitch-ratio\n");
         for (const auto &c : m_chunks) {
             fmt::print("{:7.2f},{},{},{:7.2f},{:.3f}\n", c.detected_pitch, (int)c.is_detected_pitch_outlier,
@@ -103,7 +109,7 @@ bool PitchDriftCorrector::CanFileBePitchCorrected() const {
     if (m_chunks.size() < 3) {
         MessageWithNewLine(m_message_heading,
                            "The audio is too short to process - it needs to be at least {} milliseconds long",
-                           3 * k_chunk_length_milliseconds);
+                           3 * m_chunk_length_milliseconds);
         return false;
     }
 
@@ -224,7 +230,7 @@ void PitchDriftCorrector::MarkRegionsToIgnore() {
     // Rather than stop and start the tuning for each outlier, we only stop if there is a substantial region
     // of poor pitch data, as specified by this constant. Note this size is not the same as min number of
     // consective outliers.
-    constexpr std::ptrdiff_t min_ignore_region_size = 4;
+    constexpr std::ptrdiff_t min_ignore_region_size = 3;
 
     const auto NextInvalidAnalysisChunk = [&](std::vector<AnalysisChunk>::const_iterator start) {
         return std::find_if(start, m_chunks.cend(),

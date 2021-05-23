@@ -415,10 +415,29 @@ std::vector<double> PitchDriftCorrector::CalculatePitchCorrectedInterleavedSampl
     const double smoothing_filter_cutoff = 0.00007 / ((double)data.sample_rate / 48000.0); // very smooth
 
     auto current_chunk_it = m_chunks.begin();
+
+    double fallback_pitch_ratio = 1.0;
+    if (current_chunk_it->ignore_tuning) {
+        // Rather than assume that the start of a file is the correct pitch, we instead assume that it is the
+        // pitch of the first valid chunk.
+        auto first_valid_chunk = current_chunk_it;
+        while (first_valid_chunk->ignore_tuning) {
+            ++first_valid_chunk;
+        }
+        if (first_valid_chunk != m_chunks.end()) {
+            const auto cents_from_target =
+                GetCentsDifference(first_valid_chunk->detected_pitch, first_valid_chunk->target_pitch);
+            constexpr double cents_in_octave = 1200;
+            const auto new_pitch_ratio = std::exp2(cents_from_target / cents_in_octave);
+            fallback_pitch_ratio = new_pitch_ratio;
+        }
+    }
+
     const auto UpdatePitchRatio = [&](bool hard_reset) {
         if (current_chunk_it->ignore_tuning) {
-            pitch_ratio.SetValue(1.0, hard_reset);
+            pitch_ratio.SetValue(fallback_pitch_ratio, hard_reset);
         } else {
+            fallback_pitch_ratio = 1.0;
             if (!current_chunk_it->is_detected_pitch_outlier) {
                 const auto cents_from_target =
                     GetCentsDifference(current_chunk_it->detected_pitch, current_chunk_it->target_pitch);

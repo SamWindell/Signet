@@ -76,7 +76,41 @@ When the input is a directory, scan for files in it recursively
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command (i.e. sped up or slowed down). This command works surprising well for almost any type of sample - transparently shifting it by the smallest amount possible to be more musically in-tune.
 
 ### Usage:
-  `auto-tune`
+  `auto-tune` `[OPTIONS]`
+
+### Options:
+`--sample-sets TEXT x 2`
+Rather than auto-tune each file individually, identify sets of files and tune them all in an identical manner based on a single authority file in that set. 
+    
+For example, you might have a set of samples recorded with different microphones; you can use this tool to tune all samples that are the same (except the mic) based on the close mic.
+    
+To allow for batch processing (as is the goal of Signet), this command requires a little explanation.
+
+This option requires 2 arguments. 
+
+The first is a regex pattern that will be used to identify sample sets from the names of the files (not including folders or extension). This must capture a single regex group. The bit that you capture is the differentiator for the set of samples. 
+
+For example, take a folder of files like this:
+sample-C2-close.flac
+sample-C2-room.flac
+sample-C2-ambient.flac
+sample-D2-close.flac
+sample-D2-room.flac
+sample-D2-ambient.flac
+
+Close, room and ambient are names of commonly used mic positions. They are recordings of the same thing; in a sampler we would want them to all be tuned identically.
+
+The differentiator (first arg) should be ".\*(close|room|ambient).\*". 
+
+This is because "close|room|ambient" is the ONLY bit that changes within the sets of samples. This option does not work if samples in a set have multiple parts that are different.
+
+The second argument required for this command is used to determine what should be the authority for the auto-tune. This is a string that should match against whatever we have captured in the first argument. In this example case, it would be the word "close", because we want the close mics to be the authority.
+
+Putting it all together, here's what the full command would look like for our example:
+signet sample-\* auto-tune --sample-sets ".\*(close|room|ambient).\*" "close"
+
+The entire folder of different mic positions can be processed in a single command.
+
 
 ## convert
 ### Description:

@@ -26,6 +26,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [make-docs](#make-docs)
   - [move](#move)
   - [norm](#norm)
+  - [pan](#pan)
   - [print-info](#print-info)
   - [remove-silence](#remove-silence)
   - [rename](#rename)
@@ -107,6 +108,7 @@ This is because "close|room|ambient" is the ONLY bit that changes within the set
 The second argument required for this command is used to determine what should be the authority for the auto-tune. This is a string that should match against whatever we have captured in the first argument. In this example case, it would be the word "close", because we want the close mics to be the authority.
 
 Putting it all together, here's what the full command would look like for our example:
+
 signet sample-\* auto-tune --sample-sets ".\*(close|room|ambient).\*" "close"
 
 The entire folder of different mic positions can be processed in a single command.
@@ -399,6 +401,18 @@ Use RMS (root mean squared) calculations to work out the required gain amount.
 
 `--mix FLOAT:INT in [0 - 100]`
 The mix of the normalised signal, where 100% means normalised exactly to the target, and 0% means no change.
+
+
+## pan
+### Description:
+Changes the pan of stereo files(s).
+
+### Usage:
+  `pan` `pan-amount`
+
+### Arguments:
+`pan-amount TEXT REQUIRED`
+The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
 
 ## print-info

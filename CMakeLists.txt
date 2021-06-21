@@ -75,6 +75,7 @@ add_library(
     code/signet/commands/gain/gain.cpp
     code/signet/commands/move/move.cpp
     code/signet/commands/normalise/normalise.cpp
+    code/signet/commands/pan/pan.cpp
     code/signet/commands/print_info/print_info.cpp
     code/signet/commands/fix_pitch_drift/fix_pitch_drift_command.cpp
     code/signet/commands/fix_pitch_drift/pitch_drift_corrector.cpp

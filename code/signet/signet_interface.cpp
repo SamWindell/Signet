@@ -17,6 +17,7 @@
 #include "commands/gain/gain.h"
 #include "commands/move/move.h"
 #include "commands/normalise/normalise.h"
+#include "commands/pan/pan.h"
 #include "commands/print_info/print_info.h"
 #include "commands/remove_silence/remove_silence.h"
 #include "commands/rename/rename.h"
@@ -38,6 +39,7 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<GainCommand>());
     m_commands.push_back(std::make_unique<HighpassCommand>());
     m_commands.push_back(std::make_unique<LowpassCommand>());
+    m_commands.push_back(std::make_unique<PanCommand>());
     m_commands.push_back(std::make_unique<PrintInfoCommand>());
     m_commands.push_back(std::make_unique<MoveCommand>());
     m_commands.push_back(std::make_unique<NormaliseCommand>());

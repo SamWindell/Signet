@@ -65,6 +65,7 @@ void GainCommand::ProcessFiles(AudioFiles &files) {
 
 TEST_CASE("GainCommand") {
     const auto buf = TestHelpers::CreateSquareWaveAtFrequency(1, 44100, 0.2, 440);
+    REQUIRE(buf.interleaved_samples[0] == 1);
 
     SUBCASE("requires db arg") {
         REQUIRE_THROWS(TestHelpers::ProcessBufferWithCommand<GainCommand>("gain", buf));
@@ -73,28 +74,24 @@ TEST_CASE("GainCommand") {
     SUBCASE("-6db roughly halves") {
         const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain -6db", buf);
         REQUIRE(out);
-        REQUIRE(buf.interleaved_samples[0] == -1);
-        REQUIRE(out->interleaved_samples[0] == doctest::Approx(-0.5).epsilon(0.01));
+        REQUIRE(out->interleaved_samples[0] == doctest::Approx(0.5).epsilon(0.01));
     }
 
     SUBCASE("+6db roughly doubles") {
         const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain 6db", buf);
         REQUIRE(out);
-        REQUIRE(buf.interleaved_samples[0] == -1);
-        REQUIRE(out->interleaved_samples[0] == doctest::Approx(-2).epsilon(0.01));
+        REQUIRE(out->interleaved_samples[0] == doctest::Approx(2).epsilon(0.01));
     }
 
     SUBCASE("50% roughly halves") {
         const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain 50%", buf);
         REQUIRE(out);
-        REQUIRE(buf.interleaved_samples[0] == -1);
-        REQUIRE(out->interleaved_samples[0] == doctest::Approx(-0.5).epsilon(0.01));
+        REQUIRE(out->interleaved_samples[0] == doctest::Approx(0.5).epsilon(0.01));
     }
 
     SUBCASE("200% roughly doubles") {
         const auto out = TestHelpers::ProcessBufferWithCommand<GainCommand>("gain 200%", buf);
         REQUIRE(out);
-        REQUIRE(buf.interleaved_samples[0] == -1);
-        REQUIRE(out->interleaved_samples[0] == doctest::Approx(-2).epsilon(0.01));
+        REQUIRE(out->interleaved_samples[0] == doctest::Approx(2).epsilon(0.01));
     }
 }

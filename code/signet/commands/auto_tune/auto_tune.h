@@ -1,6 +1,7 @@
 #pragma once
 
 #include "command.h"
+#include "identical_processing_set.h"
 
 class AutoTuneCommand final : public Command {
   public:
@@ -9,5 +10,5 @@ class AutoTuneCommand final : public Command {
     void ProcessFiles(AudioFiles &files) override;
 
   private:
-    std::vector<std::string> m_sample_set_args;
+    IdenticalProcessingSet m_identical_processing_set;
 };

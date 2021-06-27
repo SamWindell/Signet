@@ -65,6 +65,7 @@ add_library(
     code/common/gain_calculators.cpp
     code/common/midi_pitches.cpp
     code/common/string_utils.cpp
+    code/common/identical_processing_set.cpp
     code/signet/commands/auto_tune/auto_tune.cpp
     code/signet/commands/convert/convert.cpp
     code/signet/commands/detect_pitch/detect_pitch.cpp

@@ -5,6 +5,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 - [Signet](#Signet)
 - [Commands](#Signet%20Commands)
   - [auto-tune](#auto-tune)
+  - [clear-backup](#clear-backup)
   - [convert](#convert)
     - [sample-rate](#sample-rate)
     - [bit-depth](#bit-depth)
@@ -41,6 +42,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
     - [start](#start)
     - [end](#end)
   - [tune](#tune)
+  - [undo](#undo)
   - [zcross-offset](#zcross-offset)
 # Signet
 ## Description:
@@ -55,14 +57,8 @@ The audio files to process. You can specify more than one of these. Each input-f
 
 
 ## Options:
-`--undo`
-Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
-
 `--version`
 Prints the version of Signet.
-
-`--clear-backup`
-Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the backup.
 
 `--silent`
 Disable all messages
@@ -118,6 +114,13 @@ The entire folder of different mic positions can be processed in a single comman
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
 
+
+## clear-backup
+### Description:
+Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.
+
+### Usage:
+  `clear-backup`
 
 ## convert
 ### Description:
@@ -712,6 +715,13 @@ Changes the tune the file(s) by stretching or shrinking them. Uses a high qualit
 `tune cents FLOAT REQUIRED`
 The cents to change the pitch by.
 
+
+## undo
+### Description:
+Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
+
+### Usage:
+  `undo`
 
 ## zcross-offset
 ### Description:

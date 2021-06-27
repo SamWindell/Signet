@@ -101,7 +101,7 @@ Care has been taken to ensure the help text is comprehensive and understandable.
 ### Undo
 Signet overwrites the files that it processes. It is therefore advisable to make a copy your audio files before processing them with Signet.
 
-However, Signet can help with safety too. It features a simple undo system. You can undo any changes made in the previous run of Signet by running it again with the `--undo` option. For example `signet --undo`.
+However, Signet can help with safety too. It features a simple undo system. You can undo any changes made in the previous run of Signet by running it again with the `undo` option. For example `signet undo`.
 
 Files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 

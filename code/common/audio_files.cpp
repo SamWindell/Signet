@@ -152,7 +152,7 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
     if (error_occurred) {
         ErrorWithNewLine(
             "Signet",
-            "An error happened while backing-up or writing an audio files. Signet has stopped. Run 'signet --undo' to undo any changes that happened up to the point of this error");
+            "An error happened while backing-up or writing an audio files. Signet has stopped. Run 'signet undo' to undo any changes that happened up to the point of this error");
     }
 
     return !error_occurred;

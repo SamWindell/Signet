@@ -66,16 +66,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     bool success_thrown = false;
 
-    app.add_flag_callback(
-        "--undo",
-        [&]() {
+    app.add_subcommand(
+           "undo",
+           "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.")
+        ->final_callback([&]() {
             MessageWithNewLine("Signet", "Undoing changes made by the last run of Signet...");
             m_backup.LoadBackup();
             MessageWithNewLine("Signet", "Done.");
             success_thrown = true;
             throw CLI::Success();
-        },
-        "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.");
+        });
 
     app.add_flag_callback(
         "--version",
@@ -157,16 +157,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         });
     }
 
-    app.add_flag_callback(
-        "--clear-backup",
-        [&]() {
+    app.add_subcommand(
+           "clear-backup",
+           "Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.")
+        ->final_callback([&]() {
             MessageWithNewLine("Signet", "Clearing all backed-up files...");
             m_backup.ClearBackup();
             MessageWithNewLine("Signet", "Done.");
             success_thrown = true;
             throw CLI::Success();
-        },
-        "Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the backup.");
+        });
 
     app.add_flag_callback(
         "--silent", []() { SetMessagesEnabled(true); }, "Disable all messages");
@@ -289,7 +289,7 @@ TEST_CASE("[SignetInterface]") {
         }
 
         SUBCASE("load undo") {
-            const auto args = TestHelpers::StringToArgs {"signet --undo"};
+            const auto args = TestHelpers::StringToArgs {"signet undo"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
@@ -309,7 +309,7 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(f);
             auto starting_size = f->interleaved_samples.size();
 
-            args = TestHelpers::StringToArgs {"signet --undo"};
+            args = TestHelpers::StringToArgs {"signet undo"};
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
             f = ReadAudioFile("test-folder/tf1.wav");
@@ -336,7 +336,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 {
@@ -361,7 +361,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -381,7 +381,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -402,7 +402,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -423,7 +423,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -443,7 +443,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));
@@ -466,7 +466,7 @@ TEST_CASE("[SignetInterface]") {
             }
 
             {
-                const auto args = TestHelpers::StringToArgs {"signet --undo"};
+                const auto args = TestHelpers::StringToArgs {"signet undo"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 REQUIRE(fs::is_regular_file("test-folder/tf1.wav"));

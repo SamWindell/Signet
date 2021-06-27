@@ -88,8 +88,8 @@ void IdenticalProcessingSet::ProcessSets(
         EditTrackedAudioFile *authority_file = nullptr;
         for (auto &f : set.second) {
             const auto filename = GetJustFilenameWithNoExtension(f->GetPath());
-            assert(std::regex_match(filename, match, re));
-            assert(match.size() == 2);
+            assert(std::regex_match(filename, match, re)); // TODO show an error
+            assert(match.size() == 2); // TODO show an error
             if (match[1] == authority_matcher) {
                 authority_file = f;
                 break;

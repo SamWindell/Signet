@@ -64,7 +64,7 @@ The audio files to process. You can specify more than one of these. Each input-f
 
 ## Options:
 `--version`
-Prints the version of Signet.
+Print the version of Signet
 
 `--silent`
 Disable all messages

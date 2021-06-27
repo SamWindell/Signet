@@ -84,7 +84,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             success_thrown = true;
             throw CLI::Success();
         },
-        "Prints the version of Signet.");
+        "Print the version of Signet");
 
     {
         auto make_docs = app.add_subcommand(

@@ -16,7 +16,7 @@ GainAmount::GainAmount(std::string str) {
         }
         m_value = value;
     } else {
-        throw CLI::ValidationError("GainAmount", "This value must be a number followed by a '%%' unit or "
+        throw CLI::ValidationError("GainAmount", "This value must be a number followed by a '%' unit or "
                                                  "a 'db' unit. For example 10% or -3db.");
     }
 }

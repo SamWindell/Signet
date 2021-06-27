@@ -110,14 +110,43 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             std::sort(all_commands_sorted.begin(), all_commands_sorted.end(),
                       [](const CLI::App *a, const CLI::App *b) { return a->get_name() < b->get_name(); });
 
+            std::map<std::string, std::vector<std::string>> command_categories;
+            command_categories["Signet Utility"] = {"undo", "clear-backup", "make-docs"};
+            command_categories["Filepath"] = {"rename", "move", "folderise"};
+            command_categories["Audio"] = {
+                "auto-tune", "fade",           "fix-pitch-drift", "gain", "lowpass", "highpass",     "norm",
+                "pan",       "remove-silence", "seamless-loop",   "trim", "tune",    "zcross-offset"};
+            command_categories["File Data"] = {"convert", "embed-sampler-info"};
+            command_categories["Info"] = {"detect-pitch", "print-info"};
+            command_categories["Generate"] = {"sample-blend"};
+
+            for (auto cmd : all_commands_sorted) {
+                bool found = false;
+                for (auto c : command_categories) {
+                    for (auto cmd_a : c.second) {
+                        if (cmd_a == cmd->get_name()) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    if (found) break;
+                }
+                assert(found && "you must specify a category for this command");
+            }
+
             // Print a contents section
             os << "- [Signet](#Signet)\n";
             os << "- [Commands](#Signet%20Commands)\n";
-            for (auto s : all_commands_sorted) {
-                auto name = s->get_name();
-                os << fmt::format("  - [{}](#{})\n", name, name);
-                for (auto ss : s->get_subcommands({})) {
-                    os << fmt::format("    - [{}](#{})\n", ss->get_name(), ss->get_name());
+            for (auto c : command_categories) {
+                os << fmt::format("  - {}\n", c.first);
+                std::sort(c.second.begin(), c.second.end());
+                for (auto &i : c.second) {
+                    os << fmt::format("    - [{}](#{})\n", i, i);
+                    auto command = std::find_if(all_commands_sorted.begin(), all_commands_sorted.end(),
+                                                [i](const CLI::App *cmd) { return cmd->get_name() == i; });
+                    for (auto ss : (*command)->get_subcommands({})) {
+                        os << fmt::format("      - [{}](#{})\n", ss->get_name(), ss->get_name());
+                    }
                 }
             }
 

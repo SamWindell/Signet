@@ -110,3 +110,9 @@ void IdenticalProcessingSet::ProcessSets(
         }
     }
 }
+
+bool IdenticalProcessingSet::AllHaveSameNumFrames(const std::vector<EditTrackedAudioFile *> &set) {
+    return std::all_of(set.begin(), set.end(), [&set](EditTrackedAudioFile *f) {
+        return f->GetAudio().NumFrames() == set.front()->GetAudio().NumFrames();
+    });
+}

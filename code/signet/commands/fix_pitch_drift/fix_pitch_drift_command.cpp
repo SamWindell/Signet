@@ -50,9 +50,7 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
         m_identical_processing_set.ProcessSets(
             files, GetName(),
             [this](EditTrackedAudioFile *authority_file, const std::vector<EditTrackedAudioFile *> &set) {
-                if (!std::all_of(set.begin(), set.end(), [&set](EditTrackedAudioFile *f) {
-                        return f->GetAudio().NumFrames() == set.front()->GetAudio().NumFrames();
-                    })) {
+                if (!IdenticalProcessingSet::AllHaveSameNumFrames(set)) {
                     ErrorWithNewLine(
                         GetName(),
                         "{}: the files in the set do not all have the same number of frames and therefore cannot be processed with fix-pitch-drift.",

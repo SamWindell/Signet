@@ -17,6 +17,8 @@ class IdenticalProcessingSet {
                      const std::function<void(EditTrackedAudioFile *authority,
                                               const std::vector<EditTrackedAudioFile *> &set)> &callback);
 
+    static bool AllHaveSameNumFrames(const std::vector<EditTrackedAudioFile *> &set);
+
   private:
     std::vector<std::string> m_sample_set_args;
 };

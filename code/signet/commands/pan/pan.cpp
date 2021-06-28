@@ -23,7 +23,8 @@ PanUnit::PanUnit(std::string str) {
 }
 
 CLI::App *PanCommand::CreateCommandCLI(CLI::App &app) {
-    auto pan = app.add_subcommand("pan", "Changes the pan of stereo files(s).");
+    auto pan =
+        app.add_subcommand("pan", "Changes the pan of stereo file(s). Does not work on non-stereo files.");
 
     pan->add_option(
            "pan-amount", m_pan,

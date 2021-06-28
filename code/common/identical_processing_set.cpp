@@ -48,7 +48,7 @@ The entire folder of different mic positions can be processed in a single comman
             m_sample_set_args.push_back("(.*)");
             m_sample_set_args.push_back(str);
         },
-        R"foo("Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+        R"foo(Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern)foo");
 }

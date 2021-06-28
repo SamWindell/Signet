@@ -116,7 +116,7 @@ signet sample-\* process --sample-sets ".\*(close|room|ambient).\*" "close"
 The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
 
 `--authority-file TEXT`
-"Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
 
@@ -346,7 +346,7 @@ signet sample-\* process --sample-sets ".\*(close|room|ambient).\*" "close"
 The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
 
 `--authority-file TEXT`
-"Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
 
@@ -434,7 +434,7 @@ The folder to put all of the input files in.
 
 ## norm
 ### Description:
-Sets the peak amplitude to a certain level. When this is used on multiple files, each file is attenuated by the same amount. You can disable this by specifying the flag --independently.
+Sets the peak amplitude to a given level (normalisation). When this is used on multiple files, each file is altered by the same amount; preserving their volume levels relative to each other (sometimes known as common-gain normalisation). Alternatively, you can make each file always normalise to the target by specifying the flag --independently.
 
 ### Usage:
   `norm` `[OPTIONS]` `target-decibels`
@@ -449,15 +449,15 @@ The target level in decibels, where 0dB is the max volume.
 When there are multiple files, normalise each one individually rather than by a common gain.
 
 `--rms`
-Use RMS (root mean squared) calculations to work out the required gain amount.
+Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. Does not work well with very dynamic-range variable audio.
 
 `--mix FLOAT:INT in [0 - 100]`
-The mix of the normalised signal, where 100% means normalised exactly to the target, and 0% means no change.
+The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means no apply a gain to get halfway from the current level to the target.
 
 
 ## pan
 ### Description:
-Changes the pan of stereo files(s).
+Changes the pan of stereo file(s). Does not work on non-stereo files.
 
 ### Usage:
   `pan` `pan-amount`
@@ -521,7 +521,7 @@ signet sample-\* process --sample-sets ".\*(close|room|ambient).\*" "close"
 The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
 
 `--authority-file TEXT`
-"Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
 
@@ -671,7 +671,7 @@ For each generated file, if the 2 files that are being combined are not the same
 
 ## seamless-loop
 ### Description:
-Turns the files(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
+Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
 
 ### Usage:
   `seamless-loop` `crossfade-percent`

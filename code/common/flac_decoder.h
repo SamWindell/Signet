@@ -13,10 +13,8 @@ struct FlacFileDataContext {
     AudioData &data;
 };
 
-FLAC__StreamDecoderReadStatus FlacDecodeReadCallback(const FLAC__StreamDecoder *,
-                                                     FLAC__byte buffer[],
-                                                     size_t *bytes,
-                                                     void *client_data) {
+FLAC__StreamDecoderReadStatus
+FlacDecodeReadCallback(const FLAC__StreamDecoder *, FLAC__byte buffer[], size_t *bytes, void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
 
     if (*bytes > 0) {
@@ -31,9 +29,8 @@ FLAC__StreamDecoderReadStatus FlacDecodeReadCallback(const FLAC__StreamDecoder *
         return FLAC__STREAM_DECODER_READ_STATUS_ABORT;
 }
 
-FLAC__StreamDecoderSeekStatus FlacDecodeSeekCallback(const FLAC__StreamDecoder *,
-                                                     FLAC__uint64 absolute_byte_offset,
-                                                     void *client_data) {
+FLAC__StreamDecoderSeekStatus
+FlacDecodeSeekCallback(const FLAC__StreamDecoder *, FLAC__uint64 absolute_byte_offset, void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
 
     // TODO use fseeko to get 64 bit offset
@@ -43,9 +40,8 @@ FLAC__StreamDecoderSeekStatus FlacDecodeSeekCallback(const FLAC__StreamDecoder *
         return FLAC__STREAM_DECODER_SEEK_STATUS_OK;
 }
 
-FLAC__StreamDecoderTellStatus FlacDecodeTellCallback(const FLAC__StreamDecoder *,
-                                                     FLAC__uint64 *absolute_byte_offset,
-                                                     void *client_data) {
+FLAC__StreamDecoderTellStatus
+FlacDecodeTellCallback(const FLAC__StreamDecoder *, FLAC__uint64 *absolute_byte_offset, void *client_data) {
     auto &context = *((FlacFileDataContext *)client_data);
 
     off_t pos;
@@ -127,7 +123,7 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *,
                         cereal::JSONInputArchive archive(ss);
                         archive(cereal::make_nvp(signet_root_json_object_name, context.data.metadata));
                     } catch (const std::exception &e) {
-                        ErrorWithNewLine("Flac", "Error parsing FLAC signet metadata: {}", e.what());
+                        ErrorWithNewLine("Flac", {}, "Error parsing FLAC signet metadata: {}", e.what());
                     }
                 }
                 return;
@@ -144,7 +140,7 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *,
         case FLAC__METADATA_TYPE_CUESHEET:
         case FLAC__METADATA_TYPE_SEEKTABLE: {
             const char *type = metadata->type == FLAC__METADATA_TYPE_CUESHEET ? "cuesheet" : "seektable";
-            WarningWithNewLine("Flac", "Unsupported FLAC file block '{}', this will be deleted", type);
+            WarningWithNewLine("Flac", {}, "Unsupported FLAC file block '{}', this will be deleted", type);
             // We're discarding these at the moment because this data contains references to particular points
             // in the audio file. We might changing the length of the audio file so this would become
             // invalidated.
@@ -159,14 +155,14 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *,
 void FlacStreamDecodeErrorCallback(const FLAC__StreamDecoder *,
                                    FLAC__StreamDecoderErrorStatus status,
                                    void *) {
-    ErrorWithNewLine("Flac", "error triggered: {}", FLAC__StreamDecoderErrorStatusString[status]);
+    ErrorWithNewLine("Flac", {}, "error triggered: {}", FLAC__StreamDecoderErrorStatusString[status]);
 }
 
 bool DecodeFlacFile(FILE *file, AudioData &output) {
     std::unique_ptr<FLAC__StreamDecoder, decltype(&FLAC__stream_decoder_delete)> decoder(
         FLAC__stream_decoder_new(), &FLAC__stream_decoder_delete);
     if (decoder == nullptr) {
-        ErrorWithNewLine("Flac", "failed to allocate memory for flac decoder");
+        ErrorWithNewLine("Flac", {}, "failed to allocate memory for flac decoder");
         return false;
     }
 
@@ -180,14 +176,14 @@ bool DecodeFlacFile(FILE *file, AudioData &output) {
         FlacDecodeLengthCallback, FlacDecodeIsEndOfFile, FlacDecoderWriteCallback,
         FlacDecoderMetadataCallback, FlacStreamDecodeErrorCallback, &context);
     if (init_status != FLAC__STREAM_DECODER_INIT_STATUS_OK) {
-        ErrorWithNewLine("Flac", "failed to initialise the flac stream: {}",
+        ErrorWithNewLine("Flac", {}, "failed to initialise the flac stream: {}",
                          FLAC__StreamDecoderInitStatusString[init_status]);
         return false;
     }
 
     const auto process_success = FLAC__stream_decoder_process_until_end_of_stream(decoder.get());
     if (!process_success) {
-        ErrorWithNewLine("Flac", "failed encoding flac data");
+        ErrorWithNewLine("Flac", {}, "failed encoding flac data");
     } else {
         output.sample_rate = FLAC__stream_decoder_get_sample_rate(decoder.get());
     }

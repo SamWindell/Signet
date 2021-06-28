@@ -58,7 +58,7 @@ void IdenticalProcessingSet::ProcessSets(
     std::string_view command_name,
     const std::function<void(EditTrackedAudioFile *, const std::vector<EditTrackedAudioFile *> &)>
         &callback) {
-    MessageWithNewLine(command_name, "Performing auto-tune on sets of samples");
+    MessageWithNewLine(command_name, {}, "Performing auto-tune on sets of samples");
 
     std::regex re {m_sample_set_args[0]};
     const auto &authority_matcher = m_sample_set_args[1];
@@ -98,13 +98,13 @@ void IdenticalProcessingSet::ProcessSets(
 
         if (authority_file) {
             MessageWithNewLine(
-                command_name,
+                command_name, {},
                 "Processing sample-set \"{}\" (size {}) all with the same settings, using \"{}\" as the authority",
                 human_set_name, set.second.size(), authority_matcher);
             callback(authority_file, set.second);
         } else {
-            WarningWithNewLine(
-                command_name,
+            ErrorWithNewLine(
+                command_name, {},
                 "Failed to process sample-set because the authority file could not be identified\nFile: \"{}\"\nAuthority: \"{}\"",
                 human_set_name, authority_matcher);
         }

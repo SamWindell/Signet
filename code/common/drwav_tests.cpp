@@ -155,7 +155,7 @@ static drwav_bool32 OnSeekFile(void *file, int offset, drwav_seek_origin origin)
         fseek_success) {
         return 1;
     }
-    WarningWithNewLine("Wav", "failed to seek file");
+    WarningWithNewLine("Wav", {}, "failed to seek file");
     return 0;
 }
 
@@ -226,3 +226,83 @@ TEST_CASE("dr_wav: wave with marker and loops") {
 
     drwav_free(metadata, nullptr);
 }
+
+#if 0
+TEST_CASE("drwav: file with every type of metadata") {
+    drwav_metadata meta[17] = {};
+
+    // smpl
+    meta[0].type = drwav_metadata_type_smpl;
+    drwav_smpl_loop loops[1] = {};
+    loops[0].cuePointId = 1;
+    loops[0].type = drwav_smpl_loop_type_pingpong;
+    loops[0].firstSampleByteOffset = 0;
+    loops[0].firstSampleByteOffset = 1;
+    loops[0].sampleFraction = 0;
+    loops[0].playCount = 55;
+
+    meta[0].data.smpl.manufacturerId = 1;
+    meta[0].data.smpl.productId = 2;
+    meta[0].data.smpl.samplePeriodNanoseconds = 0;
+    meta[0].data.smpl.midiUnityNote = 0;
+    meta[0].data.smpl.midiPitchFraction = 0;
+    meta[0].data.smpl.smpteFormat = 0;
+    meta[0].data.smpl.smpteOffset = 0;
+    meta[0].data.smpl.sampleLoopCount = 1;
+    meta[0].data.smpl.samplerSpecificDataSizeInBytes = 1;
+
+    u8 byte = 0;
+    meta[0].data.smpl.pSamplerSpecificData = &byte;
+    meta[0].data.smpl.pLoops = loops;
+
+    // inst
+    meta[1].type = drwav_metadata_type_inst;
+    meta[1].data.inst = {};
+
+    // cue
+    drwav_cue_point cue_point {};
+    cue_point.id = 1;
+    cue_point.playOrderPosition = 0;
+    cue_point.dataChunkId[0] = 'd';
+    cue_point.dataChunkId[1] = 'a';
+    cue_point.dataChunkId[2] = 't';
+    cue_point.dataChunkId[3] = 'a';
+    cue_point.chunkStart = 0;
+    cue_point.blockStart = 0;
+    cue_point.sampleByteOffset = 0;
+
+    meta[1].type = drwav_metadata_type_cue;
+    meta[1].data.cue.cuePointCount = 1;
+    meta[1].data.cue.pCuePoints = &cue_point;
+
+    // acid
+    meta[1].type = drwav_metadata_type_acid;
+    meta[1].data.acid = {};
+
+    // bext
+    meta[1].type = drwav_metadata_type_bext;
+    meta[1].data.bext = {};
+
+    meta[1].data.bext.pDescription = "Description";
+    meta[1].data.bext.pOriginatorName = "Name";
+    meta[1].data.bext.pOriginatorReference = "Ref";
+    memcpy(meta[1].data.bext.pOriginationDate, "1066:01:01", 10);
+    memcpy(meta[1].data.bext.pOriginationTime, "10:01:01", 8);
+    meta[1].data.bext.timeReference = {};
+
+    meta[1].data.bext.pCodingHistory = "Coding history";
+    meta[1].data.bext.codingHistorySize = strlen("Coding history");
+    u8 umid[64] = {1, 1, 1, 1, 1, 1};
+    meta[1].data.bext.pUMID = &umid;
+    meta[1].data.bext.loudnessValue = {};
+    meta[1].data.bext.loudnessRange = {};
+    meta[1].data.bext.maxTruePeakLevel = {};
+    meta[1].data.bext.maxMomentaryLoudness = {};
+    meta[1].data.bext.maxShortTermLoudness = {};
+
+    // list label
+    meta[1].type = drwav_metadata_type_list_label;
+
+
+}
+#endif

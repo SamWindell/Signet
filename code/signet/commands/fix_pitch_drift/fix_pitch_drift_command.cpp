@@ -37,12 +37,11 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
             PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName(), m_chunk_length_milliseconds,
                                                       m_print_csv);
             if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
-                WarningWithNewLine(GetName(), "{}: cannot be pitch-drift corrected", f.OriginalFilename());
+                ErrorWithNewLine(GetName(), f, "cannot be pitch-drift corrected");
             } else {
-                MessageWithNewLine(GetName(), "{}: correcting pitch-drift", f.OriginalFilename());
+                MessageWithNewLine(GetName(), f, "correcting pitch-drift");
                 if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio())) {
-                    MessageWithNewLine(GetName(), "{}: successfully pitch-drift corrected.",
-                                       f.OriginalFilename());
+                    MessageWithNewLine(GetName(), f, "successfully pitch-drift corrected.");
                 }
             }
         }
@@ -52,25 +51,22 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
             [this](EditTrackedAudioFile *authority_file, const std::vector<EditTrackedAudioFile *> &set) {
                 if (!IdenticalProcessingSet::AllHaveSameNumFrames(set)) {
                     ErrorWithNewLine(
-                        GetName(),
-                        "{}: the files in the set do not all have the same number of frames and therefore cannot be processed with fix-pitch-drift.",
-                        authority_file->OriginalFilename());
+                        GetName(), *authority_file,
+                        "the files in the set do not all have the same number of frames and therefore cannot be processed with fix-pitch-drift.");
                     return;
                 }
 
                 PitchDriftCorrector pitch_drift_corrector(authority_file->GetAudio(), GetName(),
                                                           m_chunk_length_milliseconds, m_print_csv);
                 if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
-                    WarningWithNewLine(
-                        GetName(),
-                        "{}: authority file for set cannot be pitch-drift corrected, therefore the set cannot be processed",
-                        authority_file->OriginalFilename());
+                    ErrorWithNewLine(
+                        GetName(), *authority_file,
+                        "authority file for set cannot be pitch-drift corrected, therefore the set cannot be processed");
                 } else {
                     for (auto f : set) {
-                        MessageWithNewLine(GetName(), "{}: correcting pitch-drift", f->OriginalFilename());
+                        MessageWithNewLine(GetName(), *f, "correcting pitch-drift");
                         if (pitch_drift_corrector.ProcessFile(f->GetWritableAudio())) {
-                            MessageWithNewLine(GetName(), "{}: successfully pitch-drift corrected.",
-                                               f->OriginalFilename());
+                            MessageWithNewLine(GetName(), *f, "successfully pitch-drift corrected.");
                         }
                     }
                 }

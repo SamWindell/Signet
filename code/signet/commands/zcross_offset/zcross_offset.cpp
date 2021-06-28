@@ -4,9 +4,10 @@
 
 #include "test_helpers.h"
 
-size_t ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
-                                                             const size_t num_frames,
-                                                             const unsigned num_channels) {
+size_t
+ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(const tcb::span<const double> interleaved_buffer,
+                                                       const size_t num_frames,
+                                                       const unsigned num_channels) {
     double minimum_range = DBL_MAX;
     size_t index_of_min = 0;
     for (size_t frame = 0; frame < num_frames; ++frame) {
@@ -19,24 +20,24 @@ size_t ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(const tcb::span<co
             index_of_min = frame;
         }
     }
-    MessageWithNewLine(GetNameInternal(), "Best zero-crossing range is {}", minimum_range);
+    MessageWithNewLine(GetNameInternal(), {}, "Best zero-crossing range is {}", minimum_range);
     return index_of_min;
 }
 
 bool ZeroCrossOffsetCommand::CreateSampleOffsetToNearestZCross(AudioData &audio,
-                                                              const AudioDuration &search_size,
-                                                              const bool append_skipped_frames_on_end) {
+                                                               const AudioDuration &search_size,
+                                                               const bool append_skipped_frames_on_end) {
     const auto search_frames = search_size.GetDurationAsFrames(audio.sample_rate, audio.NumFrames());
-    MessageWithNewLine(GetNameInternal(), "Searching {} frames for a zero-crossing", search_frames);
+    MessageWithNewLine(GetNameInternal(), {}, "Searching {} frames for a zero-crossing", search_frames);
 
     const auto new_start_frame =
         FindFrameNearestToZeroInBuffer(audio.interleaved_samples, search_frames, audio.num_channels);
     if (new_start_frame == 0) {
-        MessageWithNewLine(GetNameInternal(), "Searching", "No start frame change needed");
+        MessageWithNewLine(GetNameInternal(), {}, "Searching", "No start frame change needed");
         return false;
     }
 
-    MessageWithNewLine(GetNameInternal(), "Found best approx zero-crossing frame at position {}",
+    MessageWithNewLine(GetNameInternal(), {}, "Found best approx zero-crossing frame at position {}",
                        new_start_frame);
 
     auto interleaved_samples_new_start_it =
@@ -66,7 +67,7 @@ TEST_CASE("[ZCross Offset]") {
 
         SUBCASE("finds a zero crossing at the start") {
             REQUIRE(ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(buf.interleaved_samples, 10,
-                                                                          buf.num_channels) == 0);
+                                                                           buf.num_channels) == 0);
         }
         SUBCASE("finds a zero crossing at pi radians") {
             tcb::span<const double> span = buf.interleaved_samples;

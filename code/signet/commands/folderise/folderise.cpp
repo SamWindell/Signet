@@ -27,8 +27,8 @@ CLI::App *FolderiseCommand::CreateCommandCLI(CLI::App &app) {
             "out-folder",
             [&](const std::string &input) {
                 if (fs::path(input).is_relative()) {
-                    WarningWithNewLine(
-                        "Folderise",
+                    MessageWithNewLine(
+                        "Folderise", {},
                         "input folder {} is not absolute. The resulting folder will be {} (ignoring any <n> expansion)",
                         input, fs::absolute(input));
                 }
@@ -67,9 +67,9 @@ void FolderiseCommand::ProcessFiles(AudioFiles &files) {
     }
 
     if (num_matches == 0) {
-        ErrorWithNewLine(GetName(), "No files matched the given filename regex.");
-        MessageWithNewLine(GetName(), "    The given filename regex: {}", m_filename_pattern);
-        MessageWithNewLine(GetName(), "    An example of a filename that was attempted to match to: {}",
+        ErrorWithNewLine(GetName(), {}, "No files matched the given filename regex.");
+        MessageWithNewLine(GetName(), {}, "    The given filename regex: {}", m_filename_pattern);
+        MessageWithNewLine(GetName(), {}, "    An example of a filename that was attempted to match to: {}",
                            GetJustFilenameWithNoExtension(files[0].GetPath()));
     }
 }

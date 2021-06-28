@@ -274,7 +274,7 @@ void AudioData::AudioDataWasStretched(double stretch_factor) {
 }
 
 void AudioData::PrintMetadataRemovalWarning(std::string_view metadata_name) {
-    WarningWithNewLine("Signet",
+    WarningWithNewLine("Signet", {},
                        "One or more metadata {} were removed from the file because the file changed size",
                        metadata_name);
 }

@@ -16,7 +16,7 @@ static fs::path GetTempDir() {
         return temp_dir;
     } catch (const fs::filesystem_error &e) {
         WarningWithNewLine(
-            "Backup",
+            "Backup", {},
             "could not get the temporary file folder from the OS for reason: {}. Reverting to using the current working directory.",
             e.what());
     }
@@ -27,7 +27,7 @@ static bool CreateDirectoryChecked(const fs::path &dir) {
     try {
         fs::create_directories(dir);
     } catch (const fs::filesystem_error &e) {
-        ErrorWithNewLine("Backup", "failed to create directory {} for reasion {}", e.path1(), e.what());
+        ErrorWithNewLine("Backup", {}, "failed to create directory {} for reasion {}", e.path1(), e.what());
         return false;
     }
     return true;
@@ -35,10 +35,10 @@ static bool CreateDirectoryChecked(const fs::path &dir) {
 
 static bool CreateDirectoriesChecked(const fs::path &dir) {
     try {
-        MessageWithNewLine("Signet", "Creating directories {}", dir);
+        MessageWithNewLine("Signet", {}, "Creating directories {}", dir);
         fs::create_directories(dir);
     } catch (const fs::filesystem_error &e) {
-        ErrorWithNewLine("Backup", "failed to create directory {} for reason: {}", e.path1(), e.what());
+        ErrorWithNewLine("Backup", {}, "failed to create directory {} for reason: {}", e.path1(), e.what());
         return false;
     }
     return true;
@@ -56,55 +56,56 @@ SignetBackup::SignetBackup() {
         try {
             std::ifstream i(m_database_file.generic_string(), std::ofstream::in | std::ofstream::binary);
             if (!i) {
-                ErrorWithNewLine("Backup", "could not open backup database file {}", m_database_file);
+                ErrorWithNewLine("Backup", {}, "could not open backup database file {}", m_database_file);
                 return;
             }
             i >> m_database;
             m_parsed_json = true;
             i.close();
         } catch (const nlohmann::detail::parse_error &e) {
-            WarningWithNewLine("Backup", "could not parse json backup file {}", m_database_file, e.what());
+            WarningWithNewLine("Backup", {}, "could not parse json backup file {}", m_database_file,
+                               e.what());
         }
     }
 }
 
 bool SignetBackup::LoadBackup() {
     if (!m_parsed_json) {
-        WarningWithNewLine("Backup", "The backup files could not be read");
+        WarningWithNewLine("Backup", {}, "The backup files could not be read");
         return false;
     }
     if (!m_database["files"].size() && !m_database["file_moves"].size() &&
         !m_database["files_created"].size()) {
-        WarningWithNewLine("Backup", "There is no backed-up data");
+        WarningWithNewLine("Backup", {}, "There is no backed-up data");
         return false;
     }
 
     for (const std::string f : m_database["files_created"]) {
-        MessageWithNewLine("Backup", "Deleting file created by Signet {}", f);
+        MessageWithNewLine("Backup", {}, "Deleting file {} created by Signet", f);
         try {
             fs::remove(f);
         } catch (const fs::filesystem_error &e) {
-            ErrorWithNewLine("Backup", "could not remove file from {} for reason: {}", f, e.what());
+            ErrorWithNewLine("Backup", {}, "could not remove file {} for reason: {}", f, e.what());
         }
     }
 
     for (const auto &[from, to] : m_database["file_moves"].items()) {
-        MessageWithNewLine("Backup", "Restoring moved file to {}", from);
+        MessageWithNewLine("Backup", {}, "Restoring moved file to {}", from);
         try {
             fs::rename(to.get<std::string>(), from);
         } catch (const fs::filesystem_error &e) {
-            ErrorWithNewLine("Backup", "could not move file from {} to {} for reason: {}", e.path1(),
+            ErrorWithNewLine("Backup", {}, "could not move file from {} to {} for reason: {}", e.path1(),
                              e.path2(), e.what());
         }
     }
 
     for (const auto &[hash, path] : m_database["files"].items()) {
-        MessageWithNewLine("Backup", "Loading backed-up file {}", path);
+        MessageWithNewLine("Backup", {}, "Loading backed-up file {}", path);
         try {
             fs::copy_file(m_backup_files_dir / hash, path.get<std::string>(),
                           fs::copy_options::overwrite_existing);
         } catch (const fs::filesystem_error &e) {
-            ErrorWithNewLine("Backup", "could not copy file from {} to {} for reason: {}", e.path1(),
+            ErrorWithNewLine("Backup", {}, "could not copy file from {} to {} for reason: {}", e.path1(),
                              e.path2(), e.what());
         }
     }
@@ -125,7 +126,7 @@ void SignetBackup::ClearBackup() {
 bool SignetBackup::WriteDatabaseFile() {
     std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
     if (!o) {
-        ErrorWithNewLine("Backup", "could not write to backup database file {}", m_database_file);
+        ErrorWithNewLine("Backup", {}, "could not write to backup database file {}", m_database_file);
         return false;
     }
     o << std::setw(2) << m_database << std::endl;
@@ -150,7 +151,7 @@ bool SignetBackup::AddNewlyCreatedFileToBackup(const fs::path &path) {
 bool SignetBackup::AddMovedFileToBackup(const fs::path &from, const fs::path &to) {
     if (!CreateBackupFilesDirIfNeeded()) return false;
 
-    MessageWithNewLine("Backup", "Backing-up file move from {} to {}", from, to);
+    MessageWithNewLine("Backup", {}, "Backing-up file move from {} to {}", from, to);
     m_database["file_moves"][from.generic_string()] = to.generic_string();
     return WriteDatabaseFile();
 }
@@ -158,12 +159,13 @@ bool SignetBackup::AddMovedFileToBackup(const fs::path &from, const fs::path &to
 bool SignetBackup::AddFileToBackup(const fs::path &path) {
     if (!CreateBackupFilesDirIfNeeded()) return false;
 
-    MessageWithNewLine("Signet", "Backing-up file {}", path);
+    MessageWithNewLine("Signet", path, "Backing-up file");
     const auto hash_string = std::to_string(fs::hash_value(path));
     try {
         fs::copy_file(path, m_backup_files_dir / hash_string, fs::copy_options::update_existing);
     } catch (const fs::filesystem_error &e) {
-        ErrorWithNewLine("Backup", "backing up file failed! Could not copy file from {} to {} for reason: {}",
+        ErrorWithNewLine("Backup", {},
+                         "backing up file failed! Could not copy file from {} to {} for reason: {}",
                          e.path1(), e.path2(), e.what());
         return false;
     }
@@ -181,24 +183,24 @@ static bool CreateParentDirectories(const fs::path &path) {
 
 bool SignetBackup::DeleteFile(const fs::path &path) {
     if (!AddFileToBackup(path)) return false;
-    MessageWithNewLine("Signet", "Deleting file {}", path);
+    MessageWithNewLine("Signet", path, "Deleting file");
     try {
         fs::remove(path);
     } catch (const fs::filesystem_error &e) {
-        ErrorWithNewLine("Backup", "failed to remove file {} for reason: {}", path, e.what());
+        ErrorWithNewLine("Backup", {}, "failed to remove file {} for reason: {}", path, e.what());
         return false;
     }
     return true;
 }
 
 bool SignetBackup::MoveFile(const fs::path &from, const fs::path &to) {
-    MessageWithNewLine("Signet", "Moving file from {} to {}", from, to);
+    MessageWithNewLine("Signet", {}, "Moving file from {} to {}", from, to);
     if (!CreateParentDirectories(to)) return false;
     std::error_code ec;
     assert(!fs::exists(to));
     fs::rename(from, to, ec);
     if (ec) {
-        ErrorWithNewLine("Backup", "Moving file failed for reason: {}", ec.message());
+        ErrorWithNewLine("Backup", {}, "Moving file failed for reason: {}", ec.message());
         return false;
     }
     if (!AddMovedFileToBackup(from, to)) return false;
@@ -207,14 +209,14 @@ bool SignetBackup::MoveFile(const fs::path &from, const fs::path &to) {
 
 static bool WriteFile(const fs::path &path, const AudioData &data) {
     if (!WriteAudioFile(path, data)) {
-        ErrorWithNewLine("Backup", "could not write the file {}", path);
+        ErrorWithNewLine("Backup", {}, "could not write the file {}", path);
         return false;
     }
     return true;
 }
 
 bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool create_directories) {
-    MessageWithNewLine("Backup", "Creating file {}", path);
+    MessageWithNewLine("Backup", path, "Creating file");
     if (create_directories) {
         if (!CreateParentDirectories(path)) return false;
     }
@@ -224,7 +226,7 @@ bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool 
 
 bool SignetBackup::OverwriteFile(const fs::path &path, const AudioData &data) {
     if (!AddFileToBackup(path)) return false;
-    MessageWithNewLine("Backup", "Overwriting file {}", path);
+    MessageWithNewLine("Backup", path, "Overwriting file");
     return WriteFile(path, data);
 }
 

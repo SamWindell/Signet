@@ -21,8 +21,8 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
         const auto num_frames = f.GetAudio().NumFrames();
         const auto num_xfade_frames = usize(num_frames * (m_crossfade_percent / 100.0));
         if (num_frames < num_xfade_frames || num_xfade_frames == 0) {
-            WarningWithNewLine(
-                GetName(),
+            ErrorWithNewLine(
+                GetName(), f,
                 "Cannot make the file a seamless loop because the file or crossfade-region are too small. Number of frames in the file: {}, number of frames in the crossfade-region: {}. File: {}",
                 num_frames, num_xfade_frames, f.GetPath());
             continue;

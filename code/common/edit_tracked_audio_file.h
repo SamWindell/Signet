@@ -18,7 +18,7 @@ struct EditTrackedAudioFile {
             if (const auto data = ReadAudioFile(m_original_path)) {
                 SetAudioData(*data);
             } else {
-                ErrorWithNewLine("Signet", "could not load audio file {}", m_original_path);
+                ErrorWithNewLine("Signet", m_original_path, "could not load audio");
                 m_file_valid = false;
             }
         }

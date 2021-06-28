@@ -64,10 +64,13 @@ The audio files to process. You can specify more than one of these. Each input-f
 
 ## Options:
 `--version`
-Print the version of Signet
+Display the version of Signet
 
 `--silent`
 Disable all messages
+
+`--warnings-are-errors`
+Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.
 
 `--recursive`
 When the input is a directory, scan for files in it recursively

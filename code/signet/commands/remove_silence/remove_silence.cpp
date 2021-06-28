@@ -90,21 +90,22 @@ void RemoveSilenceCommand::ProcessFile(EditTrackedAudioFile &f,
                                        usize loud_region_end) const {
     auto &audio = f.GetAudio();
     if (loud_region_start >= loud_region_end) {
-        MessageWithNewLine(GetName(), "The whole sample is silence - no change will be made");
+        MessageWithNewLine(GetName(), f, "The whole sample is silence - no change will be made");
         return;
     }
     if (loud_region_start == 0 && loud_region_end == audio.NumFrames()) {
-        MessageWithNewLine(GetName(), "No silence to trim at start or end");
+        MessageWithNewLine(GetName(), f, "No silence to trim at start or end");
         return;
     }
 
     if (loud_region_start != 0 && loud_region_end != audio.NumFrames()) {
-        MessageWithNewLine(GetName(), "Removing {} frames from the start and {} frames from the end",
+        MessageWithNewLine(GetName(), f, "Removing {} frames from the start and {} frames from the end",
                            loud_region_start, audio.NumFrames() - loud_region_end);
     } else if (loud_region_start) {
-        MessageWithNewLine(GetName(), "Removing {} frames from the start", loud_region_start);
+        MessageWithNewLine(GetName(), f, "Removing {} frames from the start", loud_region_start);
     } else {
-        MessageWithNewLine(GetName(), "Removing {} frames from the end", audio.NumFrames() - loud_region_end);
+        MessageWithNewLine(GetName(), f, "Removing {} frames from the end",
+                           audio.NumFrames() - loud_region_end);
     }
 
     if (m_region == Region::End || m_region == Region::Both) {
@@ -137,9 +138,8 @@ void RemoveSilenceCommand::ProcessFiles(AudioFiles &files) {
             [this](EditTrackedAudioFile *authority_file, const std::vector<EditTrackedAudioFile *> &set) {
                 if (!IdenticalProcessingSet::AllHaveSameNumFrames(set)) {
                     ErrorWithNewLine(
-                        GetName(),
-                        "{}: the files in the set do not all have the same number of frames and therefore cannot be processed with remove-silence.",
-                        authority_file->OriginalFilename());
+                        GetName(), *authority_file,
+                        "the files in the set do not all have the same number of frames and therefore cannot be processed with remove-silence.");
                     return;
                 }
 

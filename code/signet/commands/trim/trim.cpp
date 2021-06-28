@@ -43,18 +43,18 @@ void TrimCommand::ProcessFiles(AudioFiles &files) {
 
         if (remaining_region_start >= remaining_region_end) {
             WarningWithNewLine(
-                GetName(),
+                GetName(), f,
                 "The trim region would result in the whole sample being removed - no change will be made");
             continue;
         }
 
         if (m_start_duration && m_end_duration) {
-            MessageWithNewLine(GetName(), "Trimming {} frames from the start and {} frames from the end",
+            MessageWithNewLine(GetName(), f, "Trimming {} frames from the start and {} frames from the end",
                                remaining_region_start, audio.NumFrames() - remaining_region_end);
         } else if (m_start_duration) {
-            MessageWithNewLine(GetName(), "Trimming {} frames from the start", remaining_region_start);
+            MessageWithNewLine(GetName(), f, "Trimming {} frames from the start", remaining_region_start);
         } else {
-            MessageWithNewLine(GetName(), "Trimming {} frames from the end",
+            MessageWithNewLine(GetName(), f, "Trimming {} frames from the end",
                                audio.NumFrames() - remaining_region_end);
         }
 

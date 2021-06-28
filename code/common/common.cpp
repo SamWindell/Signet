@@ -7,12 +7,21 @@
 #include "filesystem.hpp"
 #include "fmt/color.h"
 
+#include "edit_tracked_audio_file.h"
 #include "types.h"
 
 bool g_messages_enabled = true;
 bool g_warning_issued = false;
 bool g_error_issued = false;
 
+// std::string SmartShortenedFilename(std::string_view filename) {
+//     if (filename.size() < 28) return filename;
+
+// }
+
+void PrintFilename(const EditTrackedAudioFile &f) { fmt::print("{}: ", f.OriginalFilename()); }
+void PrintFilename(const fs::path &path) { fmt::print("{}: ", GetJustFilenameWithNoExtension(path)); }
+void PrintFilename(NoneType) {}
 
 void PrintErrorPrefix(std::string_view heading) {
     fmt::print(fg(fmt::color::red) | fmt::emphasis::bold, "ERROR ({}): ", heading);
@@ -105,7 +114,7 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     auto f = OpenFileRaw(path, mode, &ec);
     if (f) return {f, SafeFClose};
 
-    WarningWithNewLine("Signet", "could not open file {} for reason: {}", path, ec.message());
+    WarningWithNewLine("Signet", {}, "could not open file {} for reason: {}", path, ec.message());
     return {nullptr, SafeFClose};
 }
 

@@ -18,12 +18,12 @@ void DetectPitchCommand::ProcessFiles(AudioFiles &files) {
         if (pitch) {
             const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
-            MessageWithNewLine(GetName(), "{} detected pitch {:.2f} Hz ({:.1f} cents from {}, MIDI {})",
+            MessageWithNewLine(GetName(), f, "{} detected pitch {:.2f} Hz ({:.1f} cents from {}, MIDI {})",
                                f.OriginalFilename(), *pitch,
                                GetCentsDifference(closest_musical_note.pitch, *pitch),
                                closest_musical_note.name, closest_musical_note.midi_note);
         } else {
-            MessageWithNewLine(GetName(), "No pitch could be found");
+            MessageWithNewLine(GetName(), f, "No pitch could be found");
         }
     }
 }

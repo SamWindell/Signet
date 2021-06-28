@@ -70,9 +70,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
            "undo",
            "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.")
         ->final_callback([&]() {
-            MessageWithNewLine("Signet", "Undoing changes made by the last run of Signet...");
+            MessageWithNewLine("Signet", {}, "Undoing changes made by the last run of Signet...");
             m_backup.LoadBackup();
-            MessageWithNewLine("Signet", "Done.");
+            MessageWithNewLine("Signet", {}, "Done.");
             success_thrown = true;
             throw CLI::Success();
         });
@@ -80,11 +80,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag_callback(
         "--version",
         [&]() {
-            MessageWithNewLine("Signet", "Version is {}", SIGNET_VERSION);
+            fmt::print("Signet version {}\n", SIGNET_VERSION);
             success_thrown = true;
             throw CLI::Success();
         },
-        "Print the version of Signet");
+        "Display the version of Signet");
 
     {
         auto make_docs = app.add_subcommand(
@@ -181,7 +181,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             }
 
             success_thrown = true;
-            MessageWithNewLine("Signet", "Successfully written docs file");
+            MessageWithNewLine("Signet", {}, "Successfully written docs file");
             throw CLI::Success();
         });
     }
@@ -190,9 +190,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
            "clear-backup",
            "Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.")
         ->final_callback([&]() {
-            MessageWithNewLine("Signet", "Clearing all backed-up files...");
+            MessageWithNewLine("Signet", {}, "Clearing all backed-up files...");
             m_backup.ClearBackup();
-            MessageWithNewLine("Signet", "Done.");
+            MessageWithNewLine("Signet", {}, "Done.");
             success_thrown = true;
             throw CLI::Success();
         });
@@ -227,7 +227,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 initial_file_edit_state.push_back({f.NumTimesAudioChanged(), f.NumTimesPathChanged()});
             }
 
-            MessageWithNewLine(command->GetName(), "Starting processing");
+            MessageWithNewLine(command->GetName(), {}, "Starting processing");
             command->ProcessFiles(m_input_audio_files);
             command->GenerateFiles(m_input_audio_files, m_backup);
 
@@ -239,8 +239,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 if (initial_file_edit_state[i].num_audio_edits != f.NumTimesAudioChanged()) ++num_audio_edits;
                 if (initial_file_edit_state[i].num_path_edits != f.NumTimesPathChanged()) ++num_path_edits;
             }
-            MessageWithNewLine(command->GetName(), "Total audio files edited: {}", num_audio_edits);
-            MessageWithNewLine(command->GetName(), "Total audio file paths edited: {}", num_path_edits);
+            MessageWithNewLine(command->GetName(), {}, "Total audio files edited: {}", num_audio_edits);
+            MessageWithNewLine(command->GetName(), {}, "Total audio file paths edited: {}", num_path_edits);
         });
     }
 

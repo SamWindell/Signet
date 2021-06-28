@@ -26,15 +26,15 @@ void AutoTuneCommand::ProcessFiles(AudioFiles &files) {
                 const auto closest_musical_note = FindClosestMidiPitch(*pitch);
                 const double cents = GetCentsDifference(*pitch, closest_musical_note.pitch);
                 if (std::abs(cents) < 1) {
-                    MessageWithNewLine(GetName(), "Sample is already in tune: {}",
+                    MessageWithNewLine(GetName(), f, "Sample is already in tune: {}",
                                        closest_musical_note.ToString());
                     continue;
                 }
-                MessageWithNewLine(GetName(), "Changing pitch from {} to {}", *pitch,
+                MessageWithNewLine(GetName(), f, "Changing pitch from {} to {}", *pitch,
                                    closest_musical_note.ToString());
                 f.GetWritableAudio().ChangePitch(cents);
             } else {
-                MessageWithNewLine(GetName(), "No pitch could be found");
+                MessageWithNewLine(GetName(), f, "No pitch could be found");
             }
         }
     } else {
@@ -45,18 +45,19 @@ void AutoTuneCommand::ProcessFiles(AudioFiles &files) {
                     const auto closest_musical_note = FindClosestMidiPitch(*pitch);
                     const double cents = GetCentsDifference(*pitch, closest_musical_note.pitch);
                     if (std::abs(cents) < 1) {
-                        MessageWithNewLine(GetName(), "Sample set is already in tune: {}",
+                        MessageWithNewLine(GetName(), {}, "Sample set is already in tune: {}",
                                            closest_musical_note.ToString());
                         return;
                     }
-                    MessageWithNewLine(GetName(), "Changing pitch from {} to {}", *pitch,
+                    MessageWithNewLine(GetName(), *authority_file,
+                                       "Sample set {}: changing pitch from {} to {}", *pitch,
                                        closest_musical_note.ToString());
 
                     for (auto &f : set) {
                         f->GetWritableAudio().ChangePitch(cents);
                     }
                 } else {
-                    MessageWithNewLine(GetName(), "No pitch could be found for sample set: {}",
+                    MessageWithNewLine(GetName(), {}, "No pitch could be found for sample set: {}",
                                        authority_file->OriginalFilename());
                 }
             });

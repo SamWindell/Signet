@@ -6,6 +6,7 @@
 #include "dywapitchtrack/dywapitchtrack.h"
 
 #include "common.h"
+#include "defer.h"
 #include "gain_calculators.h"
 #include "test_helpers.h"
 #include "tests_config.h"
@@ -107,7 +108,7 @@ void PitchDriftCorrector::PrintChunkCSV() const {
 
 bool PitchDriftCorrector::CanFileBePitchCorrected() const {
     if (m_chunks.size() < 3) {
-        MessageWithNewLine(m_message_heading,
+        MessageWithNewLine(m_message_heading, {},
                            "The audio is too short to process - it needs to be at least {} milliseconds long",
                            3 * m_chunk_length_milliseconds);
         return false;
@@ -120,7 +121,7 @@ bool PitchDriftCorrector::CanFileBePitchCorrected() const {
         (((double)num_detected_pitch_chunks / (double)m_chunks.size()) * 100.0) >= minimum_percent_detected;
     if (!result) {
         WarningWithNewLine(
-            m_message_heading,
+            m_message_heading, {},
             "The pitch detection algorithm cannot reliably detect pitch across the duration of the file");
     }
     return result;
@@ -130,10 +131,10 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
     MarkOutlierChunks();
     MarkRegionsToIgnore();
     const auto num_good_regions = MarkTargetPitches();
+    defer { PrintChunkCSV(); };
     if (!num_good_regions) {
-        WarningWithNewLine(m_message_heading,
+        WarningWithNewLine(m_message_heading, {},
                            "Failed to process the audio because there are no regions of consistent pitch");
-        PrintChunkCSV();
         return false;
     }
 
@@ -144,7 +145,6 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
     data.interleaved_samples = std::move(new_interleaved_samples);
     data.AudioDataWasStretched(size_change_ratio);
 
-    PrintChunkCSV();
     return true;
 }
 
@@ -353,13 +353,13 @@ int PitchDriftCorrector::MarkTargetPitches() {
             }
 
             MessageWithNewLine(
-                m_message_heading,
+                m_message_heading, {},
                 "{}: Found a region for pitch-drift correction from {:.2f} sec to {:.2f} sec; this will be smoothly tuned towards {:.2f} Hz.",
                 num_valid_pitch_regions, (double)region_start->frame_start / (double)m_sample_rate,
                 (double)((region_end - 1)->frame_start + (region_end - 1)->frame_size) /
                     (double)m_sample_rate,
                 target_pitch);
-            MessageWithNewLine(m_message_heading,
+            MessageWithNewLine(m_message_heading, {},
                                "{}: This region roughly drifts from the target pitch by {:.1f} cents",
                                num_valid_pitch_regions,
                                (MeanValuesDiff(region_start, region_end, target_pitch, false) +
@@ -409,7 +409,8 @@ int PitchDriftCorrector::MarkTargetPitches() {
         }
     }
 
-    MessageWithNewLine(m_message_heading, "Found {} regions of consistent pitch", num_valid_pitch_regions);
+    MessageWithNewLine(m_message_heading, {}, "Found {} regions of consistent pitch",
+                       num_valid_pitch_regions);
     return num_valid_pitch_regions;
 }
 

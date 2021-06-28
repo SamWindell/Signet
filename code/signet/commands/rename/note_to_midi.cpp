@@ -85,7 +85,8 @@ bool NoteToMIDIConverter::Rename(std::string &filename) {
     if (m_on) {
         const auto zero_note = ParseNote(m_midi_0_note);
         if (!zero_note) {
-            WarningWithNewLine("RenameCommand note-to-midi", "given root note is not valid: ", m_midi_0_note);
+            ErrorWithNewLine("RenameCommand note-to-midi", fs::path(filename),
+                             "given root note is not valid: ", m_midi_0_note);
         } else {
             bool result = false;
             while (const auto note_str = FindNoteName(filename)) {

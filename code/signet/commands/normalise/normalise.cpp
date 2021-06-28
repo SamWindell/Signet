@@ -46,21 +46,22 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         }
         if (!m_using_common_gain) {
             ErrorWithNewLine(
-                GetName(),
+                GetName(), {},
                 "unable to perform normalisation because the common gain was not successfully found");
             return;
         }
     }
 
     for (auto &f : files) {
-        PerformNormalisation(f.GetWritableAudio());
+        PerformNormalisation(f);
     }
 }
 
-bool NormaliseCommand::PerformNormalisation(AudioData &input_audio) const {
+bool NormaliseCommand::PerformNormalisation(EditTrackedAudioFile &f) const {
+    auto &audio = f.GetWritableAudio();
     if (!m_using_common_gain) {
         m_processor->Reset();
-        m_processor->RegisterBufferMagnitudes(input_audio);
+        m_processor->RegisterBufferMagnitudes(audio);
     }
     double gain = m_processor->GetGain(DBToAmp(m_target_decibels));
     if (m_norm_mix) {
@@ -72,9 +73,9 @@ bool NormaliseCommand::PerformNormalisation(AudioData &input_audio) const {
         }
     }
 
-    MessageWithNewLine(GetName(), "Applying a gain of {}", gain);
+    MessageWithNewLine(GetName(), f, "Applying a gain of {}", gain);
 
-    for (auto &s : input_audio.interleaved_samples) {
+    for (auto &s : audio.interleaved_samples) {
         s *= gain;
     }
 

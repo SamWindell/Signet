@@ -53,7 +53,7 @@ void PanCommand::ProcessFiles(AudioFiles &files) {
         auto &audio = f.GetWritableAudio();
         if (audio.IsEmpty()) continue;
         if (audio.num_channels != 2) {
-            MessageWithNewLine(GetName(), "Skipping non-stereo file {}", f.OriginalFilename());
+            MessageWithNewLine(GetName(), f, "Skipping non-stereo file");
             continue;
         }
 

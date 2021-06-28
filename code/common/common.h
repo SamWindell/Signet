@@ -14,6 +14,9 @@
 extern bool g_messages_enabled;
 extern bool g_warning_issued;
 extern bool g_error_issued;
+
+struct EditTrackedAudioFile;
+
 template <>
 struct fmt::formatter<fs::path> {
     constexpr auto parse(format_parse_context &ctx) { return ctx.end(); }
@@ -24,31 +27,50 @@ struct fmt::formatter<fs::path> {
     }
 };
 
-
 void PrintErrorPrefix(std::string_view heading);
 void PrintWarningPrefix(std::string_view heading);
-void PrintDebugPrefix();
 void PrintMessagePrefix(std::string_view heading);
+void PrintDebugPrefix();
 
-template <typename... Args>
-void ErrorWithNewLine(std::string_view heading, std::string_view format, const Args &...args) {
+struct NoneType {};
+
+void PrintFilename(const EditTrackedAudioFile &f);
+void PrintFilename(fs::path &path);
+void PrintFilename(NoneType n);
+
+template <typename NameType = NoneType, typename... Args>
+void ErrorWithNewLine(std::string_view heading,
+                      const NameType &f,
+                      std::string_view format,
+                      const Args &...args) {
+    g_error_issued = true;
     PrintErrorPrefix(heading);
+    PrintFilename(f);
     fmt::vprint(format, fmt::make_format_args(args...));
     fmt::print("\n");
     throw std::runtime_error("An error occurred, processing has stopped");
 }
 
-template <typename... Args>
-void WarningWithNewLine(std::string_view heading, std::string_view format, Args &&...args) {
+template <typename NameType = NoneType, typename... Args>
+void WarningWithNewLine(std::string_view heading,
+                        const NameType &f,
+                        std::string_view format,
+                        Args &&...args) {
+    g_warning_issued = true;
     PrintWarningPrefix(heading);
+    PrintFilename(f);
     fmt::vprint(format, fmt::make_format_args(args...));
     fmt::print("\n");
 }
 
-template <typename... Args>
-void MessageWithNewLine(std::string_view heading, std::string_view format, Args &&...args) {
-    if (GetMessagesEnabled()) {
+template <typename NameType = NoneType, typename... Args>
+void MessageWithNewLine(std::string_view heading,
+                        const NameType &f,
+                        std::string_view format,
+                        Args &&...args) {
+    if (g_messages_enabled) {
         PrintMessagePrefix(heading);
+        PrintFilename(f);
         fmt::vprint(format, fmt::make_format_args(args...));
         fmt::print("\n");
     }

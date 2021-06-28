@@ -11,6 +11,9 @@
 
 #include "filesystem.hpp"
 
+extern bool g_messages_enabled;
+extern bool g_warning_issued;
+extern bool g_error_issued;
 template <>
 struct fmt::formatter<fs::path> {
     constexpr auto parse(format_parse_context &ctx) { return ctx.end(); }
@@ -21,8 +24,6 @@ struct fmt::formatter<fs::path> {
     }
 };
 
-bool GetMessagesEnabled();
-void SetMessagesEnabled(bool v);
 
 void PrintErrorPrefix(std::string_view heading);
 void PrintWarningPrefix(std::string_view heading);
@@ -34,6 +35,7 @@ void ErrorWithNewLine(std::string_view heading, std::string_view format, const A
     PrintErrorPrefix(heading);
     fmt::vprint(format, fmt::make_format_args(args...));
     fmt::print("\n");
+    throw std::runtime_error("An error occurred, processing has stopped");
 }
 
 template <typename... Args>

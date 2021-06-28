@@ -9,10 +9,10 @@
 
 #include "types.h"
 
-static bool g_messages_enabled = true;
+bool g_messages_enabled = true;
+bool g_warning_issued = false;
+bool g_error_issued = false;
 
-bool GetMessagesEnabled() { return g_messages_enabled; }
-void SetMessagesEnabled(bool v) { g_messages_enabled = v; }
 
 void PrintErrorPrefix(std::string_view heading) {
     fmt::print(fg(fmt::color::red) | fmt::emphasis::bold, "ERROR ({}): ", heading);

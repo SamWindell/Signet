@@ -6,7 +6,8 @@
 static void SetSilent(int argc, char **argv) {
     for (int i = 0; i < argc; ++i) {
         if (strcmp(argv[i], "--silent") == 0) {
-            SetMessagesEnabled(false);
+            g_messages_enabled = false;
+            return;
         }
     }
 }

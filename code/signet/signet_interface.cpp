@@ -198,7 +198,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         });
 
     app.add_flag_callback(
-        "--silent", []() { SetMessagesEnabled(true); }, "Disable all messages");
+        "--silent", []() { g_messages_enabled = false; }, "Disable all messages");
+
+    app.add_flag_callback(
+        "--warnings-are-errors", [this]() { m_warnings_are_errors = true; },
+        "Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.");
 
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively");
@@ -257,6 +261,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             fmt::print("{}", help_text_stream.str());
             return result;
         }
+    } catch (const std::runtime_error &e) {
+        (void)e;
+        fmt::print(fg(fmt::color::red),
+                   "A fatal error occurred. Processing has stopped. No files have been changed or saved.\n");
+        return SignetResult::FatalErrorOcurred;
+    }
+
+    assert(!g_error_issued); // we should have caught this prior to now
+
+    if (m_warnings_are_errors && g_warning_issued) {
+        fmt::print(fg(fmt::color::red),
+                   "A warning was issued. Processing has stopped. No files have been changed or saved.\n");
+        return SignetResult::WarningsAreErrors;
     }
 
     m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
@@ -272,7 +289,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
         return SignetResult::NoFilesWereProcessed;
     }
-    return SignetResult::Success;
+    return (m_warnings_are_errors && g_warning_issued) ? SignetResult::WarningsAreErrors
+                                                       : SignetResult::Success;
 }
 
 TEST_CASE("[SignetInterface]") {

@@ -11,8 +11,7 @@
 #include "types.h"
 
 bool g_messages_enabled = true;
-bool g_warning_issued = false;
-bool g_error_issued = false;
+bool g_warnings_as_errors = false;
 
 // std::string SmartShortenedFilename(std::string_view filename) {
 //     if (filename.size() < 28) return filename;

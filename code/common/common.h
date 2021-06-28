@@ -12,8 +12,7 @@
 #include "filesystem.hpp"
 
 extern bool g_messages_enabled;
-extern bool g_warning_issued;
-extern bool g_error_issued;
+extern bool g_warnings_as_errors;
 
 struct EditTrackedAudioFile;
 
@@ -34,6 +33,13 @@ void PrintDebugPrefix();
 
 struct NoneType {};
 
+struct SignetError : public std::runtime_error {
+    SignetError(const std::string &str) : std::runtime_error(str) {}
+};
+struct SignetWarning : public std::runtime_error {
+    SignetWarning(const std::string &str) : std::runtime_error(str) {}
+};
+
 void PrintFilename(const EditTrackedAudioFile &f);
 void PrintFilename(fs::path &path);
 void PrintFilename(NoneType n);
@@ -43,12 +49,11 @@ void ErrorWithNewLine(std::string_view heading,
                       const NameType &f,
                       std::string_view format,
                       const Args &...args) {
-    g_error_issued = true;
     PrintErrorPrefix(heading);
     PrintFilename(f);
     fmt::vprint(format, fmt::make_format_args(args...));
     fmt::print("\n");
-    throw std::runtime_error("An error occurred, processing has stopped");
+    throw SignetError("A fatal error occurred");
 }
 
 template <typename NameType = NoneType, typename... Args>
@@ -56,11 +61,12 @@ void WarningWithNewLine(std::string_view heading,
                         const NameType &f,
                         std::string_view format,
                         Args &&...args) {
-    g_warning_issued = true;
     PrintWarningPrefix(heading);
     PrintFilename(f);
     fmt::vprint(format, fmt::make_format_args(args...));
     fmt::print("\n");
+    if (g_warnings_as_errors)
+        throw SignetWarning("A warning occurred, and warnings are set to be treated as errors");
 }
 
 template <typename NameType = NoneType, typename... Args>

@@ -33,8 +33,6 @@ class SignetInterface final {
     std::vector<std::unique_ptr<Command>> m_commands {};
     SignetBackup m_backup {};
 
-    bool m_warnings_are_errors = false;
-
     AudioFiles m_input_audio_files {};
     bool m_recursive_directory_search {};
     fs::path m_make_docs_filepath {};

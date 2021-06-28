@@ -201,7 +201,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         "--silent", []() { g_messages_enabled = false; }, "Disable all messages");
 
     app.add_flag_callback(
-        "--warnings-are-errors", [this]() { m_warnings_are_errors = true; },
+        "--warnings-are-errors", [this]() { g_warnings_as_errors = true; },
         "Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.");
 
     app.add_flag("--recursive", m_recursive_directory_search,
@@ -246,6 +246,21 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     try {
         app.parse(argc, argv);
+
+        m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
+
+        if (m_input_audio_files.GetNumFilesProcessed()) {
+            if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(m_backup)) {
+                return SignetResult::FailedToWriteFiles;
+            }
+        }
+
+        if (m_input_audio_files.Size() == 0) {
+            return SignetResult::NoFilesMatchingInput;
+        } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
+            return SignetResult::NoFilesWereProcessed;
+        }
+        return SignetResult::Success;
     } catch (const CLI::ParseError &e) {
         if (!success_thrown) PrintSignetHeading();
         if (e.get_exit_code() != 0) {
@@ -261,36 +276,15 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             fmt::print("{}", help_text_stream.str());
             return result;
         }
-    } catch (const std::runtime_error &e) {
-        (void)e;
-        fmt::print(fg(fmt::color::red),
-                   "A fatal error occurred. Processing has stopped. No files have been changed or saved.\n");
+    } catch (const SignetError &e) {
+        fmt::print(fg(fmt::color::red), "{}. Processing has stopped. No files have been changed or saved.\n",
+                   e.what());
         return SignetResult::FatalErrorOcurred;
-    }
-
-    assert(!g_error_issued); // we should have caught this prior to now
-
-    if (m_warnings_are_errors && g_warning_issued) {
-        fmt::print(fg(fmt::color::red),
-                   "A warning was issued. Processing has stopped. No files have been changed or saved.\n");
+    } catch (const SignetWarning &e) {
+        fmt::print(fg(fmt::color::red), "{}. Processing has stopped. No files have been changed or saved.\n",
+                   e.what());
         return SignetResult::WarningsAreErrors;
     }
-
-    m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
-
-    if (m_input_audio_files.GetNumFilesProcessed()) {
-        if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(m_backup)) {
-            return SignetResult::FailedToWriteFiles;
-        }
-    }
-
-    if (m_input_audio_files.Size() == 0) {
-        return SignetResult::NoFilesMatchingInput;
-    } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
-        return SignetResult::NoFilesWereProcessed;
-    }
-    return (m_warnings_are_errors && g_warning_issued) ? SignetResult::WarningsAreErrors
-                                                       : SignetResult::Success;
 }
 
 TEST_CASE("[SignetInterface]") {

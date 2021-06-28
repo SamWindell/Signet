@@ -96,9 +96,8 @@ TEST_CASE("FolderiseCommand") {
     }
 
     SUBCASE("regex no match") {
-        const auto f =
-            TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise (\\d*) <1>", {}, "file.wav");
-        REQUIRE(!f);
+        REQUIRE_THROWS(
+            TestHelpers::ProcessPathWithCommand<FolderiseCommand>("folderise (\\d*) <1>", {}, "file.wav"));
     }
 
     SUBCASE("regex 2 groups") {

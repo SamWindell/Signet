@@ -248,9 +248,8 @@ TEST_CASE("RenameCommand") {
     }
 
     SUBCASE("invalid rename substitution") {
-        const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix <foo><bar>", {},
-                                                                              "foo/file.wav");
-        REQUIRE(!f);
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix <foo><bar>", {},
+                                                                              "foo/file.wav"));
     }
 
     SUBCASE("<parent-folder>") {

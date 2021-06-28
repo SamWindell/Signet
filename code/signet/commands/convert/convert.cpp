@@ -132,8 +132,8 @@ TEST_CASE("[ConvertCommand]") {
             buf.sample_rate = 48000;
             buf.bits_per_sample = 32;
 
-            auto out = TestHelpers::ProcessBufferWithCommand<ConvertCommand>("convert file-format flac", buf);
-            REQUIRE(!out);
+            REQUIRE_THROWS(
+                TestHelpers::ProcessBufferWithCommand<ConvertCommand>("convert file-format flac", buf));
         }
 
         SUBCASE("sine") {

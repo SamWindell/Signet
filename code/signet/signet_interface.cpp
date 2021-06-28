@@ -244,6 +244,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         });
     }
 
+    const auto PrintSuccess = []() {
+        fmt::print(fmt::fg(fmt::terminal_color::green), "Signet completed successfully.\n");
+    };
+
     try {
         app.parse(argc, argv);
 
@@ -260,6 +264,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
             return SignetResult::NoFilesWereProcessed;
         }
+
+        PrintSuccess();
         return SignetResult::Success;
     } catch (const CLI::ParseError &e) {
         if (!success_thrown) PrintSignetHeading();
@@ -274,15 +280,17 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             std::stringstream help_text_stream;
             const auto result = app.exit(e, help_text_stream);
             fmt::print("{}", help_text_stream.str());
-            return result;
+
+            PrintSuccess();
+            return SignetResult::Success;
         }
     } catch (const SignetError &e) {
-        fmt::print(fg(fmt::color::red), "{}. Processing has stopped. No files have been changed or saved.\n",
-                   e.what());
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::bold,
+                   "{}. Processing has stopped. No files have been changed or saved.\n", e.what());
         return SignetResult::FatalErrorOcurred;
     } catch (const SignetWarning &e) {
-        fmt::print(fg(fmt::color::red), "{}. Processing has stopped. No files have been changed or saved.\n",
-                   e.what());
+        fmt::print(fg(fmt::color::red) | fmt::emphasis::bold,
+                   "{}. Processing has stopped. No files have been changed or saved.\n", e.what());
         return SignetResult::WarningsAreErrors;
     }
 }

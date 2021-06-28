@@ -3,6 +3,10 @@
 #include <regex>
 #include <system_error>
 
+#if WIN32
+#include <windows.h>
+#endif
+
 #include "doctest.hpp"
 #include "filesystem.hpp"
 #include "fmt/color.h"
@@ -13,25 +17,60 @@
 bool g_messages_enabled = true;
 bool g_warnings_as_errors = false;
 
-// std::string SmartShortenedFilename(std::string_view filename) {
-//     if (filename.size() < 28) return filename;
+bool EnableVTMode() {
+#if WIN32
+    // Set output mode to handle virtual terminal sequences
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) {
+        return false;
+    }
 
-// }
+    DWORD dwMode = 0;
+    if (!GetConsoleMode(hOut, &dwMode)) {
+        return false;
+    }
 
-void PrintFilename(const EditTrackedAudioFile &f) { fmt::print("{}: ", f.OriginalFilename()); }
-void PrintFilename(const fs::path &path) { fmt::print("{}: ", GetJustFilenameWithNoExtension(path)); }
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    if (!SetConsoleMode(hOut, dwMode)) {
+        return false;
+    }
+    return true;
+#endif
+}
+
+void InitConsole() {
+    struct Obj {
+        Obj() { EnableVTMode(); }
+    };
+    static Obj obj;
+}
+
+void PrintFilename(const EditTrackedAudioFile &f) {
+    InitConsole();
+    fmt::print(": ");
+    fmt::print(fg(fmt::color::navajo_white), "{}", f.OriginalFilename());
+}
+void PrintFilename(const fs::path &path) {
+    InitConsole();
+    fmt::print(": ");
+    fmt::print(fg(fmt::color::navajo_white), "{}", GetJustFilenameWithNoExtension(path));
+}
 void PrintFilename(NoneType) {}
 
 void PrintErrorPrefix(std::string_view heading) {
-    fmt::print(fg(fmt::color::red) | fmt::emphasis::bold, "ERROR ({}): ", heading);
+    InitConsole();
+    fmt::print(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[{}] ERROR", heading);
+    fmt::print(": ");
 }
-
 void PrintWarningPrefix(std::string_view heading) {
-    fmt::print(fg(fmt::color::yellow) | fmt::emphasis::bold, "WARNING ({}): ", heading);
+    InitConsole();
+    fmt::print(fmt::fg(fmt::color::orange) | fmt::emphasis::bold, "[{}] WARNING", heading);
+    fmt::print(": ");
 }
-
 void PrintMessagePrefix(const std::string_view heading) {
-    fmt::print(fmt::emphasis::bold, "[{}]: ", heading);
+    InitConsole();
+    fmt::print(fmt::fg(fmt::color::cornflower_blue) | fmt::emphasis::bold, "[{}]", heading);
+    fmt::print(": ");
 }
 
 void PrintDebugPrefix() { fmt::print(fmt::emphasis::bold, "[DEBUG]: "); }

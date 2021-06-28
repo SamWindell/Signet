@@ -50,8 +50,8 @@ void ErrorWithNewLine(std::string_view heading,
                       std::string_view format,
                       const Args &...args) {
     PrintErrorPrefix(heading);
-    PrintFilename(f);
     fmt::vprint(format, fmt::make_format_args(args...));
+    PrintFilename(f);
     fmt::print("\n");
     throw SignetError("A fatal error occurred");
 }
@@ -62,8 +62,8 @@ void WarningWithNewLine(std::string_view heading,
                         std::string_view format,
                         Args &&...args) {
     PrintWarningPrefix(heading);
-    PrintFilename(f);
     fmt::vprint(format, fmt::make_format_args(args...));
+    PrintFilename(f);
     fmt::print("\n");
     if (g_warnings_as_errors)
         throw SignetWarning("A warning occurred, and warnings are set to be treated as errors");
@@ -76,8 +76,8 @@ void MessageWithNewLine(std::string_view heading,
                         Args &&...args) {
     if (g_messages_enabled) {
         PrintMessagePrefix(heading);
-        PrintFilename(f);
         fmt::vprint(format, fmt::make_format_args(args...));
+        PrintFilename(f);
         fmt::print("\n");
     }
 }

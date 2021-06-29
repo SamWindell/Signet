@@ -34,8 +34,8 @@ bool EnableVTMode() {
     if (!SetConsoleMode(hOut, dwMode)) {
         return false;
     }
-    return true;
 #endif
+    return true;
 }
 
 void InitConsole() {

@@ -11,24 +11,66 @@
 #include "tests_config.h"
 
 CLI::App *FixPitchDriftCommand::CreateCommandCLI(CLI::App &app) {
-    auto auto_tune = app.add_subcommand(
+    auto fix_pitch_drift = app.add_subcommand(
         "fix-pitch-drift",
         "Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for samples of single-note instruments that subtly drift out of pitch, such as a human voice or a wind instrument. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that. As well as this, fix-pitch-drift is a bit more specialised and does not always work as ubiquitously as Signet's other auto-tune command.");
-    return auto_tune;
+
+    m_identical_processing_set.AddCli(*fix_pitch_drift);
+
+    fix_pitch_drift
+        ->add_option(
+            "--chunk-ms", m_chunk_length_milliseconds,
+            "fix-pitch-drift evaluates the audio in small chunks. The pitch of each chunk is determined in order to get a picture of the audio's pitch over time. You can set the chunk size with this option. The default is 60 milliseconds. If you are finding this tool is incorrectly changing the pitch, you might try increasing the chunk size by 10 ms or so.")
+        ->check(CLI::Range(20, 200));
+    ;
+
+    fix_pitch_drift->add_flag(
+        "--print-csv", m_print_csv,
+        "Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.");
+
+    return fix_pitch_drift;
 }
 
 void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
-    for (auto &f : files) {
-        PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName());
-        if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
-            WarningWithNewLine(GetName(), "{}: cannot be pitch-drift corrected", f.OriginalFilename());
-        } else {
-            MessageWithNewLine(GetName(), "{}: correcting pitch-drift", f.OriginalFilename());
-            if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio())) {
-                MessageWithNewLine(GetName(), "{}: successfully pitch-drift corrected.",
-                                   f.OriginalFilename());
+    if (!m_identical_processing_set.ShouldProcessInSets()) {
+        for (auto &f : files) {
+            PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName(), m_chunk_length_milliseconds,
+                                                      m_print_csv);
+            if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
+                ErrorWithNewLine(GetName(), f, "cannot be pitch-drift corrected");
+            } else {
+                MessageWithNewLine(GetName(), f, "correcting pitch-drift");
+                if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio())) {
+                    MessageWithNewLine(GetName(), f, "successfully pitch-drift corrected.");
+                }
             }
         }
+    } else {
+        m_identical_processing_set.ProcessSets(
+            files, GetName(),
+            [this](EditTrackedAudioFile *authority_file, const std::vector<EditTrackedAudioFile *> &set) {
+                if (!IdenticalProcessingSet::AllHaveSameNumFrames(set)) {
+                    ErrorWithNewLine(
+                        GetName(), *authority_file,
+                        "the files in the set do not all have the same number of frames and therefore cannot be processed with fix-pitch-drift.");
+                    return;
+                }
+
+                PitchDriftCorrector pitch_drift_corrector(authority_file->GetAudio(), GetName(),
+                                                          m_chunk_length_milliseconds, m_print_csv);
+                if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
+                    ErrorWithNewLine(
+                        GetName(), *authority_file,
+                        "authority file for set cannot be pitch-drift corrected, therefore the set cannot be processed");
+                } else {
+                    for (auto f : set) {
+                        MessageWithNewLine(GetName(), *f, "correcting pitch-drift");
+                        if (pitch_drift_corrector.ProcessFile(f->GetWritableAudio())) {
+                            MessageWithNewLine(GetName(), *f, "successfully pitch-drift corrected.");
+                        }
+                    }
+                }
+            });
     }
 }
 

@@ -7,10 +7,11 @@
 CLI::App *SeamlessLoopCommand::CreateCommandCLI(CLI::App &app) {
     auto looper = app.add_subcommand(
         "seamless-loop",
-        "Turns the files(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.");
+        "Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.");
     looper
         ->add_option("crossfade-percent", m_crossfade_percent,
-                     "The size of the crossfade region as a percent of the whole file.")->required()
+                     "The size of the crossfade region as a percent of the whole file.")
+        ->required()
         ->check(CLI::Range(0, 100));
     return looper;
 }
@@ -20,8 +21,8 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
         const auto num_frames = f.GetAudio().NumFrames();
         const auto num_xfade_frames = usize(num_frames * (m_crossfade_percent / 100.0));
         if (num_frames < num_xfade_frames || num_xfade_frames == 0) {
-            WarningWithNewLine(
-                GetName(),
+            ErrorWithNewLine(
+                GetName(), f,
                 "Cannot make the file a seamless loop because the file or crossfade-region are too small. Number of frames in the file: {}, number of frames in the crossfade-region: {}. File: {}",
                 num_frames, num_xfade_frames, f.GetPath());
             continue;

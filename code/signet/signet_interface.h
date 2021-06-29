@@ -18,6 +18,8 @@ enum SignetResultEnum {
     NoFilesMatchingInput,
     NoFilesWereProcessed,
     FailedToWriteFiles,
+    FatalErrorOcurred,
+    WarningsAreErrors,
 };
 }
 

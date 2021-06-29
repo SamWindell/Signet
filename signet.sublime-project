@@ -1,7 +1,7 @@
 {
     "settings": {
         "ClangFormat": {
-          "format_on_save": false
+          "format_on_save": true
         }
     },
 	"folders":
@@ -38,6 +38,16 @@
                 {
                     "name": "CMake",
                     "shell_cmd": "cmake ../ -G Ninja -DCMAKE_BUILD_TYPE=Debug"
+                },
+                {
+                    "name": "CMake Generate Debug",
+                    "working_dir": "$project_path",
+                    "shell_cmd": "cmake -B build -DCMAKE_BUILD_TYPE:STRING=Debug -G Ninja"
+                },
+                {
+                    "name": "CMake Generate RelWithDebInfo",
+                    "working_dir": "$project_path",
+                    "shell_cmd": "cmake -B build -DCMAKE_BUILD_TYPE:STRING=RelWithDebInfo -G Ninja"
                 }
             ]
         }

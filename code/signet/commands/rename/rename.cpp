@@ -124,9 +124,9 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                                 std::to_string(
                                     ScaleByOctavesToBeNearestToMiddleC(closest_musical_note.midi_note)));
                     } else {
-                        WarningWithNewLine(
-                            GetName(),
-                            "One of the detected pitch variables was used in the file name, but we could not find any pitch in the audio. All detected pitch variables will be replaced with nothing.");
+                        ErrorWithNewLine(
+                            GetName(), *f,
+                            "One of the detected pitch variables was used in the file name, but we could not find any pitch in the audio.");
                         Replace(filename, "<detected-pitch>", "");
                         Replace(filename, "<detected-midi-note>", "");
                         Replace(filename, "<detected-midi-note-octave-plus-1>", "");
@@ -145,9 +145,9 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                         Replace(filename, "<parent-folder-camel>",
                                 ToCamelCase(folder.filename().generic_string()));
                     } else {
-                        WarningWithNewLine(
-                            GetName(),
-                            "The file does not have a parent path, but the variable <parent-folder> was used. This will just be replaced by nothing.");
+                        ErrorWithNewLine(
+                            GetName(), *f,
+                            "The file does not have a parent path, but the variable <parent-folder> was used.");
                         Replace(filename, "<parent-folder>", "");
                     }
                 }
@@ -156,7 +156,7 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                 auto var_begin = std::sregex_iterator(filename.begin(), filename.end(), re);
                 auto var_end = std::sregex_iterator();
                 for (std::sregex_iterator i = var_begin; i != var_end; ++i) {
-                    ErrorWithNewLine(GetName(),
+                    ErrorWithNewLine(GetName(), *f,
                                      "{} is not a valid substitution variable. Available options are: \n{}",
                                      i->str(), RenameSubstitution::GetVariableNames());
                     renamed = false;
@@ -248,9 +248,8 @@ TEST_CASE("RenameCommand") {
     }
 
     SUBCASE("invalid rename substitution") {
-        const auto f = TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix <foo><bar>", {},
-                                                                              "foo/file.wav");
-        REQUIRE(!f);
+        REQUIRE_THROWS(TestHelpers::ProcessFilenameWithCommand<RenameCommand>("rename prefix <foo><bar>", {},
+                                                                              "foo/file.wav"));
     }
 
     SUBCASE("<parent-folder>") {

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "command.h"
+#include "identical_processing_set.h"
 
 class RemoveSilenceCommand final : public Command {
   public:
@@ -9,6 +10,10 @@ class RemoveSilenceCommand final : public Command {
     std::string GetName() const override { return "RemoveSilence"; }
 
   private:
+    std::pair<usize, usize> GetLoudRegion(EditTrackedAudioFile &f) const;
+    void ProcessFile(EditTrackedAudioFile &f, usize loud_region_start, usize loud_region_end) const;
+
+    IdenticalProcessingSet m_identical_processing_set;
     enum class Region { Start, End, Both };
     float m_silence_threshold_db = -90;
     Region m_region {Region::Both};

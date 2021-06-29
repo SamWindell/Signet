@@ -6,6 +6,7 @@
 #include "dywapitchtrack/dywapitchtrack.h"
 
 #include "common.h"
+#include "defer.h"
 #include "gain_calculators.h"
 #include "test_helpers.h"
 #include "tests_config.h"
@@ -44,8 +45,14 @@ inline double InterpolateCubic(double f0, double f1, double f2, double fm1, doub
                      t / 6.0);
 }
 
-PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view message_heading)
-    : m_message_heading(message_heading), m_sample_rate(data.sample_rate) {
+PitchDriftCorrector::PitchDriftCorrector(const AudioData &data,
+                                         std::string_view message_heading,
+                                         double chunk_length_milliseconds,
+                                         bool print_csv)
+    : m_message_heading(message_heading)
+    , m_sample_rate(data.sample_rate)
+    , m_chunk_length_milliseconds(chunk_length_milliseconds)
+    , m_print_csv(print_csv) {
 
     AudioData mono_data;
     mono_data.num_channels = 1;
@@ -54,7 +61,7 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view
     mono_data.interleaved_samples = data.MixDownToMono();
     const auto &mono_signal = mono_data.interleaved_samples;
 
-    const auto chunk_seconds = k_chunk_length_milliseconds / 1000.0;
+    const auto chunk_seconds = m_chunk_length_milliseconds / 1000.0;
     const auto chunk_frames = (usize)(chunk_seconds * data.sample_rate);
     for (usize frame = 0; frame < mono_signal.size(); frame += chunk_frames) {
         const auto chunk_size = (int)std::min(chunk_frames, mono_signal.size() - frame);
@@ -90,7 +97,7 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data, std::string_view
 }
 
 void PitchDriftCorrector::PrintChunkCSV() const {
-    if constexpr (k_print_csv) {
+    if (m_print_csv) {
         fmt::print("detected-pitch,is-outlier,ignore-tuning,target-pitch,pitch-ratio\n");
         for (const auto &c : m_chunks) {
             fmt::print("{:7.2f},{},{},{:7.2f},{:.3f}\n", c.detected_pitch, (int)c.is_detected_pitch_outlier,
@@ -101,9 +108,9 @@ void PitchDriftCorrector::PrintChunkCSV() const {
 
 bool PitchDriftCorrector::CanFileBePitchCorrected() const {
     if (m_chunks.size() < 3) {
-        MessageWithNewLine(m_message_heading,
+        MessageWithNewLine(m_message_heading, {},
                            "The audio is too short to process - it needs to be at least {} milliseconds long",
-                           3 * k_chunk_length_milliseconds);
+                           3 * m_chunk_length_milliseconds);
         return false;
     }
 
@@ -114,7 +121,7 @@ bool PitchDriftCorrector::CanFileBePitchCorrected() const {
         (((double)num_detected_pitch_chunks / (double)m_chunks.size()) * 100.0) >= minimum_percent_detected;
     if (!result) {
         WarningWithNewLine(
-            m_message_heading,
+            m_message_heading, {},
             "The pitch detection algorithm cannot reliably detect pitch across the duration of the file");
     }
     return result;
@@ -124,10 +131,10 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
     MarkOutlierChunks();
     MarkRegionsToIgnore();
     const auto num_good_regions = MarkTargetPitches();
+    defer { PrintChunkCSV(); };
     if (!num_good_regions) {
-        WarningWithNewLine(m_message_heading,
+        WarningWithNewLine(m_message_heading, {},
                            "Failed to process the audio because there are no regions of consistent pitch");
-        PrintChunkCSV();
         return false;
     }
 
@@ -138,7 +145,6 @@ bool PitchDriftCorrector::ProcessFile(AudioData &data) {
     data.interleaved_samples = std::move(new_interleaved_samples);
     data.AudioDataWasStretched(size_change_ratio);
 
-    PrintChunkCSV();
     return true;
 }
 
@@ -196,6 +202,10 @@ void PitchDriftCorrector::MarkOutlierChunks() {
     DebugWithNewLine("outlier detection is checking if adjacent detected pitches are withing {} cents",
                      threshold_cents_diff);
 
+    if (m_chunks.front().detected_pitch == 0) {
+        m_chunks.front().is_detected_pitch_outlier = true;
+    }
+
     for (auto it = m_chunks.begin() + 1; it != m_chunks.end(); ++it) {
         const auto prev = (it - 1)->detected_pitch;
         if (!PitchesAreRoughlyEqual(prev, it->detected_pitch, threshold_cents_diff) ||
@@ -220,7 +230,7 @@ void PitchDriftCorrector::MarkRegionsToIgnore() {
     // Rather than stop and start the tuning for each outlier, we only stop if there is a substantial region
     // of poor pitch data, as specified by this constant. Note this size is not the same as min number of
     // consective outliers.
-    constexpr std::ptrdiff_t min_ignore_region_size = 4;
+    constexpr std::ptrdiff_t min_ignore_region_size = 3;
 
     const auto NextInvalidAnalysisChunk = [&](std::vector<AnalysisChunk>::const_iterator start) {
         return std::find_if(start, m_chunks.cend(),
@@ -343,13 +353,13 @@ int PitchDriftCorrector::MarkTargetPitches() {
             }
 
             MessageWithNewLine(
-                m_message_heading,
+                m_message_heading, {},
                 "{}: Found a region for pitch-drift correction from {:.2f} sec to {:.2f} sec; this will be smoothly tuned towards {:.2f} Hz.",
                 num_valid_pitch_regions, (double)region_start->frame_start / (double)m_sample_rate,
                 (double)((region_end - 1)->frame_start + (region_end - 1)->frame_size) /
                     (double)m_sample_rate,
                 target_pitch);
-            MessageWithNewLine(m_message_heading,
+            MessageWithNewLine(m_message_heading, {},
                                "{}: This region roughly drifts from the target pitch by {:.1f} cents",
                                num_valid_pitch_regions,
                                (MeanValuesDiff(region_start, region_end, target_pitch, false) +
@@ -399,7 +409,8 @@ int PitchDriftCorrector::MarkTargetPitches() {
         }
     }
 
-    MessageWithNewLine(m_message_heading, "Found {} regions of consistent pitch", num_valid_pitch_regions);
+    MessageWithNewLine(m_message_heading, {}, "Found {} regions of consistent pitch",
+                       num_valid_pitch_regions);
     return num_valid_pitch_regions;
 }
 
@@ -411,10 +422,29 @@ std::vector<double> PitchDriftCorrector::CalculatePitchCorrectedInterleavedSampl
     const double smoothing_filter_cutoff = 0.00007 / ((double)data.sample_rate / 48000.0); // very smooth
 
     auto current_chunk_it = m_chunks.begin();
+
+    double fallback_pitch_ratio = 1.0;
+    if (current_chunk_it->ignore_tuning) {
+        // Rather than assume that the start of a file is the correct pitch, we instead assume that it is the
+        // pitch of the first valid chunk.
+        auto first_valid_chunk = current_chunk_it;
+        while (first_valid_chunk->ignore_tuning) {
+            ++first_valid_chunk;
+        }
+        if (first_valid_chunk != m_chunks.end()) {
+            const auto cents_from_target =
+                GetCentsDifference(first_valid_chunk->detected_pitch, first_valid_chunk->target_pitch);
+            constexpr double cents_in_octave = 1200;
+            const auto new_pitch_ratio = std::exp2(cents_from_target / cents_in_octave);
+            fallback_pitch_ratio = new_pitch_ratio;
+        }
+    }
+
     const auto UpdatePitchRatio = [&](bool hard_reset) {
         if (current_chunk_it->ignore_tuning) {
-            pitch_ratio.SetValue(1.0, hard_reset);
+            pitch_ratio.SetValue(fallback_pitch_ratio, hard_reset);
         } else {
+            fallback_pitch_ratio = 1.0;
             if (!current_chunk_it->is_detected_pitch_outlier) {
                 const auto cents_from_target =
                     GetCentsDifference(current_chunk_it->detected_pitch, current_chunk_it->target_pitch);

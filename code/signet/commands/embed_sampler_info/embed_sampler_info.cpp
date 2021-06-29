@@ -223,7 +223,8 @@ DESCRIPTION
 void EmbedSamplerInfo::ProcessFiles(AudioFiles &files) {
     if (m_remove_embedded_info) {
         MessageWithNewLine(
-            GetName(), "Remove command was specified, removing all sampler metadata from all given files");
+            GetName(), {},
+            "Remove command was specified, removing all sampler metadata from all given files");
         for (auto &f : files) {
             auto &metadata = f.GetWritableAudio().metadata;
             metadata.midi_mapping = std::nullopt;
@@ -249,15 +250,15 @@ void EmbedSamplerInfo::ProcessFiles(AudioFiles &files) {
                 auto o = GetIntIfValid(pieces_match[1].str());
                 if (!o) {
                     ErrorWithNewLine(
-                        GetName(),
-                        "The given regex pattern {} does not capture an integer in the filename {}. The value will instead be set to an appropriate default value.",
-                        pattern, filename);
+                        GetName(), f,
+                        "The given regex pattern {} does not capture an integer in the filename {}.", pattern,
+                        filename);
                 } else {
                     out = o.value();
                 }
             } else {
                 ErrorWithNewLine(
-                    GetName(),
+                    GetName(), f,
                     "The given regex pattern {} does not match the filename {}, no value could be captured",
                     pattern, filename);
             }

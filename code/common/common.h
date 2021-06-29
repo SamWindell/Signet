@@ -11,6 +11,11 @@
 
 #include "filesystem.hpp"
 
+extern bool g_messages_enabled;
+extern bool g_warnings_as_errors;
+
+struct EditTrackedAudioFile;
+
 template <>
 struct fmt::formatter<fs::path> {
     constexpr auto parse(format_parse_context &ctx) { return ctx.end(); }
@@ -21,39 +26,64 @@ struct fmt::formatter<fs::path> {
     }
 };
 
-bool GetMessagesEnabled();
-void SetMessagesEnabled(bool v);
-
 void PrintErrorPrefix(std::string_view heading);
 void PrintWarningPrefix(std::string_view heading);
-void PrintDebugPrefix();
 void PrintMessagePrefix(std::string_view heading);
+void PrintDebugPrefix();
 
-template <typename... Args>
-void ErrorWithNewLine(std::string_view heading, std::string_view format, const Args &... args) {
+struct NoneType {};
+
+struct SignetError : public std::runtime_error {
+    SignetError(const std::string &str) : std::runtime_error(str) {}
+};
+struct SignetWarning : public std::runtime_error {
+    SignetWarning(const std::string &str) : std::runtime_error(str) {}
+};
+
+void PrintFilename(const EditTrackedAudioFile &f);
+void PrintFilename(fs::path &path);
+void PrintFilename(NoneType n);
+
+template <typename NameType = NoneType, typename... Args>
+void ErrorWithNewLine(std::string_view heading,
+                      const NameType &f,
+                      std::string_view format,
+                      const Args &...args) {
     PrintErrorPrefix(heading);
     fmt::vprint(format, fmt::make_format_args(args...));
+    PrintFilename(f);
     fmt::print("\n");
+    throw SignetError("A fatal error occurred");
 }
 
-template <typename... Args>
-void WarningWithNewLine(std::string_view heading, std::string_view format, Args &&... args) {
+template <typename NameType = NoneType, typename... Args>
+void WarningWithNewLine(std::string_view heading,
+                        const NameType &f,
+                        std::string_view format,
+                        Args &&...args) {
     PrintWarningPrefix(heading);
     fmt::vprint(format, fmt::make_format_args(args...));
+    PrintFilename(f);
     fmt::print("\n");
+    if (g_warnings_as_errors)
+        throw SignetWarning("A warning occurred, and warnings are set to be treated as errors");
 }
 
-template <typename... Args>
-void MessageWithNewLine(std::string_view heading, std::string_view format, Args &&... args) {
-    if (GetMessagesEnabled()) {
+template <typename NameType = NoneType, typename... Args>
+void MessageWithNewLine(std::string_view heading,
+                        const NameType &f,
+                        std::string_view format,
+                        Args &&...args) {
+    if (g_messages_enabled) {
         PrintMessagePrefix(heading);
         fmt::vprint(format, fmt::make_format_args(args...));
+        PrintFilename(f);
         fmt::print("\n");
     }
 }
 
 template <typename... Args>
-void DebugWithNewLine(std::string_view format, Args &&... args) {
+void DebugWithNewLine(std::string_view format, Args &&...args) {
 #if SIGNET_DEBUG
     PrintDebugPrefix();
     fmt::vprint(format, fmt::make_format_args(args...));
@@ -62,12 +92,13 @@ void DebugWithNewLine(std::string_view format, Args &&... args) {
 }
 
 template <typename V, typename... T>
-constexpr auto MakeArray(T &&... t) -> std::array<V, sizeof...(T)> {
+constexpr auto MakeArray(T &&...t) -> std::array<V, sizeof...(T)> {
     return {{std::forward<T>(t)...}};
 }
 
 static constexpr auto half_pi = 1.57079632679;
-static constexpr auto pi = 3.14159265359;
+static constexpr auto pi = 3.14159265358979323846;
+static constexpr auto sqrt_two = 1.41421356237309504880;
 
 inline double DBToAmp(const double d) { return std::pow(10.0, d / 20.0); }
 inline double AmpToDB(const double a) { return 20.0 * std::log10(a); }

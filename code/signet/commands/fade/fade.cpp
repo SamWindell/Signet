@@ -107,7 +107,7 @@ void FadeCommand::ProcessFiles(AudioFiles &files) {
                          m_fade_in_duration->GetDurationAsFrames(audio.sample_rate, audio.NumFrames()));
             PerformFade(audio, 0, (s64)fade_in_frames, m_fade_in_shape);
 
-            MessageWithNewLine(GetName(), "Fading in {} frames with a {} curve", fade_in_frames,
+            MessageWithNewLine(GetName(), f, "Fading in {} frames with a {} curve", fade_in_frames,
                                magic_enum::enum_name(m_fade_in_shape));
         }
         if (m_fade_out_duration) {
@@ -117,7 +117,7 @@ void FadeCommand::ProcessFiles(AudioFiles &files) {
             const auto start_frame = std::max<s64>(0, (s64)last - (s64)fade_out_frames);
             PerformFade(audio, last, start_frame, m_fade_out_shape);
 
-            MessageWithNewLine(GetName(), "Fading out {} frames with a {} curve", fade_out_frames,
+            MessageWithNewLine(GetName(), f, "Fading out {} frames with a {} curve", fade_out_frames,
                                magic_enum::enum_name(m_fade_out_shape));
         }
     }

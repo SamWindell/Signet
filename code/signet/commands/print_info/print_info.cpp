@@ -25,7 +25,7 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
                     cereal::JSONOutputArchive archive(ss);
                     archive(cereal::make_nvp("Metadata", f.GetAudio().metadata));
                 } catch (const std::exception &e) {
-                    ErrorWithNewLine(GetName(), "Internal error when writing fetch the metadata: {}",
+                    ErrorWithNewLine(GetName(), f, "Internal error when writing fetch the metadata: {}",
                                      e.what());
                 }
             }
@@ -40,6 +40,6 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
         info_text += fmt::format("RMS: {:.5f}\n", GetRMS(f.GetAudio().interleaved_samples));
 
         if (EndsWith(info_text, "\n")) info_text.resize(info_text.size() - 1);
-        MessageWithNewLine(GetName(), "Info for file {}\n{}", f.GetPath(), info_text);
+        MessageWithNewLine(GetName(), f, "Info:\n{}", f.GetPath(), info_text);
     }
 }

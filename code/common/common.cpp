@@ -3,27 +3,74 @@
 #include <regex>
 #include <system_error>
 
+#if WIN32
+#include <windows.h>
+#endif
+
 #include "doctest.hpp"
 #include "filesystem.hpp"
 #include "fmt/color.h"
 
+#include "edit_tracked_audio_file.h"
 #include "types.h"
 
-static bool g_messages_enabled = true;
+bool g_messages_enabled = true;
+bool g_warnings_as_errors = false;
 
-bool GetMessagesEnabled() { return g_messages_enabled; }
-void SetMessagesEnabled(bool v) { g_messages_enabled = v; }
+bool EnableVTMode() {
+#if WIN32
+    // Set output mode to handle virtual terminal sequences
+    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    if (hOut == INVALID_HANDLE_VALUE) {
+        return false;
+    }
+
+    DWORD dwMode = 0;
+    if (!GetConsoleMode(hOut, &dwMode)) {
+        return false;
+    }
+
+    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
+    if (!SetConsoleMode(hOut, dwMode)) {
+        return false;
+    }
+#endif
+    return true;
+}
+
+void InitConsole() {
+    struct Obj {
+        Obj() { EnableVTMode(); }
+    };
+    static Obj obj;
+}
+
+void PrintFilename(const EditTrackedAudioFile &f) {
+    InitConsole();
+    fmt::print(": ");
+    fmt::print(fg(fmt::color::navajo_white), "{}", f.OriginalFilename());
+}
+void PrintFilename(const fs::path &path) {
+    InitConsole();
+    fmt::print(": ");
+    fmt::print(fg(fmt::color::navajo_white), "{}", GetJustFilenameWithNoExtension(path));
+}
+void PrintFilename(NoneType) {}
 
 void PrintErrorPrefix(std::string_view heading) {
-    fmt::print(fg(fmt::color::red) | fmt::emphasis::bold, "ERROR ({}): ", heading);
+    InitConsole();
+    fmt::print(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[{}] ERROR", heading);
+    fmt::print(": ");
 }
-
 void PrintWarningPrefix(std::string_view heading) {
-    fmt::print(fg(fmt::color::yellow) | fmt::emphasis::bold, "WARNING ({}): ", heading);
+    InitConsole();
+    fmt::print(fmt::fg(fmt::color::orange) | fmt::emphasis::bold, "[{}] WARNING", heading);
+    fmt::print(": ");
 }
-
 void PrintMessagePrefix(const std::string_view heading) {
-    fmt::print(fmt::emphasis::bold, "[{}]: ", heading);
+    InitConsole();
+    fmt::print(fmt::fg(fmt::color::cornflower_blue) | fmt::emphasis::bold, "[{}]", heading);
+    fmt::print(": ");
 }
 
 void PrintDebugPrefix() { fmt::print(fmt::emphasis::bold, "[DEBUG]: "); }
@@ -105,7 +152,7 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     auto f = OpenFileRaw(path, mode, &ec);
     if (f) return {f, SafeFClose};
 
-    WarningWithNewLine("Signet", "could not open file {} for reason: {}", path, ec.message());
+    WarningWithNewLine("Signet", {}, "could not open file {} for reason: {}", path, ec.message());
     return {nullptr, SafeFClose};
 }
 

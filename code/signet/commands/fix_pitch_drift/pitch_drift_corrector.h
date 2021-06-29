@@ -21,13 +21,14 @@ struct AnalysisChunk {
 
 class PitchDriftCorrector {
   public:
-    PitchDriftCorrector(const AudioData &data, std::string_view message_heading);
+    PitchDriftCorrector(const AudioData &data,
+                        std::string_view message_heading,
+                        double chunk_length_milliseconds,
+                        bool print_csv);
     bool CanFileBePitchCorrected() const;
     bool ProcessFile(AudioData &data);
 
   private:
-    static constexpr double k_chunk_length_milliseconds = 50;
-    static constexpr bool k_print_csv = false;
     static constexpr bool k_brute_force_fix_octave_errors = false;
 
     void MarkOutlierChunks();
@@ -38,6 +39,8 @@ class PitchDriftCorrector {
 
     void PrintChunkCSV() const;
 
+    bool m_print_csv;
+    double m_chunk_length_milliseconds; // near 50ms is best
     std::string m_message_heading;
     std::vector<AnalysisChunk> m_chunks;
     unsigned m_sample_rate;

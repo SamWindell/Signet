@@ -13,7 +13,7 @@ class NormaliseCommand final : public Command {
     std::string GetName() const override { return "Normalise"; }
 
   private:
-    bool PerformNormalisation(AudioData &input_audio) const;
+    bool PerformNormalisation(EditTrackedAudioFile &input_audio) const;
     bool ReadFileForCommonGain(const AudioData &audio);
 
     bool m_using_common_gain {};

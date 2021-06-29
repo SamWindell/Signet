@@ -39,6 +39,10 @@ CLI::App *SampleBlendCommand::CreateCommandCLI(CLI::App &app) {
             return "";
         });
 
+    cli->add_flag(
+        "--make-same-length", m_make_same_length,
+        "For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.");
+
     return cli;
 }
 
@@ -46,10 +50,10 @@ void SampleBlendCommand::GenerateSamplesByBlending(SignetBackup &backup,
                                                    BaseBlendFile &f1,
                                                    BaseBlendFile &f2) {
     if (f1.root_note + m_semitone_interval >= f2.root_note) {
-        MessageWithNewLine(GetName(), "Samples are close enough together already");
+        MessageWithNewLine(GetName(), {}, "Samples are close enough together already");
         return;
     }
-    MessageWithNewLine(GetName(), "Blending between {} and {}", f1.file->GetPath(), f2.file->GetPath());
+    MessageWithNewLine(GetName(), {}, "Blending between {} and {}", f1.file->GetPath(), f2.file->GetPath());
 
     const auto max_semitone_distance = f2.root_note - f1.root_note;
     for (int root_note = f1.root_note + m_semitone_interval; root_note < f2.root_note;
@@ -71,6 +75,11 @@ void SampleBlendCommand::GenerateSamplesByBlending(SignetBackup &backup,
         const auto pitch_change2 = (root_note - f2.root_note) * cents_in_semitone;
         other.ChangePitch(pitch_change2);
         other.MultiplyByScalar(distance_from_f2);
+
+        if (m_make_same_length) {
+            out.interleaved_samples.resize(
+                std::min(out.interleaved_samples.size(), other.interleaved_samples.size()));
+        }
 
         out.AddOther(other);
 
@@ -95,19 +104,20 @@ void SampleBlendCommand::GenerateFiles(AudioFiles &input_files, SignetBackup &ba
             if (std::regex_match(name, pieces_match, r)) {
                 if (pieces_match.size() != 2) {
                     ErrorWithNewLine(
-                        GetName(),
-                        "Expected exactly 1 regex group to be captured to represent the root note");
+                        GetName(), *f,
+                        "Expected exactly 1 regex group to be captured to represent the root note, but {} were given.",
+                        pieces_match.size());
                     return;
                 }
                 const auto root_note = std::stoi(pieces_match[1]);
                 if (root_note < 0 || root_note > 127) {
-                    WarningWithNewLine(
-                        GetName(), "Root note of file {} is not in the range 0-127 so cannot be processed",
-                        name);
+                    ErrorWithNewLine(GetName(), *f,
+                                     "Root note of file {} is not in the range 0-127 so cannot be processed",
+                                     name);
                 } else {
                     auto &vec = base_file_folders[folder];
                     vec.emplace_back(f, root_note);
-                    MessageWithNewLine(GetName(), "Found file {} with root note {}", f->GetPath(), root_note);
+                    MessageWithNewLine(GetName(), *f, "Found file with root note {}", root_note);
                 }
             }
         }
@@ -115,8 +125,9 @@ void SampleBlendCommand::GenerateFiles(AudioFiles &input_files, SignetBackup &ba
 
     for (auto &[folder, files] : base_file_folders) {
         if (files.size() < 2) {
-            WarningWithNewLine(GetName(), "regex pattern {} does not match at least 2 filenames in folder {}",
-                               m_regex, folder);
+            ErrorWithNewLine(GetName(), {},
+                             "regex pattern {} does not match at least 2 filenames in folder {}", m_regex,
+                             folder);
             continue;
         }
         std::sort(files.begin(), files.end(),
@@ -124,8 +135,8 @@ void SampleBlendCommand::GenerateFiles(AudioFiles &input_files, SignetBackup &ba
 
         for (usize i = 0; i < files.size() - 1; ++i) {
             if (files[i].root_note == files[i + 1].root_note) {
-                WarningWithNewLine(
-                    GetName(),
+                ErrorWithNewLine(
+                    GetName(), {},
                     "2 files have the same root note, unable to perform blend: {} and {} in folder {}",
                     files[i].file->GetPath(), files[i + 1].file->GetPath(), folder);
                 continue;

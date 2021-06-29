@@ -13,7 +13,7 @@ CLI::App *TuneCommand::CreateCommandCLI(CLI::App &app) {
 
 void TuneCommand::ProcessFiles(AudioFiles &files) {
     for (auto &f : files) {
-        MessageWithNewLine(GetName(), "Tuning sample by {} cents", m_tune_cents);
+        MessageWithNewLine(GetName(), f, "Tuning sample by {} cents", m_tune_cents);
         f.GetWritableAudio().ChangePitch(m_tune_cents);
     }
 }

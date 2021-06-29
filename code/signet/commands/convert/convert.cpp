@@ -47,7 +47,8 @@ void ConvertCommand::ProcessFiles(AudioFiles &files) {
             for (auto &f : files) {
                 auto &audio = f.GetAudio();
                 if (!CanFileBeConvertedToBitDepth(audio.format, *m_bit_depth)) {
-                    WarningWithNewLine(GetName(), "files of type {} cannot be converted to a bit depth of {}",
+                    WarningWithNewLine(GetName(), f,
+                                       "files of type {} cannot be converted to a bit depth of {}",
                                        magic_enum::enum_name(audio.format), *m_bit_depth);
                     m_files_can_be_converted = false;
                 }
@@ -55,7 +56,7 @@ void ConvertCommand::ProcessFiles(AudioFiles &files) {
         } else {
             m_files_can_be_converted = CanFileBeConvertedToBitDepth(*m_file_format, *m_bit_depth);
             if (!m_files_can_be_converted) {
-                WarningWithNewLine(GetName(), "file format {} cannot be converted to bit depths {}",
+                WarningWithNewLine(GetName(), {}, "file format {} cannot be converted to bit depths {}",
                                    magic_enum::enum_name(*m_file_format), *m_bit_depth);
             }
         }
@@ -63,7 +64,7 @@ void ConvertCommand::ProcessFiles(AudioFiles &files) {
         for (auto &f : files) {
             auto &audio = f.GetAudio();
             if (!CanFileBeConvertedToBitDepth(*m_file_format, audio.bits_per_sample)) {
-                WarningWithNewLine(GetName(), "files of type {} cannot be converted to a bit depth of {}",
+                WarningWithNewLine(GetName(), f, "files of type {} cannot be converted to a bit depth of {}",
                                    magic_enum::enum_name(*m_file_format), audio.bits_per_sample);
                 m_files_can_be_converted = false;
             }
@@ -75,13 +76,13 @@ void ConvertCommand::ProcessFiles(AudioFiles &files) {
             const auto &audio = f.GetAudio();
             bool edited = false;
             if (m_bit_depth) {
-                MessageWithNewLine(GetName(), "Seting the bit rate from {} to {}", audio.bits_per_sample,
+                MessageWithNewLine(GetName(), f, "Seting the bit rate from {} to {}", audio.bits_per_sample,
                                    *m_bit_depth);
                 f.GetWritableAudio().bits_per_sample = *m_bit_depth;
                 edited = true;
             }
             if (m_sample_rate && audio.sample_rate != *m_sample_rate) {
-                MessageWithNewLine(GetName(), "Converting sample rate from {} to {}", audio.sample_rate,
+                MessageWithNewLine(GetName(), f, "Converting sample rate from {} to {}", audio.sample_rate,
                                    *m_sample_rate);
                 f.GetWritableAudio().Resample((double)*m_sample_rate);
                 edited = true;
@@ -89,18 +90,18 @@ void ConvertCommand::ProcessFiles(AudioFiles &files) {
             if (m_file_format && audio.format != *m_file_format) {
                 const auto from_name = magic_enum::enum_name(audio.format);
                 const auto to_name = magic_enum::enum_name(*m_file_format);
-                MessageWithNewLine(GetName(), "Converting file format from {} to {}", from_name, to_name);
+                MessageWithNewLine(GetName(), f, "Converting file format from {} to {}", from_name, to_name);
                 f.GetWritableAudio().format = *m_file_format;
                 edited = true;
             }
 
             if (!edited) {
-                MessageWithNewLine(GetName(), "No conversion necessary");
+                MessageWithNewLine(GetName(), f, "No conversion necessary");
             }
         }
     } else {
-        WarningWithNewLine(GetName(),
-                           "one or more files cannot be converted therefore no conversion will take place");
+        ErrorWithNewLine(GetName(), {},
+                         "one or more files cannot be converted therefore no conversion will take place");
     }
 }
 
@@ -131,8 +132,8 @@ TEST_CASE("[ConvertCommand]") {
             buf.sample_rate = 48000;
             buf.bits_per_sample = 32;
 
-            auto out = TestHelpers::ProcessBufferWithCommand<ConvertCommand>("convert file-format flac", buf);
-            REQUIRE(!out);
+            REQUIRE_THROWS(
+                TestHelpers::ProcessBufferWithCommand<ConvertCommand>("convert file-format flac", buf));
         }
 
         SUBCASE("sine") {

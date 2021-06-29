@@ -65,6 +65,7 @@ add_library(
     code/common/gain_calculators.cpp
     code/common/midi_pitches.cpp
     code/common/string_utils.cpp
+    code/common/identical_processing_set.cpp
     code/signet/commands/auto_tune/auto_tune.cpp
     code/signet/commands/convert/convert.cpp
     code/signet/commands/detect_pitch/detect_pitch.cpp
@@ -75,6 +76,7 @@ add_library(
     code/signet/commands/gain/gain.cpp
     code/signet/commands/move/move.cpp
     code/signet/commands/normalise/normalise.cpp
+    code/signet/commands/pan/pan.cpp
     code/signet/commands/print_info/print_info.cpp
     code/signet/commands/fix_pitch_drift/fix_pitch_drift_command.cpp
     code/signet/commands/fix_pitch_drift/pitch_drift_corrector.cpp

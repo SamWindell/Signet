@@ -4,43 +4,52 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 
 - [Signet](#Signet)
 - [Commands](#Signet%20Commands)
-  - [auto-tune](#auto-tune)
-  - [convert](#convert)
-    - [sample-rate](#sample-rate)
-    - [bit-depth](#bit-depth)
-    - [file-format](#file-format)
-  - [detect-pitch](#detect-pitch)
-  - [embed-sampler-info](#embed-sampler-info)
-    - [remove](#remove)
-    - [root](#root)
-    - [note-range](#note-range)
-    - [velocity-range](#velocity-range)
-  - [fade](#fade)
-    - [in](#in)
-    - [out](#out)
-  - [fix-pitch-drift](#fix-pitch-drift)
-  - [folderise](#folderise)
-  - [gain](#gain)
-  - [highpass](#highpass)
-  - [lowpass](#lowpass)
-  - [make-docs](#make-docs)
-  - [move](#move)
-  - [norm](#norm)
-  - [print-info](#print-info)
-  - [remove-silence](#remove-silence)
-  - [rename](#rename)
-    - [prefix](#prefix)
-    - [suffix](#suffix)
-    - [regex-replace](#regex-replace)
-    - [note-to-midi](#note-to-midi)
-    - [auto-map](#auto-map)
-  - [sample-blend](#sample-blend)
-  - [seamless-loop](#seamless-loop)
-  - [trim](#trim)
-    - [start](#start)
-    - [end](#end)
-  - [tune](#tune)
-  - [zcross-offset](#zcross-offset)
+  - Audio
+    - [auto-tune](#auto-tune)
+    - [fade](#fade)
+      - [in](#in)
+      - [out](#out)
+    - [fix-pitch-drift](#fix-pitch-drift)
+    - [gain](#gain)
+    - [highpass](#highpass)
+    - [lowpass](#lowpass)
+    - [norm](#norm)
+    - [pan](#pan)
+    - [remove-silence](#remove-silence)
+    - [seamless-loop](#seamless-loop)
+    - [trim](#trim)
+      - [start](#start)
+      - [end](#end)
+    - [tune](#tune)
+    - [zcross-offset](#zcross-offset)
+  - File Data
+    - [convert](#convert)
+      - [sample-rate](#sample-rate)
+      - [bit-depth](#bit-depth)
+      - [file-format](#file-format)
+    - [embed-sampler-info](#embed-sampler-info)
+      - [remove](#remove)
+      - [root](#root)
+      - [note-range](#note-range)
+      - [velocity-range](#velocity-range)
+  - Filepath
+    - [folderise](#folderise)
+    - [move](#move)
+    - [rename](#rename)
+      - [prefix](#prefix)
+      - [suffix](#suffix)
+      - [regex-replace](#regex-replace)
+      - [note-to-midi](#note-to-midi)
+      - [auto-map](#auto-map)
+  - Generate
+    - [sample-blend](#sample-blend)
+  - Info
+    - [detect-pitch](#detect-pitch)
+    - [print-info](#print-info)
+  - Signet Utility
+    - [clear-backup](#clear-backup)
+    - [make-docs](#make-docs)
+    - [undo](#undo)
 # Signet
 ## Description:
 Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.
@@ -54,17 +63,14 @@ The audio files to process. You can specify more than one of these. Each input-f
 
 
 ## Options:
-`--undo`
-Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
-
 `--version`
-Prints the version of Signet.
-
-`--clear-backup`
-Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use --undo directly after clearing the backup.
+Display the version of Signet
 
 `--silent`
 Disable all messages
+
+`--warnings-are-errors`
+Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.
 
 `--recursive`
 When the input is a directory, scan for files in it recursively
@@ -76,7 +82,54 @@ When the input is a directory, scan for files in it recursively
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command (i.e. sped up or slowed down). This command works surprising well for almost any type of sample - transparently shifting it by the smallest amount possible to be more musically in-tune.
 
 ### Usage:
-  `auto-tune`
+  `auto-tune` `[OPTIONS]`
+
+### Options:
+`--sample-sets TEXT x 2`
+Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
+    
+For example, you might have a set of samples of something recorded simultaneously with different microphones; you can use this tool to process all of the samples in the same way based on the close mic.
+    
+To allow for batch processing (as is the goal of Signet), this option is flexible and therefore requires a little explanation.
+
+This option requires 2 arguments. 
+
+The first argument is a regex pattern that will be used to identify sample sets from all of the file names (not including folders or extension). This must capture a single regex group. The bit that you capture is the bit of text that is different for each name in the set.
+
+For example, take a folder of files like this:
+sample-C2-close.flac
+sample-C2-room.flac
+sample-C2-ambient.flac
+sample-D2-close.flac
+sample-D2-room.flac
+sample-D2-ambient.flac
+
+In this example, close, room and ambient are names of commonly used mic positions. Each mic is capturing the same sound source at the same time; we therefore want any processing done on these files to be identical.
+
+The differentiator (first arg) should be ".\*(close|room|ambient).\*". 
+
+This is because "close|room|ambient" is the ONLY bit that changes between the file names of each set. This option does not work if samples in a set have multiple parts that are different.
+
+The second argument required for this command is used to determine what should be the authority for the processing. This is a string that should match against whatever we have captured in the first argument. In this example case, it would be the word "close", because we want the close mics to be the authority.
+
+Putting it all together, here's what the full command would look like for our example:
+
+signet sample-\* process --sample-sets ".\*(close|room|ambient).\*" "close"
+
+The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
+
+`--authority-file TEXT`
+Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+    
+This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
+
+
+## clear-backup
+### Description:
+Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.
+
+### Usage:
+  `clear-backup`
 
 ## convert
 ### Description:
@@ -259,7 +312,53 @@ The shape of the fade-out curve. The default is the 'sine' shape.
 Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for samples of single-note instruments that subtly drift out of pitch, such as a human voice or a wind instrument. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that. As well as this, fix-pitch-drift is a bit more specialised and does not always work as ubiquitously as Signet's other auto-tune command.
 
 ### Usage:
-  `fix-pitch-drift`
+  `fix-pitch-drift` `[OPTIONS]`
+
+### Options:
+`--sample-sets TEXT x 2`
+Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
+    
+For example, you might have a set of samples of something recorded simultaneously with different microphones; you can use this tool to process all of the samples in the same way based on the close mic.
+    
+To allow for batch processing (as is the goal of Signet), this option is flexible and therefore requires a little explanation.
+
+This option requires 2 arguments. 
+
+The first argument is a regex pattern that will be used to identify sample sets from all of the file names (not including folders or extension). This must capture a single regex group. The bit that you capture is the bit of text that is different for each name in the set.
+
+For example, take a folder of files like this:
+sample-C2-close.flac
+sample-C2-room.flac
+sample-C2-ambient.flac
+sample-D2-close.flac
+sample-D2-room.flac
+sample-D2-ambient.flac
+
+In this example, close, room and ambient are names of commonly used mic positions. Each mic is capturing the same sound source at the same time; we therefore want any processing done on these files to be identical.
+
+The differentiator (first arg) should be ".\*(close|room|ambient).\*". 
+
+This is because "close|room|ambient" is the ONLY bit that changes between the file names of each set. This option does not work if samples in a set have multiple parts that are different.
+
+The second argument required for this command is used to determine what should be the authority for the processing. This is a string that should match against whatever we have captured in the first argument. In this example case, it would be the word "close", because we want the close mics to be the authority.
+
+Putting it all together, here's what the full command would look like for our example:
+
+signet sample-\* process --sample-sets ".\*(close|room|ambient).\*" "close"
+
+The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
+
+`--authority-file TEXT`
+Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+    
+This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
+
+`--chunk-ms FLOAT:INT in [20 - 200]`
+fix-pitch-drift evaluates the audio in small chunks. The pitch of each chunk is determined in order to get a picture of the audio's pitch over time. You can set the chunk size with this option. The default is 60 milliseconds. If you are finding this tool is incorrectly changing the pitch, you might try increasing the chunk size by 10 ms or so.
+
+`--print-csv`
+Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.
+
 
 ## folderise
 ### Description:
@@ -338,7 +437,7 @@ The folder to put all of the input files in.
 
 ## norm
 ### Description:
-Sets the peak amplitude to a certain level. When this is used on multiple files, each file is attenuated by the same amount. You can disable this by specifying the flag --independently.
+Sets the peak amplitude to a given level (normalisation). When this is used on multiple files, each file is altered by the same amount; preserving their volume levels relative to each other (sometimes known as common-gain normalisation). Alternatively, you can make each file always normalise to the target by specifying the flag --independently.
 
 ### Usage:
   `norm` `[OPTIONS]` `target-decibels`
@@ -353,10 +452,22 @@ The target level in decibels, where 0dB is the max volume.
 When there are multiple files, normalise each one individually rather than by a common gain.
 
 `--rms`
-Use RMS (root mean squared) calculations to work out the required gain amount.
+Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. Does not work well with very dynamic-range variable audio.
 
 `--mix FLOAT:INT in [0 - 100]`
-The mix of the normalised signal, where 100% means normalised exactly to the target, and 0% means no change.
+The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means no apply a gain to get halfway from the current level to the target.
+
+
+## pan
+### Description:
+Changes the pan of stereo file(s). Does not work on non-stereo files.
+
+### Usage:
+  `pan` `pan-amount`
+
+### Arguments:
+`pan-amount TEXT REQUIRED`
+The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
 
 ## print-info
@@ -379,6 +490,44 @@ Specify whether the removal should be at the start, the end or both.
 
 
 ### Options:
+`--sample-sets TEXT x 2`
+Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
+    
+For example, you might have a set of samples of something recorded simultaneously with different microphones; you can use this tool to process all of the samples in the same way based on the close mic.
+    
+To allow for batch processing (as is the goal of Signet), this option is flexible and therefore requires a little explanation.
+
+This option requires 2 arguments. 
+
+The first argument is a regex pattern that will be used to identify sample sets from all of the file names (not including folders or extension). This must capture a single regex group. The bit that you capture is the bit of text that is different for each name in the set.
+
+For example, take a folder of files like this:
+sample-C2-close.flac
+sample-C2-room.flac
+sample-C2-ambient.flac
+sample-D2-close.flac
+sample-D2-room.flac
+sample-D2-ambient.flac
+
+In this example, close, room and ambient are names of commonly used mic positions. Each mic is capturing the same sound source at the same time; we therefore want any processing done on these files to be identical.
+
+The differentiator (first arg) should be ".\*(close|room|ambient).\*". 
+
+This is because "close|room|ambient" is the ONLY bit that changes between the file names of each set. This option does not work if samples in a set have multiple parts that are different.
+
+The second argument required for this command is used to determine what should be the authority for the processing. This is a string that should match against whatever we have captured in the first argument. In this example case, it would be the word "close", because we want the close mics to be the authority.
+
+Putting it all together, here's what the full command would look like for our example:
+
+signet sample-\* process --sample-sets ".\*(close|room|ambient).\*" "close"
+
+The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
+
+`--authority-file TEXT`
+Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
+    
+This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
+
 `--threshold FLOAT:INT in [-200 - 0]`
 The threshold in decibels to which anything under it should be considered silence.
 
@@ -505,7 +654,7 @@ The name of the output file (excluding extension). This should contain substitut
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
 
 ### Usage:
-  `sample-blend` `root_note_regex semitone-interval out-filename`
+  `sample-blend` `[OPTIONS]` `root_note_regex semitone-interval out-filename`
 
 ### Arguments:
 `root_note_regex TEXT REQUIRED`
@@ -518,9 +667,14 @@ The semitone interval at which to generate new samples by
 The filename of the generated files (excluding extension). It should contain either the substitution variable `<root-num>` or `<root-note>` which will be replaced by the root note of the generated file. `<root-num>` is replaced by the MIDI note number, and `<root-name>` is replaced by the note name, such as C3.
 
 
+### Options:
+`--make-same-length`
+For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.
+
+
 ## seamless-loop
 ### Description:
-Turns the files(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
+Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
 
 ### Usage:
   `seamless-loop` `crossfade-percent`
@@ -570,6 +724,13 @@ Changes the tune the file(s) by stretching or shrinking them. Uses a high qualit
 `tune cents FLOAT REQUIRED`
 The cents to change the pitch by.
 
+
+## undo
+### Description:
+Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
+
+### Usage:
+  `undo`
 
 ## zcross-offset
 ### Description:

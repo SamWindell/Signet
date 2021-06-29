@@ -48,7 +48,7 @@ void AudioFiles::ReadAllAudioFiles(const FilepathSet &paths) {
         std::error_code ec;
         const auto proximate = fs::proximate(path);
         if (ec) {
-            ErrorWithNewLine("Signet",
+            ErrorWithNewLine("Signet", {},
                              "Internal error in function {}: fs::proximate failed for path {} for reason {}",
                              __FUNCTION__, path, ec.message());
             m_all_files.push_back(path);
@@ -56,7 +56,7 @@ void AudioFiles::ReadAllAudioFiles(const FilepathSet &paths) {
             m_all_files.push_back(proximate);
         }
     }
-    MessageWithNewLine("Signet", "Found {} matching files", m_all_files.size());
+    MessageWithNewLine("Signet", {}, "Found {} matching files", m_all_files.size());
     CreateFoldersDataStructure();
 }
 
@@ -65,19 +65,15 @@ bool AudioFiles::WouldWritingAllFilesCreateConflicts() {
     bool file_conflicts = false;
     for (const auto &f : m_all_files) {
         if (files_set.find(f.GetPath()) != files_set.end()) {
-            ErrorWithNewLine("Signet", "filepath {} would have the same filename as another file",
-                             f.GetPath());
+            ErrorWithNewLine(
+                "Signet", f,
+                "Filepath {} would have the same filename as another file. Please review your renaming settings, no action will be taken now",
+                f.GetPath());
             file_conflicts = true;
         }
         files_set.insert(f.GetPath());
     }
-    if (file_conflicts) {
-        ErrorWithNewLine("Signet",
-                         "files could be unexpectedly overwritten, please review your renaming settings, "
-                         "no action will be taken now");
-        return true;
-    }
-    return false;
+    return file_conflicts;
 }
 
 static fs::path PathWithNewExtension(fs::path path, AudioFileFormat format) {
@@ -151,8 +147,8 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
 
     if (error_occurred) {
         ErrorWithNewLine(
-            "Signet",
-            "An error happened while backing-up or writing an audio files. Signet has stopped. Run 'signet --undo' to undo any changes that happened up to the point of this error");
+            "Signet", {},
+            "An error happened while backing-up or writing an audio files. Signet has stopped. Run 'signet undo' to undo any changes that happened up to the point of this error");
     }
 
     return !error_occurred;

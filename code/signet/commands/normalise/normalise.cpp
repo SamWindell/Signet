@@ -7,9 +7,8 @@
 
 CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
     auto norm = app.add_subcommand(
-        "norm", "Sets the peak amplitude to a certain level. When this is used on multiple files, each "
-                "file is attenuated by the same amount. You can disable this by specifying the flag "
-                "--independently.");
+        "norm",
+        "Sets the peak amplitude to a given level (normalisation). When this is used on multiple files, each file is altered by the same amount; preserving their volume levels relative to each other (sometimes known as common-gain normalisation). Alternatively, you can make each file always normalise to the target by specifying the flag --independently.");
 
     norm->add_option("target-decibels", m_target_decibels,
                      "The target level in decibels, where 0dB is the max volume.")
@@ -19,11 +18,12 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
     norm->add_flag(
         "--independently", m_normalise_independently,
         "When there are multiple files, normalise each one individually rather than by a common gain.");
-    norm->add_flag("--rms", m_use_rms,
-                   "Use RMS (root mean squared) calculations to work out the required gain amount.");
-    norm->add_option("--mix", m_norm_mix,
-                     "The mix of the normalised signal, where 100% means normalised exactly to the target, "
-                     "and 0% means no change.")
+    norm->add_flag(
+        "--rms", m_use_rms,
+        "Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. Does not work well with very dynamic-range variable audio.");
+    norm->add_option(
+            "--mix", m_norm_mix,
+            "The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means no apply a gain to get halfway from the current level to the target.")
         ->check(CLI::Range(0, 100));
     return norm;
 }
@@ -46,21 +46,22 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         }
         if (!m_using_common_gain) {
             ErrorWithNewLine(
-                GetName(),
+                GetName(), {},
                 "unable to perform normalisation because the common gain was not successfully found");
             return;
         }
     }
 
     for (auto &f : files) {
-        PerformNormalisation(f.GetWritableAudio());
+        PerformNormalisation(f);
     }
 }
 
-bool NormaliseCommand::PerformNormalisation(AudioData &input_audio) const {
+bool NormaliseCommand::PerformNormalisation(EditTrackedAudioFile &f) const {
+    auto &audio = f.GetWritableAudio();
     if (!m_using_common_gain) {
         m_processor->Reset();
-        m_processor->RegisterBufferMagnitudes(input_audio);
+        m_processor->RegisterBufferMagnitudes(audio);
     }
     double gain = m_processor->GetGain(DBToAmp(m_target_decibels));
     if (m_norm_mix) {
@@ -72,9 +73,9 @@ bool NormaliseCommand::PerformNormalisation(AudioData &input_audio) const {
         }
     }
 
-    MessageWithNewLine(GetName(), "Applying a gain of {}", gain);
+    MessageWithNewLine(GetName(), f, "Applying a gain of {}", gain);
 
-    for (auto &s : input_audio.interleaved_samples) {
+    for (auto &s : audio.interleaved_samples) {
         s *= gain;
     }
 

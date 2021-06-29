@@ -50,8 +50,8 @@ PitchDriftCorrector::PitchDriftCorrector(const AudioData &data,
                                          double chunk_length_milliseconds,
                                          bool print_csv)
     : m_message_heading(message_heading)
-    , m_sample_rate(data.sample_rate)
     , m_chunk_length_milliseconds(chunk_length_milliseconds)
+    , m_sample_rate(data.sample_rate)
     , m_print_csv(print_csv) {
 
     AudioData mono_data;

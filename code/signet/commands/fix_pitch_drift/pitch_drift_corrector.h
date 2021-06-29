@@ -39,9 +39,9 @@ class PitchDriftCorrector {
 
     void PrintChunkCSV() const;
 
-    bool m_print_csv;
-    double m_chunk_length_milliseconds; // near 50ms is best
     std::string m_message_heading;
-    std::vector<AnalysisChunk> m_chunks;
+    double m_chunk_length_milliseconds; // near 50ms is best
     unsigned m_sample_rate;
+    bool m_print_csv;
+    std::vector<AnalysisChunk> m_chunks;
 };

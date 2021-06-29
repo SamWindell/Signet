@@ -67,8 +67,8 @@ bool operator==(const drwav_bext &a, const drwav_bext &b) {
     if (!strcmp(a.pDescription, b.pDescription)) return false;
     if (!strcmp(a.pOriginatorName, b.pOriginatorName)) return false;
     if (!strcmp(a.pOriginatorReference, b.pOriginatorReference)) return false;
-    if (!memcmp(a.pOriginationDate, b.pOriginationDate, sizeof(a.pOriginationDate)) != 0) return false;
-    if (!memcmp(a.pOriginationTime, b.pOriginationTime, sizeof(a.pOriginationTime)) != 0) return false;
+    if (memcmp(a.pOriginationDate, b.pOriginationDate, sizeof(a.pOriginationDate)) != 0) return false;
+    if (memcmp(a.pOriginationTime, b.pOriginationTime, sizeof(a.pOriginationTime)) != 0) return false;
     if (!(a.codingHistorySize == b.codingHistorySize && a.loudnessValue == b.loudnessValue &&
           a.loudnessRange == b.loudnessRange && a.maxTruePeakLevel == b.maxTruePeakLevel &&
           a.maxMomentaryLoudness == b.maxMomentaryLoudness &&

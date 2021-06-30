@@ -24,10 +24,11 @@ class PitchDriftCorrector {
   public:
     PitchDriftCorrector(const AudioData &data,
                         std::string_view message_heading,
+                        const fs::path &file_name,
                         double chunk_length_milliseconds,
                         bool print_csv);
     bool CanFileBePitchCorrected() const;
-    bool ProcessFile(AudioData &data, std::optional<MIDIPitch> required_midi_pitch);
+    bool ProcessFile(AudioData &data, std::optional<MIDIPitch> expected_midi_pitch);
 
   private:
     static constexpr bool k_brute_force_fix_octave_errors = false;
@@ -41,6 +42,7 @@ class PitchDriftCorrector {
     void PrintChunkCSV() const;
 
     std::string m_message_heading;
+    fs::path m_file_name;
     double m_chunk_length_milliseconds; // near 50ms is best
     unsigned m_sample_rate;
     bool m_print_csv;

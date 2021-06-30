@@ -87,8 +87,8 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
 
     if (!m_identical_processing_set.ShouldProcessInSets()) {
         for (auto &f : files) {
-            PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName(), m_chunk_length_milliseconds,
-                                                      m_print_csv);
+            PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName(), f.OriginalPath(),
+                                                      m_chunk_length_milliseconds, m_print_csv);
             if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
                 ErrorWithNewLine(GetName(), f, "cannot be pitch-drift corrected");
             } else {
@@ -111,6 +111,7 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
                 }
 
                 PitchDriftCorrector pitch_drift_corrector(authority_file->GetAudio(), GetName(),
+                                                          authority_file->OriginalPath(),
                                                           m_chunk_length_milliseconds, m_print_csv);
                 if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
                     ErrorWithNewLine(

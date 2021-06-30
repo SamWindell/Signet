@@ -451,6 +451,9 @@ The target level in decibels, where 0dB is the max volume.
 `--independently`
 When there are multiple files, normalise each one individually rather than by a common gain.
 
+`--independent-channels`
+Normalise each channel independently rather than scale them together.
+
 `--rms`
 Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. Does not work well with very dynamic-range variable audio.
 

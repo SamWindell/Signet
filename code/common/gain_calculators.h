@@ -12,7 +12,7 @@
 class NormalisationGainCalculator {
   public:
     virtual ~NormalisationGainCalculator() {}
-    virtual bool RegisterBufferMagnitudes(const AudioData &audio) = 0;
+    virtual bool RegisterBufferMagnitudes(const AudioData &audio, std::optional<unsigned> channel) = 0;
     virtual double GetGain(double target_amp) const = 0;
     virtual const char *GetName() const = 0;
     virtual double GetLargestRegisteredMagnitude() const = 0;
@@ -21,7 +21,7 @@ class NormalisationGainCalculator {
 
 class RMSGainCalculator : public NormalisationGainCalculator {
   public:
-    bool RegisterBufferMagnitudes(const AudioData &audio) override {
+    bool RegisterBufferMagnitudes(const AudioData &audio, std::optional<unsigned> channel) override {
         if (!m_sum_of_squares_channels.size()) {
             m_sum_of_squares_channels.resize(audio.num_channels);
         }
@@ -32,9 +32,9 @@ class RMSGainCalculator : public NormalisationGainCalculator {
             return false;
         }
         for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
-            for (unsigned channel = 0; channel < audio.num_channels; ++channel) {
-                const auto sample_index = frame * audio.num_channels + channel;
-                m_sum_of_squares_channels[channel] += std::pow(audio.interleaved_samples[sample_index], 2.0);
+            for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                const auto sample_index = frame * audio.num_channels + chan;
+                m_sum_of_squares_channels[chan] += std::pow(audio.interleaved_samples[sample_index], 2.0);
             }
         }
         m_num_frames += audio.NumFrames();
@@ -80,11 +80,17 @@ class RMSGainCalculator : public NormalisationGainCalculator {
 
 class PeakGainCalculator : public NormalisationGainCalculator {
   public:
-    bool RegisterBufferMagnitudes(const AudioData &audio) override {
+    bool RegisterBufferMagnitudes(const AudioData &audio, std::optional<unsigned> channel) override {
         double max_magnitude = 0;
-        for (const auto s : audio.interleaved_samples) {
-            const auto magnitude = std::abs(s);
-            max_magnitude = std::max(max_magnitude, magnitude);
+
+        for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
+            if (channel) {
+                max_magnitude = std::max(max_magnitude, std::abs(audio.GetSample(*channel, frame)));
+            } else {
+                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                    max_magnitude = std::max(max_magnitude, std::abs(audio.GetSample(chan, frame)));
+                }
+            }
         }
         m_max_magnitude = std::max(m_max_magnitude, max_magnitude);
         REQUIRE(m_max_magnitude >= 0);

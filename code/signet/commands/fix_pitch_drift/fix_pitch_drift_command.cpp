@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <optional>
+#include <regex>
 
 #include "CLI11.hpp"
 #include "doctest.hpp"
@@ -24,6 +25,21 @@ CLI::App *FixPitchDriftCommand::CreateCommandCLI(CLI::App &app) {
         ->check(CLI::Range(20, 200));
     ;
 
+    fix_pitch_drift
+        ->add_option_function<std::vector<std::string>>(
+            "--expected-note",
+            [this](const std::vector<std::string> &args) {
+                m_expected_note_capture = args[0];
+                if (args.size() == 2) {
+                    m_expected_note_capture_midi_zero_octave = std::atoi(args[1].data());
+                }
+            },
+            R"aa(Only correct the audio if the detected target pitch matches the one given. To do this, specify a regex pattern that has a single capture group. This will be compared against each filename (excluding folder or file extension). The bit that you capture should be the MIDI note number of the audio file. You can also optionally specify an additional argument: the octave number for MIDI note zero (the default is that MIDI note 0 is C-1).
+
+Example: fix-pitch-drift --expected-note ".*-note-(\d+)-.*" 0
+This would find the digits after the text '-note-' in the filename and interpret them as the expected pitch of the track using 0 as the octave number for MIDI note 0.)aa")
+        ->expected(1, 2);
+
     fix_pitch_drift->add_flag(
         "--print-csv", m_print_csv,
         "Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.");
@@ -32,6 +48,43 @@ CLI::App *FixPitchDriftCommand::CreateCommandCLI(CLI::App &app) {
 }
 
 void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
+    const auto GetExpectedMidiPitch = [&](EditTrackedAudioFile &f) {
+        std::optional<MIDIPitch> expected_midi_pitch {};
+        if (m_expected_note_capture) {
+            const auto filename = GetJustFilenameWithNoExtension(f.GetPath());
+            std::smatch match;
+            std::regex re {*m_expected_note_capture};
+            if (std::regex_match(filename, match, re)) {
+                if (match.size() != 2) {
+                    ErrorWithNewLine(
+                        GetName(), f,
+                        "Regex pattern {} contains {} capture group when it should only contain one",
+                        *m_expected_note_capture, match.size() - 1);
+                }
+                const auto midi_note = std::atoi(match[1].str().data());
+                if (midi_note < 0 || midi_note > 127) {
+                    ErrorWithNewLine(
+                        GetName(), f,
+                        "The captured midi note is outside the valid range - {} is not >=0 and <=127",
+                        midi_note);
+                }
+
+                const auto index = midi_note + (m_expected_note_capture_midi_zero_octave + 1) * 12;
+                if (index < 0 || index > 127) {
+                    ErrorWithNewLine(
+                        GetName(), f,
+                        "The captured midi note index is outside of Signet's midi pitch range - check if the MIDI note 0 octave is set correctly.",
+                        index);
+                }
+                expected_midi_pitch = g_midi_pitches[index];
+            } else {
+                ErrorWithNewLine(GetName(), f, "Failed to match regex pattern {} to filename {}",
+                                 *m_expected_note_capture, filename);
+            }
+        }
+        return expected_midi_pitch;
+    };
+
     if (!m_identical_processing_set.ShouldProcessInSets()) {
         for (auto &f : files) {
             PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName(), m_chunk_length_milliseconds,
@@ -40,7 +93,8 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
                 ErrorWithNewLine(GetName(), f, "cannot be pitch-drift corrected");
             } else {
                 MessageWithNewLine(GetName(), f, "correcting pitch-drift");
-                if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio())) {
+
+                if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio(), GetExpectedMidiPitch(f))) {
                     MessageWithNewLine(GetName(), f, "successfully pitch-drift corrected.");
                 }
             }
@@ -48,7 +102,7 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
     } else {
         m_identical_processing_set.ProcessSets(
             files, GetName(),
-            [this](EditTrackedAudioFile *authority_file, const std::vector<EditTrackedAudioFile *> &set) {
+            [&](EditTrackedAudioFile *authority_file, const std::vector<EditTrackedAudioFile *> &set) {
                 if (!IdenticalProcessingSet::AllHaveSameNumFrames(set)) {
                     ErrorWithNewLine(
                         GetName(), *authority_file,
@@ -65,7 +119,8 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
                 } else {
                     for (auto f : set) {
                         MessageWithNewLine(GetName(), *f, "correcting pitch-drift");
-                        if (pitch_drift_corrector.ProcessFile(f->GetWritableAudio())) {
+                        if (pitch_drift_corrector.ProcessFile(f->GetWritableAudio(),
+                                                              GetExpectedMidiPitch(*f))) {
                             MessageWithNewLine(GetName(), *f, "successfully pitch-drift corrected.");
                         }
                     }

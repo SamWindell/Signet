@@ -6,6 +6,7 @@
 #include "span.hpp"
 
 #include "audio_data.h"
+#include "midi_pitches.h"
 
 struct AnalysisChunk {
     usize frame_start {};
@@ -26,7 +27,7 @@ class PitchDriftCorrector {
                         double chunk_length_milliseconds,
                         bool print_csv);
     bool CanFileBePitchCorrected() const;
-    bool ProcessFile(AudioData &data);
+    bool ProcessFile(AudioData &data, std::optional<MIDIPitch> required_midi_pitch);
 
   private:
     static constexpr bool k_brute_force_fix_octave_errors = false;

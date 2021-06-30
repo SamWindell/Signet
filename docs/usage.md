@@ -356,6 +356,12 @@ This is the same as --sample-sets, but just takes a single filename for all of t
 `--chunk-ms FLOAT:INT in [20 - 200]`
 fix-pitch-drift evaluates the audio in small chunks. The pitch of each chunk is determined in order to get a picture of the audio's pitch over time. You can set the chunk size with this option. The default is 60 milliseconds. If you are finding this tool is incorrectly changing the pitch, you might try increasing the chunk size by 10 ms or so.
 
+`--expected-note TEXT`
+Only correct the audio if the detected target pitch matches the one given. To do this, specify a regex pattern that has a single capture group. This will be compared against each filename (excluding folder or file extension). The bit that you capture should be the MIDI note number of the audio file. You can also optionally specify an additional argument: the octave number for MIDI note zero (the default is that MIDI note 0 is C-1).
+
+Example: fix-pitch-drift --expected-note ".\*-note-(\d+)-.\*" 0
+This would find the digits after the text '-note-' in the filename and interpret them as the expected pitch of the track using 0 as the octave number for MIDI note 0.
+
 `--print-csv`
 Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.
 

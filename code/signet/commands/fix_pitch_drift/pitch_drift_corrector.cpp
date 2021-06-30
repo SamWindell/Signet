@@ -127,10 +127,25 @@ bool PitchDriftCorrector::CanFileBePitchCorrected() const {
     return result;
 }
 
-bool PitchDriftCorrector::ProcessFile(AudioData &data) {
+bool PitchDriftCorrector::ProcessFile(AudioData &data, std::optional<MIDIPitch> required_midi_pitch) {
     MarkOutlierChunks();
     MarkRegionsToIgnore();
     const auto num_good_regions = MarkTargetPitches();
+
+    if (required_midi_pitch) {
+        for (auto &c : m_chunks) {
+            if (!c.ignore_tuning) {
+                if (!PitchesAreRoughlyEqual(required_midi_pitch->pitch, c.target_pitch, 50)) {
+                    WarningWithNewLine(
+                        m_message_heading, {},
+                        "Failed to process the audio because the detected audio ({}) is too far from the expected pitch ({})",
+                        c.target_pitch, required_midi_pitch->pitch);
+                    return false;
+                }
+            }
+        }
+    }
+
     defer { PrintChunkCSV(); };
     if (!num_good_regions) {
         WarningWithNewLine(m_message_heading, {},

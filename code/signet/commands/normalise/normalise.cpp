@@ -24,11 +24,11 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
 
     norm->add_flag(
         "--rms", m_use_rms,
-        "Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. Does not work well with very dynamic-range variable audio.");
+        "Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.");
 
     norm->add_option(
             "--mix", m_norm_mix,
-            "The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means no apply a gain to get halfway from the current level to the target.")
+            "The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.")
         ->check(CLI::Range(0, 100));
     return norm;
 }
@@ -66,7 +66,7 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         if (!use_common_gain) {
             ErrorWithNewLine(
                 GetName(), {},
-                "unable to perform normalisation because the common gain was not successfully found");
+                "Unable to perform normalisation because the common gain was not successfully found");
             return;
         }
     }
@@ -168,7 +168,7 @@ TEST_CASE("NormaliseCommand") {
         REQUIRE(FindMaxSample(*outs[1]) == doctest::Approx(1.0).epsilon(0.1));
     }
 
-    SUBCASE("independant channels") {
+    SUBCASE("independent channels") {
         auto stereo_sine_a = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
         auto stereo_sine_b = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
 

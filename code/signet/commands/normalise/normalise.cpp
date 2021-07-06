@@ -20,7 +20,7 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
         "When there are multiple files, normalise each one individually rather than by a common gain.");
 
     norm->add_flag("--independent-channels", m_normalise_channels_separately,
-                   "Normalise each channel independently rather than scale them together.");
+                   "UNTESTED: Normalise each channel independently rather than scale them together.");
 
     norm->add_flag(
         "--rms", m_use_rms,

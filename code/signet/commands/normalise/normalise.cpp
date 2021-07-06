@@ -102,6 +102,8 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
                 }
                 const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
 
+                // TODO: should there be another option to norm that works like --mix but for individual
+                // channels - allowing for channels to be normalised partially to other channels in the file?
                 const auto gain = GetMixedGain();
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                     const auto channel_gain = gain * (max_channel_gain / channel_peaks[chan]);

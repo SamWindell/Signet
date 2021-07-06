@@ -46,31 +46,31 @@ A C++17 compiler is required. The compiler must also be [compatible with the mag
 ## Examples
 The general pattern is `signet <input-file(s)> <command>`. You can have one or more commands, in which case each command will process the set of input-files in the order that you specify them.
 
-Adds a fade-in of 1 second to filename.wav
+Add a fade-in of 1 second to filename.wav:
 
 ```signet filename.wav fade in 1s```
 
-Auto-tunes all the audio files in the directory 'untuned-files' to their nearest musical pitch
+Auto-tunes all the audio files in the directory 'untuned-files' to their nearest musical pitch:
 
 ```signet untuned-files auto-tune```
 
-Normalises (to a common gain) all WAV files in the current directory to -3dB
+Normalise (to a common gain) all WAV files in the current directory to -3dB:
 
 ```signet *.wav norm -3```
 
-Normalises (to a common gain) filename1.wav and filename2.flac to -1dB
+Normalise (to a common gain) filename1.wav and filename2.flac to -1dB:
 
 ```signet filename1.wav filename2.flac norm -1```
 
-Offsets the start of each file to the nearest zero-crossing within the first 100 milliseconds. Performs this for all WAV files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with "-unprocessed.wav".
+Offset the start of each file to the nearest zero-crossing within the first 100 milliseconds. Perform this for all WAV files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with "-unprocessed.wav":
 
 ```signet "sampler/session*/**.wav" "-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms```
 
-Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall renamed to the whatever group index 1 of the match was, with a -b suffix.
+Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall be renamed to the whatever group 1 of the regex match was, with a -b suffix:
 
 ```signet "one-shots/**/.*" rename (.*)-a <1>-b```
 
-Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24.
+Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24:
 
 ```signet my_folder convert sample-rate 44100 bit-depth 24```
 
@@ -83,7 +83,7 @@ Signet is flexible in terms of what files to process. You can specify one or mor
 
 You can exclude certain files from being processed by prefixing them with a dash. For example `"file.*" "-*.wav"` will match all files in the current directory that start with `file`, except those with the `.wav` extension.
 
-Input files are processed and then saved back to file (overwritten). Signet features a simple undo option that will restore any files that you overwrote in the last call.
+Input files are processed and then saved back to file (overwritten). Signet features a simple undo command that will restore any files that you overwrote in the last call.
 
 ### Comprehensive help text
 Care has been taken to ensure the help text is comprehensive and understandable. Run signet with the option `--help` to see information about the available options. Run with `--help-all` to see all the available commands. You can also add `--help` after a command to see the options of that command specifically. For example:
@@ -99,9 +99,9 @@ Care has been taken to ensure the help text is comprehensive and understandable.
 `signet convert file-format --help`
 
 ### Undo
-Signet overwrites the files that it processes. It is therefore advisable to make a copy your audio files before processing them with Signet.
+Signet overwrites the files that it processes. Therefore to avoid errors, it's advisable to make a copy your audio files before processing them with Signet.
 
-However, Signet can help with safety too. It features a simple undo system. You can undo any changes made in the previous run of Signet by running it again with the `undo` option. For example `signet undo`.
+However, Signet can help with safety too. It features a simple undo system. You can undo any changes made in the previous run of Signet by running it again with the `undo` command. For example `signet undo`.
 
 Files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 

@@ -39,6 +39,7 @@ struct AudioData {
     //
     //
     void MultiplyByScalar(const double amount);
+    void MultiplyByScalar(unsigned channel, const double amount);
     void AddOther(const AudioData &other);
     void Resample(double new_sample_rate);
     void ChangePitch(double cents);

@@ -63,6 +63,12 @@ void AudioData::MultiplyByScalar(const double amount) {
     }
 }
 
+void AudioData::MultiplyByScalar(unsigned channel, double amount) {
+    for (size_t frame = 0; frame < NumFrames(); ++frame) {
+        GetSample(channel, frame) *= amount;
+    }
+}
+
 void AudioData::AddOther(const AudioData &other) {
     if (other.interleaved_samples.size() > interleaved_samples.size()) {
         interleaved_samples.resize(other.interleaved_samples.size());

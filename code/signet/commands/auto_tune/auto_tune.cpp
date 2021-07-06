@@ -30,11 +30,10 @@ void AutoTuneCommand::ProcessFiles(AudioFiles &files) {
                                        closest_musical_note.ToString());
                     continue;
                 }
-                MessageWithNewLine(GetName(), f, "Changing pitch from {} to {}", *pitch,
-                                   closest_musical_note.ToString());
+                MessageWithNewLine(GetName(), f, "Changing pitch by {:.2f} cents", cents);
                 f.GetWritableAudio().ChangePitch(cents);
             } else {
-                MessageWithNewLine(GetName(), f, "No pitch could be found");
+                WarningWithNewLine(GetName(), f, "No pitch could be found");
             }
         }
     } else {
@@ -57,7 +56,7 @@ void AutoTuneCommand::ProcessFiles(AudioFiles &files) {
                         f->GetWritableAudio().ChangePitch(cents);
                     }
                 } else {
-                    MessageWithNewLine(GetName(), {}, "No pitch could be found for sample set: {}",
+                    WarningWithNewLine(GetName(), {}, "No pitch could be found for sample set: {}",
                                        authority_file->OriginalFilename());
                 }
             });

@@ -124,7 +124,7 @@ bool PitchDriftCorrector::CanFileBePitchCorrected() const {
     if (!result) {
         WarningWithNewLine(
             m_message_heading, m_file_name,
-            "The pitch detection algorithm cannot reliably detect pitch across the duration of the file");
+            "The pitch detection algorithm cannot reliably detect pitch across the duration of the file. This could be the case for a few reasons: (1) too much silence, (2) multiple pitches playing or (3), the tone is too complicated to be detected by the algorithm.");
     }
     return result;
 }
@@ -371,7 +371,7 @@ int PitchDriftCorrector::MarkTargetPitches() {
 
             MessageWithNewLine(
                 m_message_heading, m_file_name,
-                "{}: Found a region for pitch-drift correction from {:.2f} sec to {:.2f} sec; this will be smoothly tuned towards {:.2f} Hz.",
+                "{}: Found a region for pitch-drift correction from {:.2f} sec to {:.2f} sec; this will be smoothly tuned towards {:.2f} Hz",
                 num_valid_pitch_regions, (double)region_start->frame_start / (double)m_sample_rate,
                 (double)((region_end - 1)->frame_start + (region_end - 1)->frame_size) /
                     (double)m_sample_rate,

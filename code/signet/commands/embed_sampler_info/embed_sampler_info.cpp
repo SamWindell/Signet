@@ -251,7 +251,7 @@ void EmbedSamplerInfo::ProcessFiles(AudioFiles &files) {
                 if (!o) {
                     ErrorWithNewLine(
                         GetName(), f,
-                        "The given regex pattern {} does not capture an integer in the filename {}.", pattern,
+                        "The given regex pattern {} does not capture an integer in the filename {}", pattern,
                         filename);
                 } else {
                     out = o.value();

@@ -3,13 +3,10 @@
 #include <array>
 #include <string>
 
+#include <fmt/core.h>
+
 struct MIDIPitch {
-    std::string ToString() const {
-        std::array<char, 32> buf {};
-        std::snprintf(buf.data(), buf.size(), "%.2f", pitch);
-        return std::string(name) + " (" + std::string(buf.data()) + "Hz - MIDI " + std::to_string(midi_note) +
-               ")";
-    }
+    std::string ToString() const { return fmt::format("{} ({:.2f} Hz - MIDI {})", name, pitch, midi_note); }
 
     std::string GetPitchString() const {
         std::array<char, 32> buf {};

@@ -89,13 +89,11 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
         for (auto &f : files) {
             PitchDriftCorrector pitch_drift_corrector(f.GetAudio(), GetName(), f.OriginalPath(),
                                                       m_chunk_length_milliseconds, m_print_csv);
-            if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
-                ErrorWithNewLine(GetName(), f, "cannot be pitch-drift corrected");
-            } else {
-                MessageWithNewLine(GetName(), f, "correcting pitch-drift");
+            if (pitch_drift_corrector.CanFileBePitchCorrected()) {
+                MessageWithNewLine(GetName(), f, "Correcting pitch-drift");
 
                 if (pitch_drift_corrector.ProcessFile(f.GetWritableAudio(), GetExpectedMidiPitch(f))) {
-                    MessageWithNewLine(GetName(), f, "successfully pitch-drift corrected.");
+                    MessageWithNewLine(GetName(), f, "Successfully pitch-drift corrected");
                 }
             }
         }
@@ -106,7 +104,7 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
                 if (!IdenticalProcessingSet::AllHaveSameNumFrames(set)) {
                     ErrorWithNewLine(
                         GetName(), *authority_file,
-                        "the files in the set do not all have the same number of frames and therefore cannot be processed with fix-pitch-drift.");
+                        "The files in the set do not all have the same number of frames and therefore cannot be processed with fix-pitch-drift");
                     return;
                 }
 
@@ -116,13 +114,13 @@ void FixPitchDriftCommand::ProcessFiles(AudioFiles &files) {
                 if (!pitch_drift_corrector.CanFileBePitchCorrected()) {
                     ErrorWithNewLine(
                         GetName(), *authority_file,
-                        "authority file for set cannot be pitch-drift corrected, therefore the set cannot be processed");
+                        "Authority file for set cannot be pitch-drift corrected, therefore the set cannot be processed");
                 } else {
                     for (auto f : set) {
-                        MessageWithNewLine(GetName(), *f, "correcting pitch-drift");
+                        MessageWithNewLine(GetName(), *f, "Correcting pitch-drift");
                         if (pitch_drift_corrector.ProcessFile(f->GetWritableAudio(),
                                                               GetExpectedMidiPitch(*f))) {
-                            MessageWithNewLine(GetName(), *f, "successfully pitch-drift corrected.");
+                            MessageWithNewLine(GetName(), *f, "Successfully pitch-drift corrected");
                         }
                     }
                 }

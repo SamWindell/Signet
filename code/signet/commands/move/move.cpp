@@ -19,7 +19,7 @@ void MoveCommand::ProcessFiles(AudioFiles &files) {
                 already_exists = true;
                 ErrorWithNewLine(
                     GetName(), p,
-                    "There is already another file with the same that will be moved to the destination folder.");
+                    "There is already another file with the same that will be moved to the destination folder");
             }
         }
 

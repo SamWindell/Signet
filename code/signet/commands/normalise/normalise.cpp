@@ -20,7 +20,7 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
         "When there are multiple files, normalise each one individually rather than by a common gain.");
 
     norm->add_flag("--independent-channels", m_normalise_channels_separately,
-                   "UNTESTED: Normalise each channel independently rather than scale them together.");
+                   "Normalise each channel independently rather than scale them together.");
 
     norm->add_flag(
         "--rms", m_use_rms,
@@ -140,14 +140,20 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
 
 TEST_CASE("NormaliseCommand") {
     auto sine = TestHelpers::CreateSingleOscillationSineWave(1, 100, 100);
-    for (auto &s : sine.interleaved_samples) {
-        s *= 0.5;
-    }
+    sine.MultiplyByScalar(0.5);
 
     const auto FindMaxSample = [](const AudioData &d) {
         double max = 0;
         for (const auto &s : d.interleaved_samples) {
             max = std::max(std::abs(s), max);
+        }
+        return max;
+    };
+
+    const auto FindMaxSampleChannel = [](const AudioData &d, unsigned channel) {
+        double max = 0;
+        for (size_t frame = 0; frame < d.NumFrames(); ++frame) {
+            max = std::max(std::abs(d.GetSample(channel, frame)), max);
         }
         return max;
     };
@@ -183,5 +189,57 @@ TEST_CASE("NormaliseCommand") {
         }
         REQUIRE(FindMaxSample(*outs[0]) == doctest::Approx(0.666).epsilon(0.1));
         REQUIRE(FindMaxSample(*outs[1]) == doctest::Approx(1.0).epsilon(0.1));
+    }
+
+    SUBCASE("independant channels") {
+        auto stereo_sine_a = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
+        auto stereo_sine_b = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
+
+        REQUIRE(stereo_sine_a.NumFrames() == stereo_sine_b.NumFrames());
+        for (size_t frame = 0; frame < stereo_sine_a.NumFrames(); ++frame) {
+            stereo_sine_a.GetSample(0, frame) *= 0.8;
+            stereo_sine_a.GetSample(1, frame) *= 0.6;
+            stereo_sine_b.GetSample(0, frame) *= 0.4;
+            stereo_sine_b.GetSample(1, frame) *= 0.2;
+        }
+
+        SUBCASE("non-common with independent channels") {
+            const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+                "norm 0 --independently --independent-channels", {stereo_sine_a, stereo_sine_b});
+            for (const auto &out : outs) {
+                REQUIRE(out);
+            }
+
+            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(1.0));
+        }
+
+        SUBCASE("common with independent channels") {
+            const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+                "norm 0 --independent-channels", {stereo_sine_a, stereo_sine_b});
+            for (const auto &out : outs) {
+                REQUIRE(out);
+            }
+
+            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.5));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.5));
+        }
+
+        SUBCASE("common with independent channels mix 50%") {
+            const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+                "norm 0 --independent-channels --mix=50", {stereo_sine_a, stereo_sine_b});
+            for (const auto &out : outs) {
+                REQUIRE(out);
+            }
+
+            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9));
+            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45));
+        }
     }
 }

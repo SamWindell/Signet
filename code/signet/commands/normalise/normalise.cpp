@@ -34,18 +34,31 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
 }
 
 void NormaliseCommand::ProcessFiles(AudioFiles &files) {
-    std::unique_ptr<NormalisationGainCalculator> main_processor {};
-    if (m_use_rms) {
-        main_processor = std::make_unique<RMSGainCalculator>();
-    } else {
-        main_processor = std::make_unique<PeakGainCalculator>();
-    }
+    const auto MakeGainCalculator = [rms = m_use_rms]() -> std::unique_ptr<NormalisationGainCalculator> {
+        if (rms) return std::make_unique<RMSGainCalculator>();
+        return std::make_unique<PeakGainCalculator>();
+    };
+
+    auto gain_calculator = MakeGainCalculator();
+
+    const auto GetMixedGain = [&]() {
+        double gain = gain_calculator->GetGain(DBToAmp(m_target_decibels));
+        if (m_norm_mix) {
+            const auto mix_01 = *m_norm_mix / 100.0;
+            if (gain >= 1) {
+                gain = 1 + (gain - 1) * mix_01;
+            } else {
+                gain = gain + (1 - gain) * mix_01;
+            }
+        }
+        return gain;
+    };
 
     bool use_common_gain = false;
     if (files.Size() > 1 && !m_normalise_independently) {
         use_common_gain = true;
         for (auto &f : files) {
-            if (!main_processor->RegisterBufferMagnitudes(f.GetAudio(), {})) {
+            if (!gain_calculator->RegisterBufferMagnitudes(f.GetAudio(), {})) {
                 use_common_gain = false;
                 break;
             }
@@ -62,76 +75,40 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         auto &audio = f.GetWritableAudio();
         if (!m_normalise_channels_separately) {
             if (!use_common_gain) {
-                main_processor->Reset();
-                main_processor->RegisterBufferMagnitudes(audio, {});
+                gain_calculator->Reset();
+                gain_calculator->RegisterBufferMagnitudes(audio, {});
             }
-            double gain = main_processor->GetGain(DBToAmp(m_target_decibels));
-            if (m_norm_mix) {
-                const auto mix_01 = *m_norm_mix / 100.0;
-                if (gain >= 1) {
-                    gain = 1 + (gain - 1) * mix_01;
-                } else {
-                    gain = gain + (1 - gain) * mix_01;
-                }
-            }
-
-            MessageWithNewLine(GetName(), f, "Applying a gain of {}", gain);
+            const auto gain = GetMixedGain();
+            MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", gain);
             audio.MultiplyByScalar(gain);
         } else {
             if (!use_common_gain) {
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    main_processor->Reset();
-                    main_processor->RegisterBufferMagnitudes(audio, chan);
+                    gain_calculator->Reset();
+                    gain_calculator->RegisterBufferMagnitudes(audio, chan);
 
-                    double gain = main_processor->GetGain(DBToAmp(m_target_decibels));
-                    if (m_norm_mix) {
-                        const auto mix_01 = *m_norm_mix / 100.0;
-                        if (gain >= 1) {
-                            gain = 1 + (gain - 1) * mix_01;
-                        } else {
-                            gain = gain + (1 - gain) * mix_01;
-                        }
-                    }
-
-                    MessageWithNewLine(GetName(), f, "Applying a gain of {} to channel {}", gain, chan);
-
-                    for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
-                        audio.GetSample(chan, frame) *= gain;
-                    }
+                    const auto gain = GetMixedGain();
+                    MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", gain, chan);
+                    audio.MultiplyByScalar(chan, gain);
                 }
             } else {
-                double gain = main_processor->GetGain(DBToAmp(m_target_decibels));
-                if (m_norm_mix) {
-                    const auto mix_01 = *m_norm_mix / 100.0;
-                    if (gain >= 1) {
-                        gain = 1 + (gain - 1) * mix_01;
-                    } else {
-                        gain = gain + (1 - gain) * mix_01;
-                    }
-                }
-
-                std::unique_ptr<NormalisationGainCalculator> processor;
-                if (m_use_rms)
-                    processor = std::make_unique<RMSGainCalculator>();
-                else
-                    processor = std::make_unique<PeakGainCalculator>();
+                auto channels_gain_calculator = MakeGainCalculator();
 
                 std::vector<double> channel_peaks;
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    processor->Reset();
-                    processor->RegisterBufferMagnitudes(audio, chan);
-                    channel_peaks.push_back(processor->GetLargestRegisteredMagnitude());
+                    channels_gain_calculator->Reset();
+                    channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
+                    channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
                 }
+                const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
 
-                auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
+                const auto gain = GetMixedGain();
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                     const auto channel_gain = gain * (max_channel_gain / channel_peaks[chan]);
 
-                    MessageWithNewLine(GetName(), f, "Applying a gain of {} to channel {}", channel_gain,
+                    MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", channel_gain,
                                        chan);
-                    for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
-                        audio.GetSample(chan, frame) *= channel_gain;
-                    }
+                    audio.MultiplyByScalar(chan, channel_gain);
                 }
             }
         }
@@ -195,13 +172,10 @@ TEST_CASE("NormaliseCommand") {
         auto stereo_sine_a = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
         auto stereo_sine_b = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
 
-        REQUIRE(stereo_sine_a.NumFrames() == stereo_sine_b.NumFrames());
-        for (size_t frame = 0; frame < stereo_sine_a.NumFrames(); ++frame) {
-            stereo_sine_a.GetSample(0, frame) *= 0.8;
-            stereo_sine_a.GetSample(1, frame) *= 0.6;
-            stereo_sine_b.GetSample(0, frame) *= 0.4;
-            stereo_sine_b.GetSample(1, frame) *= 0.2;
-        }
+        stereo_sine_a.MultiplyByScalar(0, 0.8);
+        stereo_sine_a.MultiplyByScalar(1, 0.6);
+        stereo_sine_b.MultiplyByScalar(0, 0.4);
+        stereo_sine_b.MultiplyByScalar(1, 0.2);
 
         SUBCASE("non-common with independent channels") {
             const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(

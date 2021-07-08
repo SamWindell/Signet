@@ -21,6 +21,7 @@ class NormalisationGainCalculator {
 
 class RMSGainCalculator : public NormalisationGainCalculator {
   public:
+    // TODO: use channel
     bool RegisterBufferMagnitudes(const AudioData &audio, std::optional<unsigned> channel) override {
         if (!m_sum_of_squares_channels.size()) {
             m_sum_of_squares_channels.resize(audio.num_channels);

@@ -19,21 +19,41 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
         "--independently", m_normalise_independently,
         "When there are multiple files, normalise each one individually rather than by a common gain.");
 
-    norm->add_flag("--independent-channels", m_normalise_channels_separately,
-                   "Normalise each channel independently rather than scale them together.");
+    auto independent_chans =
+        norm->add_flag("--independent-channels", m_normalise_channels_separately,
+                       "Normalise each channel independently rather than scale them together.");
 
     norm->add_flag(
         "--rms", m_use_rms,
         "Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.");
 
     norm->add_option(
-            "--mix", m_norm_mix,
+            "--mix", m_norm_mix_percent,
             "The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.")
         ->check(CLI::Range(0, 100));
+
+    norm->add_option(
+            "--mix-channels", m_norm_channel_mix_percent,
+            "UNTESTED: The mix of each channels normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.")
+        ->check(CLI::Range(0, 100))
+        ->needs(independent_chans);
+
     return norm;
 }
 
+static double ScaleMultiplier(double multiplier, double scale_01) {
+    if (multiplier == 0) return 0;
+    assert(multiplier > 0);
+    return std::pow(2, std::log2(multiplier) * scale_01);
+}
+
 void NormaliseCommand::ProcessFiles(AudioFiles &files) {
+    if (m_norm_mix_percent == 0) {
+        WarningWithNewLine(GetName(), {},
+                           "The mix percent is set to 0 - no change will be made to any files");
+        return;
+    }
+
     const auto MakeGainCalculator = [rms = m_use_rms]() -> std::unique_ptr<NormalisationGainCalculator> {
         if (rms) return std::make_unique<RMSGainCalculator>();
         return std::make_unique<PeakGainCalculator>();
@@ -42,16 +62,8 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
     auto gain_calculator = MakeGainCalculator();
 
     const auto GetMixedGain = [&]() {
-        double gain = gain_calculator->GetGain(DBToAmp(m_target_decibels));
-        if (m_norm_mix) {
-            const auto mix_01 = *m_norm_mix / 100.0;
-            if (gain >= 1) {
-                gain = 1 + (gain - 1) * mix_01;
-            } else {
-                gain = gain + (1 - gain) * mix_01;
-            }
-        }
-        return gain;
+        return ScaleMultiplier(gain_calculator->GetGain(DBToAmp(m_target_decibels)),
+                               m_norm_mix_percent / 100.0);
     };
 
     bool use_common_gain = false;
@@ -71,6 +83,7 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         }
     }
 
+    auto channels_gain_calculator = MakeGainCalculator();
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (!m_normalise_channels_separately) {
@@ -82,32 +95,33 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
             MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", gain);
             audio.MultiplyByScalar(gain);
         } else {
+            std::vector<double> channel_peaks;
+            for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                channels_gain_calculator->Reset();
+                channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
+                channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
+            }
+            const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
+
             if (!use_common_gain) {
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                     gain_calculator->Reset();
                     gain_calculator->RegisterBufferMagnitudes(audio, chan);
 
-                    const auto gain = GetMixedGain();
+                    const auto relative_other_chans = max_channel_gain / channel_peaks[chan];
+
+                    auto gain = GetMixedGain();
+                    if (max_channel_gain != channel_peaks[chan]) {
+                        gain = ScaleMultiplier(gain, m_norm_channel_mix_percent / 100.0);
+                    }
                     MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", gain, chan);
                     audio.MultiplyByScalar(chan, gain);
                 }
             } else {
-                auto channels_gain_calculator = MakeGainCalculator();
-
-                std::vector<double> channel_peaks;
-                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    channels_gain_calculator->Reset();
-                    channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
-                    channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
-                }
-                const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
-
-                // TODO: should there be another option to norm that works like --mix but for individual
-                // channels - allowing for channels to be normalised partially to other channels in the file?
                 const auto gain = GetMixedGain();
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    const auto channel_gain = gain * (max_channel_gain / channel_peaks[chan]);
-
+                    auto channel_gain = ScaleMultiplier(gain * (max_channel_gain / channel_peaks[chan]),
+                                                        m_norm_channel_mix_percent / 100.0);
                     MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", channel_gain,
                                        chan);
                     audio.MultiplyByScalar(chan, channel_gain);
@@ -146,13 +160,13 @@ TEST_CASE("NormaliseCommand") {
     SUBCASE("single file mix 50% to 0db") {
         const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0 --mix=50", sine);
         REQUIRE(out);
-        REQUIRE(FindMaxSample(*out) == doctest::Approx(0.75));
+        REQUIRE(FindMaxSample(*out) == doctest::Approx(std::sqrt(2) / 2));
     }
 
     SUBCASE("single file mix 75% to 0db") {
         const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0 --mix=75", sine);
         REQUIRE(out);
-        REQUIRE(FindMaxSample(*out) == doctest::Approx(0.875));
+        REQUIRE(FindMaxSample(*out) == doctest::Approx(0.85).epsilon(0.1));
     }
 
     SUBCASE("multiple files common gain") {
@@ -212,10 +226,37 @@ TEST_CASE("NormaliseCommand") {
                 REQUIRE(out);
             }
 
-            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9));
-            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45));
+            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9).epsilon(0.1));
+            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9).epsilon(0.1));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45).epsilon(0.1));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45).epsilon(0.1));
         }
+
+        SUBCASE("non-common with independent channels chan-mix 50%") {
+            const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+                "norm 0 --independently --independent-channels --mix-channels=50",
+                {stereo_sine_a, stereo_sine_b});
+            for (const auto &out : outs) {
+                REQUIRE(out);
+            }
+
+            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.8).epsilon(0.08));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
+            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.8).epsilon(0.08));
+        }
+
+        // SUBCASE("common with independent channels chan-mix 50%") {
+        //     const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+        //         "norm 0 --independent-channels --mix-channels=50", {stereo_sine_a, stereo_sine_b});
+        //     for (const auto &out : outs) {
+        //         REQUIRE(out);
+        //     }
+
+        //     REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9));
+        //     REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9));
+        //     REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45));
+        //     REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45));
+        // }
     }
 }

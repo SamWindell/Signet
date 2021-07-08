@@ -13,7 +13,8 @@ class NormaliseCommand final : public Command {
     std::string GetName() const override { return "Normalise"; }
 
   private:
-    std::optional<double> m_norm_mix {};
+    double m_norm_mix_percent {100.0};
+    double m_norm_channel_mix_percent {100.0};
     bool m_normalise_independently = false;
     bool m_normalise_channels_separately = false;
     double m_target_decibels = 0.0;

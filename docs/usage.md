@@ -461,10 +461,13 @@ When there are multiple files, normalise each one individually rather than by a 
 Normalise each channel independently rather than scale them together.
 
 `--rms`
-Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. Does not work well with very dynamic-range variable audio.
+Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.
 
 `--mix FLOAT:INT in [0 - 100]`
-The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means no apply a gain to get halfway from the current level to the target.
+The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.
+
+`--mix-channels FLOAT:INT in [0 - 100] Needs: --independent-channels`
+UNTESTED: The mix of each channels normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.
 
 
 ## pan

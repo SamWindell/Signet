@@ -56,7 +56,7 @@ void GainCommand::ProcessFiles(AudioFiles &files) {
         if (audio.IsEmpty()) continue;
 
         const auto amp = m_gain.GetMultiplier();
-        MessageWithNewLine(GetName(), f, "Applying a gain of {}", amp);
+        MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", amp);
         for (auto &s : audio.interleaved_samples) {
             s *= amp;
         }

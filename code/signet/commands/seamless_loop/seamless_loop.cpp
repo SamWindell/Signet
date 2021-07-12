@@ -3,6 +3,7 @@
 #include "CLI11.hpp"
 
 #include "commands/fade/fade.h"
+#include "test_helpers.h"
 
 CLI::App *SeamlessLoopCommand::CreateCommandCLI(CLI::App &app) {
     auto looper = app.add_subcommand(
@@ -23,8 +24,8 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
         if (num_frames < num_xfade_frames || num_xfade_frames == 0) {
             ErrorWithNewLine(
                 GetName(), f,
-                "Cannot make the file a seamless loop because the file or crossfade-region are too small. Number of frames in the file: {}, number of frames in the crossfade-region: {}. File: {}",
-                num_frames, num_xfade_frames, f.GetPath());
+                "Cannot make the file a seamless loop because the file or crossfade-region are too small. Number of frames in the file: {}, number of frames in the crossfade-region: {}",
+                num_frames, num_xfade_frames);
             continue;
         }
         auto &audio = f.GetWritableAudio();
@@ -32,7 +33,7 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
         FadeCommand::PerformFade(audio, num_frames - 1, (num_frames - 1) - num_xfade_frames,
                                  FadeCommand::Shape::Sine);
         for (usize i = 0; i < num_xfade_frames; ++i) {
-            auto write_index = (num_frames - 1) - num_xfade_frames + i;
+            auto write_index = (num_frames - 1) - (num_xfade_frames - 1) + i;
             for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                 audio.GetSample(chan, write_index) += audio.GetSample(chan, i);
             }
@@ -40,5 +41,18 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
         auto &samples = audio.interleaved_samples;
         samples.erase(samples.begin(), samples.begin() + num_xfade_frames * audio.num_channels);
         audio.FramesWereRemovedFromStart(num_xfade_frames);
+    }
+}
+
+TEST_CASE("SeamlessLoopCommand") {
+    AudioData buf {};
+    buf.num_channels = 1;
+    buf.sample_rate = 44100;
+    buf.interleaved_samples.resize(100, 1.0);
+
+    const auto out = TestHelpers::ProcessBufferWithCommand<SeamlessLoopCommand>("seamless-loop 10", buf);
+    REQUIRE(out);
+    for (auto s : out->interleaved_samples) {
+        CHECK(s == doctest::Approx(1.0).epsilon(0.2));
     }
 }

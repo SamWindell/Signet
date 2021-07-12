@@ -29,12 +29,12 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
 
     norm->add_option(
             "--mix", m_norm_mix_percent,
-            "The mix of the normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.")
+            "The mix of the normalised signal, where 100% means normalise to exactly to the target, and 50% means apply a gain to get halfway from the current level to the target. The default is 100%.")
         ->check(CLI::Range(0, 100));
 
     norm->add_option(
             "--mix-channels", m_norm_channel_mix_percent,
-            "UNTESTED: The mix of each channels normalised signal, where 100% means normalise to exactly to the target, 50% means apply a gain to get halfway from the current level to the target.")
+            "When --independent-channels is also given, this option controls the mix of each channels normalised signal, where 100% means normalise to exactly to the target, and 50% means apply a gain to get halfway from the current level to the target. The default is 100%.")
         ->check(CLI::Range(0, 100))
         ->needs(independent_chans);
 
@@ -105,7 +105,6 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
                     gain_calculator->Reset();
                     gain_calculator->RegisterBufferMagnitudes(audio, chan);
                     auto gain = gain_calculator->GetGain(DBToAmp(m_target_decibels));
-                    if (gain == 1) continue;
                     gain = ScaleMultiplier(gain, m_norm_channel_mix_percent / 100.0);
 
                     MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}",
@@ -123,8 +122,8 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
 
                 const auto gain = GetMixedGain();
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    auto channel_gain = ScaleMultiplier(gain * (max_channel_gain / channel_peaks[chan]),
-                                                        m_norm_channel_mix_percent / 100.0);
+                    auto channel_gain = gain * ScaleMultiplier(max_channel_gain / channel_peaks[chan],
+                                                               m_norm_channel_mix_percent / 100.0);
                     MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", channel_gain,
                                        chan);
                     audio.MultiplyByScalar(chan, channel_gain);
@@ -249,17 +248,17 @@ TEST_CASE("NormaliseCommand") {
             CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.707).epsilon(0.01));
         }
 
-        // SUBCASE("common with independent channels chan-mix 50%") {
-        //     const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
-        //         "norm 0 --independent-channels --mix-channels=50", {stereo_sine_a, stereo_sine_b});
-        //     for (const auto &out : outs) {
-        //         REQUIRE(out);
-        //     }
+        SUBCASE("common with independent channels chan-mix 50%") {
+            const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+                "norm 0 --independent-channels --mix-channels=50", {stereo_sine_a, stereo_sine_b});
+            for (const auto &out : outs) {
+                REQUIRE(out);
+            }
 
-        //     REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9));
-        //     REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9));
-        //     REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45));
-        //     REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45));
-        // }
+            CHECK(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.707).epsilon(0.01));
+            CHECK(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.5).epsilon(0.01));
+            CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.35).epsilon(0.01));
+        }
     }
 }

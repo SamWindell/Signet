@@ -95,29 +95,32 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
             MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", gain);
             audio.MultiplyByScalar(gain);
         } else {
-            std::vector<double> channel_peaks;
-            for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                channels_gain_calculator->Reset();
-                channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
-                channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
-            }
-            const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
-
             if (!use_common_gain) {
+                gain_calculator->Reset();
+                gain_calculator->RegisterBufferMagnitudes(audio, {});
+                const auto overall_gain = GetMixedGain();
+                audio.MultiplyByScalar(overall_gain);
+
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                     gain_calculator->Reset();
                     gain_calculator->RegisterBufferMagnitudes(audio, chan);
+                    auto gain = gain_calculator->GetGain(DBToAmp(m_target_decibels));
+                    if (gain == 1) continue;
+                    gain = ScaleMultiplier(gain, m_norm_channel_mix_percent / 100.0);
 
-                    const auto relative_other_chans = max_channel_gain / channel_peaks[chan];
-
-                    auto gain = GetMixedGain();
-                    if (max_channel_gain != channel_peaks[chan]) {
-                        gain = ScaleMultiplier(gain, m_norm_channel_mix_percent / 100.0);
-                    }
-                    MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", gain, chan);
+                    MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}",
+                                       gain * overall_gain, chan);
                     audio.MultiplyByScalar(chan, gain);
                 }
             } else {
+                std::vector<double> channel_peaks;
+                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                    channels_gain_calculator->Reset();
+                    channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
+                    channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
+                }
+                const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
+
                 const auto gain = GetMixedGain();
                 for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                     auto channel_gain = ScaleMultiplier(gain * (max_channel_gain / channel_peaks[chan]),
@@ -154,19 +157,19 @@ TEST_CASE("NormaliseCommand") {
     SUBCASE("single file") {
         const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0", sine);
         REQUIRE(out);
-        REQUIRE(FindMaxSample(*out) == doctest::Approx(1.0));
+        CHECK(FindMaxSample(*out) == doctest::Approx(1.0));
     }
 
     SUBCASE("single file mix 50% to 0db") {
         const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0 --mix=50", sine);
         REQUIRE(out);
-        REQUIRE(FindMaxSample(*out) == doctest::Approx(std::sqrt(2) / 2));
+        CHECK(FindMaxSample(*out) == doctest::Approx(std::sqrt(2) / 2));
     }
 
     SUBCASE("single file mix 75% to 0db") {
         const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm 0 --mix=75", sine);
         REQUIRE(out);
-        REQUIRE(FindMaxSample(*out) == doctest::Approx(0.85).epsilon(0.1));
+        CHECK(FindMaxSample(*out) == doctest::Approx(0.85).epsilon(0.1));
     }
 
     SUBCASE("multiple files common gain") {
@@ -180,8 +183,8 @@ TEST_CASE("NormaliseCommand") {
         for (const auto &out : outs) {
             REQUIRE(out);
         }
-        REQUIRE(FindMaxSample(*outs[0]) == doctest::Approx(0.666).epsilon(0.1));
-        REQUIRE(FindMaxSample(*outs[1]) == doctest::Approx(1.0).epsilon(0.1));
+        CHECK(FindMaxSample(*outs[0]) == doctest::Approx(0.666).epsilon(0.1));
+        CHECK(FindMaxSample(*outs[1]) == doctest::Approx(1.0).epsilon(0.1));
     }
 
     SUBCASE("independent channels") {
@@ -189,7 +192,7 @@ TEST_CASE("NormaliseCommand") {
         auto stereo_sine_b = TestHelpers::CreateSingleOscillationSineWave(2, 100, 100);
 
         stereo_sine_a.MultiplyByScalar(0, 0.8);
-        stereo_sine_a.MultiplyByScalar(1, 0.6);
+        stereo_sine_a.MultiplyByScalar(1, 0.4);
         stereo_sine_b.MultiplyByScalar(0, 0.4);
         stereo_sine_b.MultiplyByScalar(1, 0.2);
 
@@ -200,10 +203,10 @@ TEST_CASE("NormaliseCommand") {
                 REQUIRE(out);
             }
 
-            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(1.0));
         }
 
         SUBCASE("common with independent channels") {
@@ -213,10 +216,10 @@ TEST_CASE("NormaliseCommand") {
                 REQUIRE(out);
             }
 
-            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.5));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.5));
+            CHECK(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.5));
+            CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.5));
         }
 
         SUBCASE("common with independent channels mix 50%") {
@@ -226,10 +229,10 @@ TEST_CASE("NormaliseCommand") {
                 REQUIRE(out);
             }
 
-            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9).epsilon(0.1));
-            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9).epsilon(0.1));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45).epsilon(0.1));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45).epsilon(0.1));
+            CHECK(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(0.9).epsilon(0.05));
+            CHECK(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.9).epsilon(0.05));
+            CHECK(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(0.45).epsilon(0.05));
+            CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.45).epsilon(0.05));
         }
 
         SUBCASE("non-common with independent channels chan-mix 50%") {
@@ -240,10 +243,10 @@ TEST_CASE("NormaliseCommand") {
                 REQUIRE(out);
             }
 
-            REQUIRE(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.8).epsilon(0.08));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
-            REQUIRE(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.8).epsilon(0.08));
+            CHECK(FindMaxSampleChannel(*outs[0], 0) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(0.707).epsilon(0.01));
+            CHECK(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
+            CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(0.707).epsilon(0.01));
         }
 
         // SUBCASE("common with independent channels chan-mix 50%") {

@@ -40,6 +40,6 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
         info_text += fmt::format("RMS: {:.5f}\n", GetRMS(f.GetAudio().interleaved_samples));
 
         if (EndsWith(info_text, "\n")) info_text.resize(info_text.size() - 1);
-        MessageWithNewLine(GetName(), f, "Info:\n{}", f.GetPath(), info_text);
+        MessageWithNewLine(GetName(), f, "Info:\n{}", info_text);
     }
 }

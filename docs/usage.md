@@ -739,7 +739,7 @@ The cents to change the pitch by.
 
 ## undo
 ### Description:
-Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
+Undo any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
 ### Usage:
   `undo`

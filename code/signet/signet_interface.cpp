@@ -68,7 +68,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     app.add_subcommand(
            "undo",
-           "Undoes any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.")
+           "Undo any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.")
         ->final_callback([&]() {
             MessageWithNewLine("Signet", {}, "Undoing changes made by the last run of Signet...");
             m_backup.LoadBackup();
@@ -205,7 +205,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         "Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.");
 
     app.add_flag("--recursive", m_recursive_directory_search,
-                 "When the input is a directory, scan for files in it recursively");
+                 "When the input is a directory, scan for files in it recursively.");
 
     auto input_files_option = app.add_option_function<std::vector<std::string>>(
         "input-files",

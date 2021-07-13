@@ -1116,7 +1116,6 @@ bool WriteAudioFile(const fs::path &filename,
         result = WriteWaveFile(filename, audio_data, bits_per_sample);
     }
 
-    if (result) MessageWithNewLine("Signet", filename, "Successfully wrote file");
     return result;
 }
 

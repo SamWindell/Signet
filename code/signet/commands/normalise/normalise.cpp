@@ -95,39 +95,26 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
             MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", gain);
             audio.MultiplyByScalar(gain);
         } else {
+            std::vector<double> channel_peaks;
+            for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                channels_gain_calculator->Reset();
+                channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
+                channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
+            }
+            const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
+
             if (!use_common_gain) {
                 gain_calculator->Reset();
                 gain_calculator->RegisterBufferMagnitudes(audio, {});
-                const auto overall_gain = GetMixedGain();
-                audio.MultiplyByScalar(overall_gain);
+            }
+            const auto gain = GetMixedGain();
 
-                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    gain_calculator->Reset();
-                    gain_calculator->RegisterBufferMagnitudes(audio, chan);
-                    auto gain = gain_calculator->GetGain(DBToAmp(m_target_decibels));
-                    gain = ScaleMultiplier(gain, m_norm_channel_mix_percent / 100.0);
-
-                    MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}",
-                                       gain * overall_gain, chan);
-                    audio.MultiplyByScalar(chan, gain);
-                }
-            } else {
-                std::vector<double> channel_peaks;
-                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    channels_gain_calculator->Reset();
-                    channels_gain_calculator->RegisterBufferMagnitudes(audio, chan);
-                    channel_peaks.push_back(channels_gain_calculator->GetLargestRegisteredMagnitude());
-                }
-                const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
-
-                const auto gain = GetMixedGain();
-                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                    auto channel_gain = gain * ScaleMultiplier(max_channel_gain / channel_peaks[chan],
-                                                               m_norm_channel_mix_percent / 100.0);
-                    MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", channel_gain,
-                                       chan);
-                    audio.MultiplyByScalar(chan, channel_gain);
-                }
+            for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                auto channel_gain = gain * ScaleMultiplier(max_channel_gain / channel_peaks[chan],
+                                                           m_norm_channel_mix_percent / 100.0);
+                MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f} to channel {}", channel_gain,
+                                   chan);
+                audio.MultiplyByScalar(chan, channel_gain);
             }
         }
     }

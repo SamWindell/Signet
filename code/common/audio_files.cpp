@@ -81,7 +81,7 @@ static fs::path PathWithNewExtension(fs::path path, AudioFileFormat format) {
     return path;
 }
 
-bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
+bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup, bool create_copies) {
     if (WouldWritingAllFilesCreateConflicts()) {
         return false;
     }
@@ -95,9 +95,16 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
         if (file_renamed) {
             if (!file_data_changed && !file_format_changed) {
                 // only renamed
-                if (!backup.MoveFile(file.OriginalPath(), file.GetPath())) {
-                    error_occurred = true;
-                    break;
+                if (!create_copies) {
+                    if (!backup.MoveFile(file.OriginalPath(), file.GetPath())) {
+                        error_occurred = true;
+                        break;
+                    }
+                } else {
+                    if (!backup.CreateFile(file.GetPath(), file.GetAudio(), true)) {
+                        error_occurred = true;
+                        break;
+                    }
                 }
             } else if ((!file_data_changed && file_format_changed) ||
                        (file_data_changed && file_format_changed)) {
@@ -107,7 +114,7 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
                     error_occurred = true;
                     break;
                 }
-                if (!backup.DeleteFile(file.OriginalPath())) {
+                if (!create_copies && !backup.DeleteFile(file.OriginalPath())) {
                     error_occurred = true;
                     break;
                 }
@@ -117,7 +124,7 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
                     error_occurred = true;
                     break;
                 }
-                if (!backup.DeleteFile(file.OriginalPath())) {
+                if (!create_copies && !backup.DeleteFile(file.OriginalPath())) {
                     error_occurred = true;
                     break;
                 }
@@ -131,15 +138,22 @@ bool AudioFiles::WriteFilesThatHaveBeenEdited(SignetBackup &backup) {
                     error_occurred = true;
                     break;
                 }
-                if (!backup.DeleteFile(file.OriginalPath())) {
+                if (!create_copies && !backup.DeleteFile(file.OriginalPath())) {
                     error_occurred = true;
                     break;
                 }
             } else if (!file_format_changed && file_data_changed) {
                 // only new data
-                if (!backup.OverwriteFile(file.OriginalPath(), file.GetAudio())) {
-                    error_occurred = true;
-                    break;
+                if (!create_copies) {
+                    if (!backup.OverwriteFile(file.OriginalPath(), file.GetAudio())) {
+                        error_occurred = true;
+                        break;
+                    }
+                } else {
+                    if (!backup.CreateFile(file.OriginalPath(), file.GetAudio(), true)) {
+                        error_occurred = true;
+                        break;
+                    }
                 }
             }
         }

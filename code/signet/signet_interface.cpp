@@ -214,6 +214,17 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
 
+    auto output_option =
+        app.add_option(
+               "--output-folder", m_output_path,
+               "Instead of overwriting the input files, put the processed audio files are put into the given output folder. Subfolders are not created within the output folder; all files are put at the same level. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.")
+            ->check([&](const std::string &str) -> std::string {
+                if (fs::exists(str) && !fs::is_directory(str)) {
+                    return "The given output is a file that already exists.";
+                }
+                return {};
+            });
+
     for (auto &command : m_commands) {
         auto s = command->CreateCommandCLI(app);
         s->needs(input_files_option);
@@ -242,6 +253,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             MessageWithNewLine(command->GetName(), {}, "Total audio files edited: {}", num_audio_edits);
             MessageWithNewLine(command->GetName(), {}, "Total audio file paths edited: {}", num_path_edits);
         });
+        if (!command->AllowsOutputFolder()) {
+            s->excludes(output_option);
+        }
     }
 
     const auto PrintSuccess = []() {
@@ -254,7 +268,14 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
 
         if (m_input_audio_files.GetNumFilesProcessed()) {
-            if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(m_backup)) {
+            if (m_output_path) {
+                for (auto &f : m_input_audio_files) {
+                    auto new_path = *m_output_path / f.GetPath().filename();
+                    f.SetPath(new_path);
+                }
+            }
+
+            if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(m_backup, m_output_path ? true : false)) {
                 return SignetResult::FailedToWriteFiles;
             }
         }

@@ -38,7 +38,7 @@ class AudioFiles {
 
     //
     //
-    bool WriteFilesThatHaveBeenEdited(SignetBackup &backup);
+    bool WriteFilesThatHaveBeenEdited(SignetBackup &backup, bool create_copies);
     int GetNumFilesProcessed() const {
         int n = 0;
         for (const auto &f : m_all_files) {

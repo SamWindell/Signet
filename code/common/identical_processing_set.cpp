@@ -58,7 +58,6 @@ void IdenticalProcessingSet::ProcessSets(
     std::string_view command_name,
     const std::function<void(EditTrackedAudioFile *, const std::vector<EditTrackedAudioFile *> &)>
         &callback) {
-    MessageWithNewLine(command_name, {}, "Performing auto-tune on sets of samples");
 
     std::regex re {m_sample_set_args[0]};
     const auto &authority_matcher = m_sample_set_args[1];

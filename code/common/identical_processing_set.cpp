@@ -59,7 +59,8 @@ void IdenticalProcessingSet::ProcessSets(
     const std::function<void(EditTrackedAudioFile *, const std::vector<EditTrackedAudioFile *> &)>
         &callback) {
 
-    std::regex re {m_sample_set_args[0]};
+    const auto re_str = m_sample_set_args[0];
+    std::regex re {re_str};
     const auto &authority_matcher = m_sample_set_args[1];
 
     std::unordered_map<std::string, std::vector<EditTrackedAudioFile *>> sets;
@@ -77,7 +78,7 @@ void IdenticalProcessingSet::ProcessSets(
             }
         }
 
-        auto &arr = sets[(f.GetPath().parent_path() / fs::path(replaced)).generic_string()];
+        auto &arr = sets[fs::path(replaced).generic_string()];
         arr.push_back(&f);
     }
 

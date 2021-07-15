@@ -1076,7 +1076,7 @@ WriteFlacFile(const fs::path &filename, const AudioData &audio_data, const unsig
 
     auto f = OpenFileRaw(filename, "w+b");
     if (!f) {
-        WarningWithNewLine("Flac", filename, "could not write flac file - could not open file {}");
+        WarningWithNewLine("Flac", filename, "could not write flac file - could not open file");
         return false;
     }
 

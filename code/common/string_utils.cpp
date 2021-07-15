@@ -199,6 +199,48 @@ std::optional<std::string> Get3CharAlphaIdentifier(unsigned counter) {
     return result;
 }
 
+bool IsAbsoluteDirectory(std::string_view path) {
+#if _WIN32
+    // https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#fully-qualified-vs-relative-paths
+    if (StartsWith(path, "\\\\") || StartsWith(path, "//")) return true;
+    if (path.size() >= 3) return path[1] == ':' && (path[2] == '\\') || (path[2] == '/');
+    return false;
+#else
+    return path.size() && path[0] == '/';
+#endif
+}
+
+bool IsPathSyntacticallyCorrect(std::string_view path, std::string *error) {
+    if (error) error->clear();
+#if _WIN32
+    if (IsAbsoluteDirectory(path)) {
+        path = path.substr(2);
+    }
+
+    char invalid_chars[] = {'<', '>', ':', '\"', '|', '?', '*'};
+    bool invalid = false;
+    for (auto c : path) {
+        for (auto &invalid_char : invalid_chars) {
+            if (invalid_char == c) {
+                invalid_char = '\0';
+                invalid = true;
+                if (error) error->append(1, c);
+            }
+        }
+    }
+    if (!invalid)
+        error->clear();
+    else {
+        error->insert(0, "The path contains the following invalid characters: (");
+        error->append(") ");
+    }
+    return !invalid;
+#else
+    (void)path;
+    return true;
+#endif
+}
+
 TEST_CASE("String Utils") {
     {
         std::string s {"th<>sef<> < seofi>"};

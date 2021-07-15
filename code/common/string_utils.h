@@ -31,3 +31,6 @@ std::vector<std::string_view>
 Split(std::string_view str, std::string_view delim, bool include_empties = false);
 
 std::optional<std::string> Get3CharAlphaIdentifier(unsigned counter);
+
+bool IsAbsoluteDirectory(std::string_view path);
+bool IsPathSyntacticallyCorrect(std::string_view path, std::string *error = nullptr);

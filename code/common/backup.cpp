@@ -182,6 +182,15 @@ static bool CreateParentDirectories(const fs::path &path) {
     return true;
 }
 
+static bool CheckForValidPath(const fs::path &path) {
+    std::string error;
+    if (!IsPathSyntacticallyCorrect(path.generic_string(), &error)) {
+        ErrorWithNewLine("Signet", path, "{}", error);
+        return false;
+    }
+    return true;
+}
+
 bool SignetBackup::DeleteFile(const fs::path &path) {
     if (!AddFileToBackup(path)) return false;
     MessageWithNewLine("Signet", path, "Deleting file");
@@ -196,6 +205,7 @@ bool SignetBackup::DeleteFile(const fs::path &path) {
 
 bool SignetBackup::MoveFile(const fs::path &from, const fs::path &to) {
     MessageWithNewLine("Signet", {}, "Moving file from {} to {}", from, to);
+    if (!CheckForValidPath(from) || !CheckForValidPath(to)) return false;
     if (!CreateParentDirectories(to)) return false;
     std::error_code ec;
     assert(!fs::exists(to));
@@ -217,6 +227,7 @@ static bool WriteFile(const fs::path &path, const AudioData &data) {
 }
 
 bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool create_directories) {
+    if (!CheckForValidPath(path)) return false;
     if (create_directories) {
         if (!CreateParentDirectories(path)) return false;
     }

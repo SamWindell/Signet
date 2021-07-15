@@ -123,6 +123,10 @@ void SampleBlendCommand::GenerateFiles(AudioFiles &input_files, SignetBackup &ba
         }
     }
 
+    if (base_file_folders.size() == 0) {
+        ErrorWithNewLine(GetName(), {}, "No files matched the regex \"{}\"", m_regex);
+    }
+
     for (auto &[folder, files] : base_file_folders) {
         if (files.size() < 2) {
             ErrorWithNewLine(GetName(), {},

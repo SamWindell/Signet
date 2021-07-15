@@ -88,8 +88,14 @@ void IdenticalProcessingSet::ProcessSets(
         EditTrackedAudioFile *authority_file = nullptr;
         for (auto &f : set.second) {
             const auto filename = GetJustFilenameWithNoExtension(f->GetPath());
-            assert(std::regex_match(filename, match, re)); // TODO show an error
-            assert(match.size() == 2); // TODO show an error
+            if (!std::regex_match(filename, match, re))
+                ErrorWithNewLine(command_name, *f, "The filename {} does not match the regex {}", filename,
+                                 re_str);
+            if (match.size() != 2)
+                ErrorWithNewLine(
+                    command_name, *f,
+                    "The filename {} does not match exactly 1 group (it matches {} instead) using the regex {}",
+                    filename, match.size(), re_str);
             if (match[1] == authority_matcher) {
                 authority_file = f;
                 break;
@@ -105,7 +111,7 @@ void IdenticalProcessingSet::ProcessSets(
         } else {
             ErrorWithNewLine(
                 command_name, {},
-                "Failed to process sample-set because the authority file could not be identified\nFile: \"{}\"\nAuthority: \"{}\"",
+                "Failed to process sample-set because the authority file could not be identified\nSet: \"{}\"\nAuthority: \"{}\"",
                 human_set_name, authority_matcher);
         }
     }

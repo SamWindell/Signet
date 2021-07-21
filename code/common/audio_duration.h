@@ -50,8 +50,11 @@ class AudioDuration {
     }
 
     static std::optional<Unit> GetUnit(const std::string &str) {
+        std::string_view suffix {str};
+        suffix.remove_prefix(str.find_first_not_of("0123456789."));
+
         for (const auto &u : available_units) {
-            if (EndsWith(str, u.first)) {
+            if (suffix == u.first) {
                 return u.second;
             }
         }

@@ -265,8 +265,6 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     try {
         app.parse(argc, argv);
 
-        m_backup.ClearBackup(); // if we have gotten here we must not be wanting to undo
-
         if (m_input_audio_files.GetNumFilesProcessed()) {
             if (m_output_path) {
                 for (auto &f : m_input_audio_files) {

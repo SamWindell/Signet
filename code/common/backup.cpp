@@ -124,6 +124,14 @@ void SignetBackup::ClearBackup() {
     m_database = {};
 }
 
+void SignetBackup::ClearOldBackIfNeeded() {
+    if (!m_old_backup_cleared) {
+        MessageWithNewLine("Signet", {}, "Clearing the old backup data ready for new changes to be saved");
+        ClearBackup();
+        m_old_backup_cleared = true;
+    }
+}
+
 bool SignetBackup::WriteDatabaseFile() {
     std::ofstream o(m_database_file.generic_string(), std::ofstream::out | std::ofstream::binary);
     if (!o) {
@@ -192,6 +200,7 @@ static bool CheckForValidPath(const fs::path &path) {
 }
 
 bool SignetBackup::DeleteFile(const fs::path &path) {
+    ClearOldBackIfNeeded();
     if (!AddFileToBackup(path)) return false;
     MessageWithNewLine("Signet", path, "Deleting file");
     try {
@@ -204,6 +213,7 @@ bool SignetBackup::DeleteFile(const fs::path &path) {
 }
 
 bool SignetBackup::MoveFile(const fs::path &from, const fs::path &to) {
+    ClearOldBackIfNeeded();
     MessageWithNewLine("Signet", {}, "Moving file from {} to {}", from, to);
     if (!CheckForValidPath(from) || !CheckForValidPath(to)) return false;
     if (!CreateParentDirectories(to)) return false;
@@ -227,6 +237,7 @@ static bool WriteFile(const fs::path &path, const AudioData &data) {
 }
 
 bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool create_directories) {
+    ClearOldBackIfNeeded();
     if (!CheckForValidPath(path)) return false;
     if (create_directories) {
         if (!CreateParentDirectories(path)) return false;
@@ -242,6 +253,7 @@ bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool 
 }
 
 bool SignetBackup::OverwriteFile(const fs::path &path, const AudioData &data) {
+    ClearOldBackIfNeeded();
     if (!AddFileToBackup(path)) return false;
     MessageWithNewLine("Signet", path, "Overwriting file");
     return WriteFile(path, data);

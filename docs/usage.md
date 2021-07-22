@@ -667,6 +667,8 @@ The name of the output file (excluding extension). This should contain substitut
 ## sample-blend
 ### Description:
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
+        
+WARNING: sample-blend is still rough around the edges; it doesn't save files to the backup system and it doesn't work with the --output-folder option.
 
 ### Usage:
   `sample-blend` `[OPTIONS]` `root_note_regex semitone-interval out-filename`

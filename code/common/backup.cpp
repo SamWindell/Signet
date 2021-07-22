@@ -160,7 +160,6 @@ bool SignetBackup::AddNewlyCreatedFileToBackup(const fs::path &path) {
 bool SignetBackup::AddMovedFileToBackup(const fs::path &from, const fs::path &to) {
     if (!CreateBackupFilesDirIfNeeded()) return false;
 
-    MessageWithNewLine("Signet", {}, "Backing-up file move from {} to {}", from, to);
     m_database["file_moves"][from.generic_string()] = to.generic_string();
     return WriteDatabaseFile();
 }
@@ -168,7 +167,6 @@ bool SignetBackup::AddMovedFileToBackup(const fs::path &from, const fs::path &to
 bool SignetBackup::AddFileToBackup(const fs::path &path) {
     if (!CreateBackupFilesDirIfNeeded()) return false;
 
-    MessageWithNewLine("Signet", path, "Backing-up file");
     const auto hash_string = std::to_string(fs::hash_value(path));
     try {
         fs::copy_file(path, m_backup_files_dir / hash_string, fs::copy_options::update_existing);

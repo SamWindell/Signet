@@ -12,6 +12,8 @@ class SampleBlendCommand : public Command {
     void GenerateFiles(AudioFiles &files, SignetBackup &backup) override;
     std::string GetName() const override { return "SampleBlend"; }
 
+    bool AllowsOutputFolder() const override { return false; }
+
   private:
     struct BaseBlendFile {
         BaseBlendFile(EditTrackedAudioFile *file_, const int root_note_)

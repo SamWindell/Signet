@@ -44,20 +44,18 @@ void AutoTuneCommand::ProcessFiles(AudioFiles &files) {
                     const auto closest_musical_note = FindClosestMidiPitch(*pitch);
                     const double cents = GetCentsDifference(*pitch, closest_musical_note.pitch);
                     if (std::abs(cents) < 1) {
-                        MessageWithNewLine(GetName(), {}, "Sample set is already in tune: {}",
+                        MessageWithNewLine(GetName(), *authority_file, "Sample set is already in tune - {}",
                                            closest_musical_note.ToString());
                         return;
                     }
                     MessageWithNewLine(GetName(), *authority_file,
-                                       "Sample set {}: changing pitch from {} to {}", *pitch,
-                                       closest_musical_note.ToString());
+                                       "Sample set changing pitch by {:.2f} cents", cents);
 
                     for (auto &f : set) {
                         f->GetWritableAudio().ChangePitch(cents);
                     }
                 } else {
-                    WarningWithNewLine(GetName(), {}, "No pitch could be found for sample set: {}",
-                                       authority_file->OriginalFilename());
+                    WarningWithNewLine(GetName(), *authority_file, "No pitch could be found for sample set");
                 }
             });
     }

@@ -2,55 +2,54 @@
 
 This is an auto-generated file based on the output of `signet --help`. It contains information about every feature of Signet.
 
-- [Signet](#Signet)
-- [Commands](#Signet%20Commands)
-  - Audio
-    - [auto-tune](#auto-tune)
-    - [fade](#fade)
-      - [in](#in)
-      - [out](#out)
-    - [fix-pitch-drift](#fix-pitch-drift)
-    - [gain](#gain)
-    - [highpass](#highpass)
-    - [lowpass](#lowpass)
-    - [norm](#norm)
-    - [pan](#pan)
-    - [remove-silence](#remove-silence)
-    - [seamless-loop](#seamless-loop)
-    - [trim](#trim)
-      - [start](#start)
-      - [end](#end)
-    - [tune](#tune)
-    - [zcross-offset](#zcross-offset)
-  - File Data
-    - [convert](#convert)
-      - [sample-rate](#sample-rate)
-      - [bit-depth](#bit-depth)
-      - [file-format](#file-format)
-    - [embed-sampler-info](#embed-sampler-info)
-      - [remove](#remove)
-      - [root](#root)
-      - [note-range](#note-range)
-      - [velocity-range](#velocity-range)
-  - Filepath
-    - [folderise](#folderise)
-    - [move](#move)
-    - [rename](#rename)
-      - [prefix](#prefix)
-      - [suffix](#suffix)
-      - [regex-replace](#regex-replace)
-      - [note-to-midi](#note-to-midi)
-      - [auto-map](#auto-map)
-  - Generate
-    - [sample-blend](#sample-blend)
-  - Info
-    - [detect-pitch](#detect-pitch)
-    - [print-info](#print-info)
-  - Signet Utility
-    - [clear-backup](#clear-backup)
-    - [make-docs](#make-docs)
-    - [undo](#undo)
-# Signet
+- [General Usage](#General%20Usage)
+- [Audio Commands](#Audio%20Commands)
+  - [auto-tune](#auto-tune)
+  - [fade](#fade)
+    - [in](#in)
+    - [out](#out)
+  - [fix-pitch-drift](#fix-pitch-drift)
+  - [gain](#gain)
+  - [highpass](#highpass)
+  - [lowpass](#lowpass)
+  - [norm](#norm)
+  - [pan](#pan)
+  - [remove-silence](#remove-silence)
+  - [seamless-loop](#seamless-loop)
+  - [trim](#trim)
+    - [start](#start)
+    - [end](#end)
+  - [tune](#tune)
+  - [zcross-offset](#zcross-offset)
+- [File Data Commands](#File%20Data%20Commands)
+  - [convert](#convert)
+    - [sample-rate](#sample-rate)
+    - [bit-depth](#bit-depth)
+    - [file-format](#file-format)
+  - [embed-sampler-info](#embed-sampler-info)
+    - [remove](#remove)
+    - [root](#root)
+    - [note-range](#note-range)
+    - [velocity-range](#velocity-range)
+- [Filepath Commands](#Filepath%20Commands)
+  - [folderise](#folderise)
+  - [move](#move)
+  - [rename](#rename)
+    - [prefix](#prefix)
+    - [suffix](#suffix)
+    - [regex-replace](#regex-replace)
+    - [note-to-midi](#note-to-midi)
+    - [auto-map](#auto-map)
+- [Generate Commands](#Generate%20Commands)
+  - [sample-blend](#sample-blend)
+- [Info Commands](#Info%20Commands)
+  - [detect-pitch](#detect-pitch)
+  - [print-info](#print-info)
+- [Signet Utility Commands](#Signet%20Utility%20Commands)
+  - [clear-backup](#clear-backup)
+  - [make-docs](#make-docs)
+  - [undo](#undo)
+# General Usage
 ## Description:
 Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.
 
@@ -79,7 +78,7 @@ When the input is a directory, scan for files in it recursively.
 Instead of overwriting the input files, put the processed audio files are put into the given output folder. Subfolders are not created within the output folder; all files are put at the same level. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.
 
 
-# Signet Commands
+# Audio Commands
 ## auto-tune
 ### Description:
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command (i.e. sped up or slowed down). This command works surprising well for almost any type of sample - transparently shifting it by the smallest amount possible to be more musically in-tune.
@@ -125,154 +124,6 @@ The entire folder of different mic positions can be processed in a single comman
 Rather than process each file individually, process all of the files in an identical manner based on a single authority file. This takes 1 argument: the name (without folders or extension) of the file that should be the authority.
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
-
-
-## clear-backup
-### Description:
-Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.
-
-### Usage:
-  `clear-backup`
-
-## convert
-### Description:
-Converts the file format, bit-depth or sample rate. Features a high quality resampling algorithm. This command has subcommands; it requires at least one of sample-rate, bit-depth or file-format to be specified.
-
-### Usage:
-  `convert` `COMMAND`
-
-### Commands:
-#### sample-rate
-##### Description:
-Change the sample rate using a high quality resampler.
-
-
-##### Arguments:
-`sample-rate UINT:UINT in [1 - 4300000000] REQUIRED`
-The target sample rate in Hz. For example 44100
-
-
-#### bit-depth
-##### Description:
-Change the bit depth of the file(s).
-
-
-##### Arguments:
-`bit-depth UINT:{8,16,20,24,32,64} REQUIRED`
-The target bit depth.
-
-
-#### file-format
-##### Description:
-Change the file format.
-
-
-##### Arguments:
-`file-format ENUM:value in {Flac->1,Wav->0} OR {1,0} REQUIRED`
-The output file format.
-
-
-
-## detect-pitch
-### Description:
-Prints out the detected pitch of the file(s).
-
-### Usage:
-  `detect-pitch`
-
-## embed-sampler-info
-### Description:
-Embeds sampler metadata into the audio file(s), such as the root note, the velocity mapping range and the note mapping range.
-
-### Usage:
-  `embed-sampler-info` `COMMAND`
-
-### Commands:
-#### remove
-##### Description:
-Remove all sampler metadata from the file(s)
-
-
-#### root
-##### Description:
-Embed the root note of the audio file
-
-
-##### Arguments:
-`Root note value TEXT REQUIRED`
-This value should be 1 of the following 3 formats:
-
-(1) A MIDI note number.
-(2) An ECMAScript-style regex pattern containing 1 capture group which is to be used to get the value from the filename of the audio file (not including the extension). For example if the file was called sample_40.wav, you could use the regex pattern "sample_(\d+)" to get the value 40.
-(3) 'auto-detect' or one of the other auto-detect options. This will invoke the pitch-detection algorithm to automatically get the MIDI number from the audio file. There are a few variations for auto-detect. They all use the same algorithm but some also shift the value in octaves. Here is the full list of options: auto-detect, auto-detect-octave-plus-1, auto-detect-octave-plus-2, auto-detect-octave-minus-1, auto-detect-octave-minus-2, auto-detect-nearest-to-middle-c.
-
-EXAMPLE
-
-'root 60'
-Sets the root note to MIDI number 60.
-
-'root "sample_(\d+)"'
-Sets the root note by looking at the filename and matching the given regex pattern to it.
-
-'root auto-detect'
-Sets the root note by running a pitch detection algorithm on the file. If the audio file does not have a pitch, the value will be set to 60.
-
-
-#### note-range
-##### Description:
-Embed the low and high notes.
-
-
-##### Arguments:
-`Note range value(s) TEXT REQUIRED`
-This value is either 'auto-map' or 2 separate values to set the low and high note range.
-
-EXAMPLES
-
-'note-range auto-map'
-Auto maps the file based on the files in its same folder.
-
-'note-range 40 62'
-Sets the low note to MIDI note 40 and the high note to 62.
-
-'note-range unchanged 127'
-Leaves the low note unchanged (if no value exists already it will be set to 0), and sets the high note to 127.
-
-'note-range "sample_(\d+)_\d+_\d+" "sample_\d+_\d+_(\d+)"'
-Sets the low value from the name of the file by pattern-matching the given regex pattern to it, and taking the value of the given capture group (with is the bit inside the brackets). The high value is set from the filename too, but a different regex pattern is matched against.
-
-
-DESCRIPTION
-
-If it's auto-map, then the low and high note will be set by assessing the root note of every file in the same folder and calculating an appropriate value.
-
-If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. The first of these 2 arguments represents the low note, and the second represents the high note. The 3 possible formats are as follows: (1) a MIDI note number, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 0 for the low note or 127 for the high note.
-
-
-#### velocity-range
-##### Description:
-Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI velocity. In order to do this, the sampler needs to know what the minimum and maximum MIDI velocity values that a sample should play in. The whole MIDI velocity range is between 1 and 127.
-
-
-##### Arguments:
-`Low and high velocity values TEXT x 2 REQUIRED`
-2 values to represent the low and high velocity mapping.
-
-EXAMPLES
-
-'velocity-range 1 64'
-Sets the low velocity to 1 and the high velocity to 64.
-
-'velocity-range "sample_(\d+)_\d+_\d+" "sample_\d+_\d+_(\d+)"'
-Sets the low velocity from the name of the file, by matching the given regex pattern to it, and get the number from the captured region. Same is done for the high velocity but a different capture region is specified.
-
-'velocity-range 1 unchanged'
-Sets the low velocity to 1 and leaves the high velocity unchanged. If the high velocity is not already embedding the file, it will be set to 127
-
-DESCRIPTION
-
-2 values must be given. The first one represents the low velocity and the second one represents the high velocity. Each value can be 1 of 3 formats. (1) A number from 1 to 127, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 1 for the low velocity or 127 for the high velocity.
-
 
 
 ## fade
@@ -369,21 +220,6 @@ This would find the digits after the text '-note-' in the filename and interpret
 Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.
 
 
-## folderise
-### Description:
-Moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
-
-### Usage:
-  `folderise` `filename-regex out-folder`
-
-### Arguments:
-`filename-regex TEXT REQUIRED`
-The ECMAScript-style regex pattern used to match filenames against. The file extension is not part of this comparison.
-
-`out-folder TEXT REQUIRED`
-The output folder that the matching files should be put into. This will be created if it does not exist. It can contain numbers in angle brackets to signify where groups from the matching regex should be inserted. These means files can end up in multiple folders. For example, 'folderise file(\d+).wav C:/folder`<1>`' would create folders 'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.
-
-
 ## gain
 ### Description:
 Changes the volume of the file(s).
@@ -394,18 +230,6 @@ Changes the volume of the file(s).
 ### Arguments:
 `gain-amount TEXT REQUIRED`
 The gain amount. This is a number followed by a unit. The unit can be % or db. For example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% makes it twice as loud.
-
-
-## highpass
-### Description:
-Removes frequencies below the given cutoff.
-
-### Usage:
-  `highpass` `cutoff-freq-hz`
-
-### Arguments:
-`cutoff-freq-hz FLOAT REQUIRED`
-The cutoff point where frequencies below this should be removed.
 
 
 ## lowpass
@@ -420,28 +244,16 @@ Lowpass: removes frequencies above the given cutoff.
 The cutoff point where frequencies above this should be removed.
 
 
-## make-docs
+## highpass
 ### Description:
-Creates a markdown file containing the full CLI - based on running signet --help.
+Removes frequencies below the given cutoff.
 
 ### Usage:
-  `make-docs` `output-file`
+  `highpass` `cutoff-freq-hz`
 
 ### Arguments:
-`output-file TEXT REQUIRED`
-The filepath for the generated markdown file.
-
-
-## move
-### Description:
-Moves all input files to a given folder.
-
-### Usage:
-  `move` `[destination-folder]`
-
-### Arguments:
-`destination-folder TEXT`
-The folder to put all of the input files in.
+`cutoff-freq-hz FLOAT REQUIRED`
+The cutoff point where frequencies below this should be removed.
 
 
 ## norm
@@ -484,13 +296,6 @@ Changes the pan of stereo file(s). Does not work on non-stereo files.
 `pan-amount TEXT REQUIRED`
 The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
-
-## print-info
-### Description:
-Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
-
-### Usage:
-  `print-info`
 
 ## remove-silence
 ### Description:
@@ -547,6 +352,212 @@ This is the same as --sample-sets, but just takes a single filename for all of t
 The threshold in decibels to which anything under it should be considered silence.
 
 
+## seamless-loop
+### Description:
+Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
+
+### Usage:
+  `seamless-loop` `crossfade-percent`
+
+### Arguments:
+`crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
+The size of the crossfade region as a percent of the whole file.
+
+
+## trim
+### Description:
+Removes the start or end of the file(s). This command has 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
+
+### Usage:
+  `trim` `COMMAND`
+
+### Commands:
+#### start
+##### Description:
+Removes the start of the file.
+
+
+##### Arguments:
+`trim-start-length TEXT REQUIRED`
+The amount to remove from the start. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+
+
+#### end
+##### Description:
+Removes the end of the file.
+
+
+##### Arguments:
+`trim-end-length TEXT REQUIRED`
+The amount to remove from the end. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+
+
+
+## tune
+### Description:
+Changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
+
+### Usage:
+  `tune` `tune cents`
+
+### Arguments:
+`tune cents FLOAT REQUIRED`
+The cents to change the pitch by.
+
+
+## zcross-offset
+### Description:
+Offsets the start of an audio file to the nearest zero-crossing (or the closest thing to a zero crossing). You can use the option --append to cause the samples that were offsetted to be appended to the end of the file. This is useful for when the file is a seamless loop.
+
+### Usage:
+  `zcross-offset` `[OPTIONS]` `search_size`
+
+### Arguments:
+`search_size TEXT REQUIRED`
+The maximum length that it is allowed to offset to. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+
+
+### Options:
+`--append`
+Append the frames offsetted to the end of the file - useful when the sample is a seamless loop.
+
+
+# File Data Commands
+## convert
+### Description:
+Converts the file format, bit-depth or sample rate. Features a high quality resampling algorithm. This command has subcommands; it requires at least one of sample-rate, bit-depth or file-format to be specified.
+
+### Usage:
+  `convert` `COMMAND`
+
+### Commands:
+#### sample-rate
+##### Description:
+Change the sample rate using a high quality resampler.
+
+
+##### Arguments:
+`sample-rate UINT:UINT in [1 - 4300000000] REQUIRED`
+The target sample rate in Hz. For example 44100
+
+
+#### bit-depth
+##### Description:
+Change the bit depth of the file(s).
+
+
+##### Arguments:
+`bit-depth UINT:{8,16,20,24,32,64} REQUIRED`
+The target bit depth.
+
+
+#### file-format
+##### Description:
+Change the file format.
+
+
+##### Arguments:
+`file-format ENUM:value in {Flac->1,Wav->0} OR {1,0} REQUIRED`
+The output file format.
+
+
+
+## embed-sampler-info
+### Description:
+Embeds sampler metadata into the audio file(s), such as the root note, the velocity mapping range and the note mapping range.
+
+### Usage:
+  `embed-sampler-info` `COMMAND`
+
+### Commands:
+#### remove
+##### Description:
+Remove all sampler metadata from the file(s)
+
+
+#### root
+##### Description:
+Embed the root note of the audio file
+
+
+##### Arguments:
+`Root note value TEXT REQUIRED`
+This value should be 1 of the following 3 formats:
+
+(1) A MIDI note number.
+(2) An ECMAScript-style regex pattern containing 1 capture group which is to be used to get the value from the filename of the audio file (not including the extension). For example if the file was called sample_40.wav, you could use the regex pattern "sample_(\d+)" to get the value 40.
+(3) 'auto-detect' or one of the other auto-detect options. This will invoke the pitch-detection algorithm to automatically get the MIDI number from the audio file. There are a few variations for auto-detect. They all use the same algorithm but some also shift the value in octaves. Here is the full list of options: auto-detect, auto-detect-octave-plus-1, auto-detect-octave-plus-2, auto-detect-octave-minus-1, auto-detect-octave-minus-2, auto-detect-nearest-to-middle-c.
+
+EXAMPLE
+
+'root 60'
+Sets the root note to MIDI number 60.
+
+'root "sample_(\d+)"'
+Sets the root note by looking at the filename and matching the given regex pattern to it.
+
+'root auto-detect'
+Sets the root note by running a pitch detection algorithm on the file. If the audio file does not have a pitch, the value will be set to 60.
+
+
+#### note-range
+##### Description:
+Embed the low and high notes.
+
+
+##### Arguments:
+`Note range value(s) TEXT REQUIRED`
+This value is either 'auto-map' or 2 separate values to set the low and high note range.
+
+EXAMPLES
+
+'note-range auto-map'
+Auto maps the file based on the files in its same folder.
+
+'note-range 40 62'
+Sets the low note to MIDI note 40 and the high note to 62.
+
+'note-range unchanged 127'
+Leaves the low note unchanged (if no value exists already it will be set to 0), and sets the high note to 127.
+
+'note-range "sample_(\d+)_\d+_\d+" "sample_\d+_\d+_(\d+)"'
+Sets the low value from the name of the file by pattern-matching the given regex pattern to it, and taking the value of the given capture group (with is the bit inside the brackets). The high value is set from the filename too, but a different regex pattern is matched against.
+
+
+DESCRIPTION
+
+If it's auto-map, then the low and high note will be set by assessing the root note of every file in the same folder and calculating an appropriate value.
+
+If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. The first of these 2 arguments represents the low note, and the second represents the high note. The 3 possible formats are as follows: (1) a MIDI note number, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 0 for the low note or 127 for the high note.
+
+
+#### velocity-range
+##### Description:
+Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI velocity. In order to do this, the sampler needs to know what the minimum and maximum MIDI velocity values that a sample should play in. The whole MIDI velocity range is between 1 and 127.
+
+
+##### Arguments:
+`Low and high velocity values TEXT x 2 REQUIRED`
+2 values to represent the low and high velocity mapping.
+
+EXAMPLES
+
+'velocity-range 1 64'
+Sets the low velocity to 1 and the high velocity to 64.
+
+'velocity-range "sample_(\d+)_\d+_\d+" "sample_\d+_\d+_(\d+)"'
+Sets the low velocity from the name of the file, by matching the given regex pattern to it, and get the number from the captured region. Same is done for the high velocity but a different capture region is specified.
+
+'velocity-range 1 unchanged'
+Sets the low velocity to 1 and leaves the high velocity unchanged. If the high velocity is not already embedding the file, it will be set to 127
+
+DESCRIPTION
+
+2 values must be given. The first one represents the low velocity and the second one represents the high velocity. Each value can be 1 of 3 formats. (1) A number from 1 to 127, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 1 for the low velocity or 127 for the high velocity.
+
+
+
+# Filepath Commands
 ## rename
 ### Description:
 Various commands for renaming files.
@@ -664,6 +675,34 @@ The name of the output file (excluding extension). This should contain substitut
 
 
 
+## move
+### Description:
+Moves all input files to a given folder.
+
+### Usage:
+  `move` `[destination-folder]`
+
+### Arguments:
+`destination-folder TEXT`
+The folder to put all of the input files in.
+
+
+## folderise
+### Description:
+Moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
+
+### Usage:
+  `folderise` `filename-regex out-folder`
+
+### Arguments:
+`filename-regex TEXT REQUIRED`
+The ECMAScript-style regex pattern used to match filenames against. The file extension is not part of this comparison.
+
+`out-folder TEXT REQUIRED`
+The output folder that the matching files should be put into. This will be created if it does not exist. It can contain numbers in angle brackets to signify where groups from the matching regex should be inserted. These means files can end up in multiple folders. For example, 'folderise file(\d+).wav C:/folder`<1>`' would create folders 'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.
+
+
+# Generate Commands
 ## sample-blend
 ### Description:
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
@@ -687,59 +726,22 @@ The filename of the generated files (excluding extension). It should contain eit
 For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.
 
 
-## seamless-loop
+# Info Commands
+## detect-pitch
 ### Description:
-Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
+Prints out the detected pitch of the file(s).
 
 ### Usage:
-  `seamless-loop` `crossfade-percent`
+  `detect-pitch`
 
-### Arguments:
-`crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
-The size of the crossfade region as a percent of the whole file.
-
-
-## trim
+## print-info
 ### Description:
-Removes the start or end of the file(s). This command has 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
+Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
 
 ### Usage:
-  `trim` `COMMAND`
+  `print-info`
 
-### Commands:
-#### start
-##### Description:
-Removes the start of the file.
-
-
-##### Arguments:
-`trim-start-length TEXT REQUIRED`
-The amount to remove from the start. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
-
-
-#### end
-##### Description:
-Removes the end of the file.
-
-
-##### Arguments:
-`trim-end-length TEXT REQUIRED`
-The amount to remove from the end. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
-
-
-
-## tune
-### Description:
-Changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
-
-### Usage:
-  `tune` `tune cents`
-
-### Arguments:
-`tune cents FLOAT REQUIRED`
-The cents to change the pitch by.
-
-
+# Signet Utility Commands
 ## undo
 ### Description:
 Undo any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
@@ -747,20 +749,22 @@ Undo any changes made by the last run of Signet; files that were overwritten are
 ### Usage:
   `undo`
 
-## zcross-offset
+## clear-backup
 ### Description:
-Offsets the start of an audio file to the nearest zero-crossing (or the closest thing to a zero crossing). You can use the option --append to cause the samples that were offsetted to be appended to the end of the file. This is useful for when the file is a seamless loop.
+Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.
 
 ### Usage:
-  `zcross-offset` `[OPTIONS]` `search_size`
+  `clear-backup`
+
+## make-docs
+### Description:
+Creates a markdown file containing the full CLI - based on running signet --help.
+
+### Usage:
+  `make-docs` `output-file`
 
 ### Arguments:
-`search_size TEXT REQUIRED`
-The maximum length that it is allowed to offset to. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
-
-
-### Options:
-`--append`
-Append the frames offsetted to the end of the file - useful when the sample is a seamless loop.
+`output-file TEXT REQUIRED`
+The filepath for the generated markdown file.
 
 

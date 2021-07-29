@@ -135,17 +135,18 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             }
 
             // Print a contents section
-            os << "- [Signet](#Signet)\n";
-            os << "- [Commands](#Signet%20Commands)\n";
+            os << "- [General Usage](#General%20Usage)\n";
             for (auto c : command_categories) {
-                os << fmt::format("  - {}\n", c.first);
+                std::string link_name = c.first;
+                Replace(link_name, " ", "%20");
+                os << fmt::format("- [{} Commands](#{}%20Commands)\n", c.first, link_name);
                 std::sort(c.second.begin(), c.second.end());
                 for (auto &i : c.second) {
-                    os << fmt::format("    - [{}](#{})\n", i, i);
+                    os << fmt::format("  - [{}](#{})\n", i, i);
                     auto command = std::find_if(all_commands_sorted.begin(), all_commands_sorted.end(),
                                                 [i](const CLI::App *cmd) { return cmd->get_name() == i; });
                     for (auto ss : (*command)->get_subcommands({})) {
-                        os << fmt::format("      - [{}](#{})\n", ss->get_name(), ss->get_name());
+                        os << fmt::format("    - [{}](#{})\n", ss->get_name(), ss->get_name());
                     }
                 }
             }
@@ -161,7 +162,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 return result;
             };
 
-            os << "# Signet\n";
+            os << "# General Usage\n";
             auto main_usage = MakeAngleBracketWordsMarkdownCode(app.help("", CLI::AppFormatMode::Normal));
             // Rather than include the text descriptions of the commands, we ignore anything from the heading
             // "commands" onwards and instead write our own commands section below.
@@ -171,12 +172,18 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 os << line << "\n";
             }
 
-            // Write the commands section
-            os << "# Signet Commands\n";
-            for (auto s : all_commands_sorted) {
-                os << "## " << s->get_name() << "\n";
-                global_formatter_indent = 2; //
-                os << MakeAngleBracketWordsMarkdownCode(s->help("", CLI::AppFormatMode::All));
+            for (auto c : command_categories) {
+                os << fmt::format("# {} Commands\n", c.first);
+
+                global_formatter_indent = 2;
+
+                for (auto &i : c.second) {
+                    auto command = std::find_if(all_commands_sorted.begin(), all_commands_sorted.end(),
+                                                [i](const CLI::App *cmd) { return cmd->get_name() == i; });
+                    os << "## " << (*command)->get_name() << "\n";
+                    os << MakeAngleBracketWordsMarkdownCode((*command)->help("", CLI::AppFormatMode::All));
+                }
+
                 global_formatter_indent = 0;
             }
 

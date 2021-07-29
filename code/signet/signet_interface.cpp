@@ -135,11 +135,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             }
 
             // Print a contents section
-            os << "- [General Usage](#General%20Usage)\n";
+            os << "- [General Usage](#General-Usage)\n";
             for (auto c : command_categories) {
                 std::string link_name = c.first;
-                Replace(link_name, " ", "%20");
-                os << fmt::format("- [{} Commands](#{}%20Commands)\n", c.first, link_name);
+                Replace(link_name, " ", "-");
+                os << fmt::format("- [{} Commands](#{}-Commands)\n", c.first, link_name);
                 std::sort(c.second.begin(), c.second.end());
                 for (auto &i : c.second) {
                     os << fmt::format("  - [{}](#{})\n", i, i);

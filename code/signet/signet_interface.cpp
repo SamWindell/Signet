@@ -88,7 +88,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
     {
         auto make_docs = app.add_subcommand(
-            "make-docs", "Creates a markdown file containing the full CLI - based on running signet --help.");
+            "make-docs",
+            "Creates a Github flavour markdown file containing the full CLI - based on running signet --help.");
         make_docs
             ->add_option("output-file", m_make_docs_filepath, "The filepath for the generated markdown file.")
             ->required();
@@ -180,7 +181,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 for (auto &i : c.second) {
                     auto command = std::find_if(all_commands_sorted.begin(), all_commands_sorted.end(),
                                                 [i](const CLI::App *cmd) { return cmd->get_name() == i; });
-                    os << "## " << (*command)->get_name() << "\n";
+                    os << "## :sound: " << (*command)->get_name() << "\n";
                     os << MakeAngleBracketWordsMarkdownCode((*command)->help("", CLI::AppFormatMode::All));
                 }
 

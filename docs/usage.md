@@ -79,7 +79,7 @@ Instead of overwriting the input files, put the processed audio files are put in
 
 
 # Audio Commands
-## auto-tune
+## :sound: auto-tune
 ### Description:
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command (i.e. sped up or slowed down). This command works surprising well for almost any type of sample - transparently shifting it by the smallest amount possible to be more musically in-tune.
 
@@ -126,7 +126,7 @@ Rather than process each file individually, process all of the files in an ident
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
 
 
-## fade
+## :sound: fade
 ### Description:
 Adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify first the fade length. You can then optionally specify the shape of the fade curve.
 
@@ -161,7 +161,7 @@ The shape of the fade-out curve. The default is the 'sine' shape.
 
 
 
-## fix-pitch-drift
+## :sound: fix-pitch-drift
 ### Description:
 Automatically corrects regions of drifting pitch in the file(s). This tool is ideal for samples of single-note instruments that subtly drift out of pitch, such as a human voice or a wind instrument. It analyses the audio for regions of consistent pitch (avoiding noise or silence), and for each of these regions, it smoothly speeds up or slows down the audio to counteract any drift pitch. The result is a file that stays in-tune throughout its duration. Only the drifting pitch is corrected by this tool; it does not tune the audio to be a standard musical pitch. See Signet's other auto-tune command for that. As well as this, fix-pitch-drift is a bit more specialised and does not always work as ubiquitously as Signet's other auto-tune command.
 
@@ -220,7 +220,7 @@ This would find the digits after the text '-note-' in the filename and interpret
 Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.
 
 
-## gain
+## :sound: gain
 ### Description:
 Changes the volume of the file(s).
 
@@ -232,7 +232,7 @@ Changes the volume of the file(s).
 The gain amount. This is a number followed by a unit. The unit can be % or db. For example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% makes it twice as loud.
 
 
-## lowpass
+## :sound: lowpass
 ### Description:
 Lowpass: removes frequencies above the given cutoff.
 
@@ -244,7 +244,7 @@ Lowpass: removes frequencies above the given cutoff.
 The cutoff point where frequencies above this should be removed.
 
 
-## highpass
+## :sound: highpass
 ### Description:
 Removes frequencies below the given cutoff.
 
@@ -256,7 +256,7 @@ Removes frequencies below the given cutoff.
 The cutoff point where frequencies below this should be removed.
 
 
-## norm
+## :sound: norm
 ### Description:
 Sets the peak amplitude to a given level (normalisation). When this is used on multiple files, each file is altered by the same amount; preserving their volume levels relative to each other (sometimes known as common-gain normalisation). Alternatively, you can make each file always normalise to the target by specifying the flag --independently.
 
@@ -285,7 +285,7 @@ The mix of the normalised signal, where 100% means normalise to exactly to the t
 When --independent-channels is also given, this option controls the mix of each channels normalised signal, where 100% means normalise to exactly to the target, and 50% means apply a gain to get halfway from the current level to the target. The default is 100%.
 
 
-## pan
+## :sound: pan
 ### Description:
 Changes the pan of stereo file(s). Does not work on non-stereo files.
 
@@ -297,7 +297,7 @@ Changes the pan of stereo file(s). Does not work on non-stereo files.
 The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
 
-## remove-silence
+## :sound: remove-silence
 ### Description:
 Removes silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
 
@@ -352,7 +352,7 @@ This is the same as --sample-sets, but just takes a single filename for all of t
 The threshold in decibels to which anything under it should be considered silence.
 
 
-## seamless-loop
+## :sound: seamless-loop
 ### Description:
 Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
 
@@ -364,7 +364,7 @@ Turns the file(s) into seamless loops by crossfading a given percentage of audio
 The size of the crossfade region as a percent of the whole file.
 
 
-## trim
+## :sound: trim
 ### Description:
 Removes the start or end of the file(s). This command has 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
 
@@ -393,7 +393,7 @@ The amount to remove from the end. This value is a number directly followed by a
 
 
 
-## tune
+## :sound: tune
 ### Description:
 Changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
 
@@ -405,7 +405,7 @@ Changes the tune the file(s) by stretching or shrinking them. Uses a high qualit
 The cents to change the pitch by.
 
 
-## zcross-offset
+## :sound: zcross-offset
 ### Description:
 Offsets the start of an audio file to the nearest zero-crossing (or the closest thing to a zero crossing). You can use the option --append to cause the samples that were offsetted to be appended to the end of the file. This is useful for when the file is a seamless loop.
 
@@ -423,7 +423,7 @@ Append the frames offsetted to the end of the file - useful when the sample is a
 
 
 # File Data Commands
-## convert
+## :sound: convert
 ### Description:
 Converts the file format, bit-depth or sample rate. Features a high quality resampling algorithm. This command has subcommands; it requires at least one of sample-rate, bit-depth or file-format to be specified.
 
@@ -462,7 +462,7 @@ The output file format.
 
 
 
-## embed-sampler-info
+## :sound: embed-sampler-info
 ### Description:
 Embeds sampler metadata into the audio file(s), such as the root note, the velocity mapping range and the note mapping range.
 
@@ -558,7 +558,7 @@ DESCRIPTION
 
 
 # Filepath Commands
-## rename
+## :sound: rename
 ### Description:
 Various commands for renaming files.
 
@@ -675,7 +675,7 @@ The name of the output file (excluding extension). This should contain substitut
 
 
 
-## move
+## :sound: move
 ### Description:
 Moves all input files to a given folder.
 
@@ -687,7 +687,7 @@ Moves all input files to a given folder.
 The folder to put all of the input files in.
 
 
-## folderise
+## :sound: folderise
 ### Description:
 Moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
 
@@ -703,7 +703,7 @@ The output folder that the matching files should be put into. This will be creat
 
 
 # Generate Commands
-## sample-blend
+## :sound: sample-blend
 ### Description:
 Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.
 
@@ -727,14 +727,14 @@ For each generated file, if the 2 files that are being combined are not the same
 
 
 # Info Commands
-## detect-pitch
+## :sound: detect-pitch
 ### Description:
 Prints out the detected pitch of the file(s).
 
 ### Usage:
   `detect-pitch`
 
-## print-info
+## :sound: print-info
 ### Description:
 Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
 
@@ -742,23 +742,23 @@ Prints information about the audio file(s), such as the embedded metadata, sampl
   `print-info`
 
 # Signet Utility Commands
-## undo
+## :sound: undo
 ### Description:
 Undo any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
 
 ### Usage:
   `undo`
 
-## clear-backup
+## :sound: clear-backup
 ### Description:
 Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.
 
 ### Usage:
   `clear-backup`
 
-## make-docs
+## :sound: make-docs
 ### Description:
-Creates a markdown file containing the full CLI - based on running signet --help.
+Creates a Github flavour markdown file containing the full CLI - based on running signet --help.
 
 ### Usage:
   `make-docs` `output-file`

@@ -125,6 +125,12 @@ Rather than process each file individually, process all of the files in an ident
     
 This is the same as --sample-sets, but just takes a single filename for all of the files (rather than allowing multiple sets to be identified using a regex pattern
 
+`--expected-note TEXT`
+Only correct the audio if the detected target pitch matches the one given (or any octave of that note). To do this, specify a regex pattern that has a single capture group. This will be compared against each filename (excluding folder or file extension). The bit that you capture should be the MIDI note number of the audio file. You can also optionally specify an additional argument: the octave number for MIDI note zero (the default is that MIDI note 0 is C-1).
+
+Example: fix-pitch-drift --expected-note ".\*-note-(\d+)-.\*" 0
+This would find the digits after the text '-note-' in the filename and interpret them as the expected pitch of the track using 0 as the octave number for MIDI note 0.
+
 
 ## :sound: fade
 ### Description:

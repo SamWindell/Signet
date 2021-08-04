@@ -1,6 +1,7 @@
 #pragma once
 
 #include "command.h"
+#include "expected_midi_pitch.h"
 #include "identical_processing_set.h"
 
 class AutoTuneCommand final : public Command {
@@ -11,4 +12,5 @@ class AutoTuneCommand final : public Command {
 
   private:
     IdenticalProcessingSet m_identical_processing_set;
+    ExpectedMidiPitch m_expected_midi_pitch;
 };

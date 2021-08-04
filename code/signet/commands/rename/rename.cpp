@@ -108,7 +108,8 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                     if (const auto pitch = f->GetAudio().DetectPitch()) {
                         const auto closest_musical_note = FindClosestMidiPitch(*pitch);
 
-                        Replace(filename, "<detected-pitch>", closest_musical_note.GetPitchString());
+                        Replace(filename, "<detected-pitch>",
+                                fmt::format("{:.0f}", closest_musical_note.pitch));
                         Replace(filename, "<detected-midi-note>",
                                 std::to_string(closest_musical_note.midi_note));
                         Replace(filename, "<detected-midi-note-octave-plus-1>",

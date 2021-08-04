@@ -8,12 +8,6 @@
 struct MIDIPitch {
     std::string ToString() const { return fmt::format("{} ({:.2f} Hz - MIDI {})", name, pitch, midi_note); }
 
-    std::string GetPitchString() const {
-        std::array<char, 32> buf {};
-        std::snprintf(buf.data(), buf.size(), "%.0f", pitch);
-        return buf.data();
-    }
-
     int midi_note;
     const char *name;
     double pitch;
@@ -53,6 +47,8 @@ static constexpr MIDIPitch g_midi_pitches[] = {
     {120, "C9", 8372.02},  {121, "C#9", 8869.84}, {122, "D9", 9397.27},   {123, "D#9", 9956.06},
     {124, "E9", 10548.08}, {125, "F9", 11175.3},  {126, "F#9", 11839.82}, {127, "G9", 12543.85},
 };
+
+static constexpr char *g_note_names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
 
 MIDIPitch FindClosestMidiPitch(const double freq);
 int ScaleByOctavesToBeNearestToMiddleC(int midi_note);

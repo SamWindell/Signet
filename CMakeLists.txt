@@ -58,6 +58,7 @@ add_library(
     code/common/audio_file_io.cpp
     code/common/audio_files.cpp
     code/common/backup.cpp
+    code/common/expected_midi_pitch.cpp
     code/common/drwav_tests.cpp
     code/common/common.cpp
     code/common/filepath_set.cpp

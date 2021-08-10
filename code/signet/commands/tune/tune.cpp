@@ -9,7 +9,7 @@ CLI::App *TuneCommand::CreateCommandCLI(CLI::App &app) {
         "tune",
         "Changes the tune of the file(s) by stretching or shrinking them. Uses a high-quality resampling algorithm. Tuning up will result in audio that is shorter in duration, and tuning down will result in longer audio.");
     tune->add_option(
-            "tune cents", m_tune_cents,
+            "cents", m_tune_cents,
             "The cents to change the pitch by. For example, a value of 1200 would tune the audio up an octave. A value of -80 would tune the audio down by nearly an octave.")
         ->required();
     return tune;

@@ -91,6 +91,13 @@ std::string GetJustFilenameWithNoExtension(fs::path path) {
     return filename.generic_string();
 }
 
+std::string TrimWhitespace(std::string_view str) {
+    while (str.size() && std::isspace(str.back())) {
+        str.remove_suffix(1);
+    }
+    return std::string(str);
+}
+
 void Lowercase(std::string &str) {
     for (auto &c : str) {
         c = (char)std::tolower(c);

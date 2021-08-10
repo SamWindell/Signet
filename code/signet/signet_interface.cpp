@@ -151,6 +151,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                     }
                 }
             }
+            os << '\n';
 
             auto MakeAngleBracketWordsMarkdownCode = [](std::string markdown) {
                 // There are commands have use a concept of a 'variable' which is a string instide angle

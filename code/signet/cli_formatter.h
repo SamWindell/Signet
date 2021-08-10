@@ -64,8 +64,6 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
                                               (app->get_require_subcommand_min() == 0 ? "]" : ""));
         }
 
-        out << std::endl;
-
         return out.str();
     }
 
@@ -86,7 +84,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         };
 
         if (!opts.size()) return {};
-        out << fmt::format("\n{}:\n", FormatHeading(group));
+        out << fmt::format("{}:\n", FormatHeading(group));
         for (const auto opt : opts) {
             out << make_option(opt, is_positional);
         }
@@ -119,7 +117,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
 
         // For each group, filter out and print subcommands
         for (const std::string &group : subcmd_groups_seen) {
-            out << fmt::format("\n{}:\n", FormatHeading(group));
+            out << fmt::format("{}:\n", FormatHeading(group));
             auto subcommands_group = app->get_subcommands([&group](const CLI::App *sub_app) {
                 return CLI::detail::to_lower(sub_app->get_group()) == CLI::detail::to_lower(group);
             });
@@ -217,24 +215,14 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
 
         global_formatter_indent += indent_size;
 
-        out << make_description(sub);
-        out << make_positionals(sub);
-        out << make_groups(sub, CLI::AppFormatMode::Sub);
-        out << make_subcommands(sub, CLI::AppFormatMode::Sub);
+        out << TrimWhitespaceIfNeeded(make_description(sub));
+        out << TrimWhitespaceIfNeeded(make_positionals(sub));
+        out << TrimWhitespaceIfNeeded(make_groups(sub, CLI::AppFormatMode::Sub));
+        out << TrimWhitespaceIfNeeded(make_subcommands(sub, CLI::AppFormatMode::Sub));
 
-        global_formatter_indent -= indent_size;
+        global_formatter_indent -= indent_size * 2;
 
-        // Drop blank spaces
-        std::string result = out.str();
-        if (m_mode == OutputMode::CommandLine) {
-            result = CLI::detail::find_and_replace(result, "\n\n", "\n");
-        }
-        result = result.substr(0, result.size() - 1); // Remove the final '\n'
-
-        global_formatter_indent -= indent_size;
-
-        // Indent all but the first line (the name)
-        return result + "\n";
+        return out.str();
     }
 
     inline std::string
@@ -251,12 +239,21 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
             }
         }
 
-        out << make_description(app);
-        out << make_usage(app, name);
-        out << make_positionals(app);
-        out << make_groups(app, mode);
-        out << make_subcommands(app, mode);
-        out << '\n' << make_footer(app);
+        out << TrimWhitespaceIfNeeded(make_description(app));
+        out << TrimWhitespaceIfNeeded(make_usage(app, name));
+        out << TrimWhitespaceIfNeeded(make_positionals(app));
+        out << TrimWhitespaceIfNeeded(make_groups(app, mode));
+        out << TrimWhitespaceIfNeeded(make_subcommands(app, mode));
+
+        auto footer = make_footer(app);
+        if (StartsWith(footer, "Examples:")) {
+            if (m_mode == OutputMode::Markdown) {
+                Replace(footer, "Examples:\n", "Examples:\n```\n");
+                footer = TrimWhitespace(footer) + "\n```";
+            }
+            Replace(footer, "Examples:", FormatHeading("Examples:"));
+        }
+        out << TrimWhitespaceIfNeeded(footer);
 
         auto result = out.str();
         if (m_mode == OutputMode::Markdown) {
@@ -267,6 +264,11 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     }
 
   private:
+    static std::string TrimWhitespaceIfNeeded(const std::string &str) {
+        if (!str.size()) return {};
+        return TrimWhitespace(str) + "\n\n";
+    }
+
     std::string IndentTextIfNeeded(const std::string &str, usize indent) const {
         if (m_mode == OutputMode::Markdown) return str;
         return IndentText(str, indent);

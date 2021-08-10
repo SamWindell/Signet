@@ -49,6 +49,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [clear-backup](#sound-clear-backup)
   - [make-docs](#sound-make-docs)
   - [undo](#sound-undo)
+
 # General Usage
 ## Description:
 Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.
@@ -59,7 +60,6 @@ Signet is a command-line program designed for bulk editing audio files. It has c
 ## Arguments:
 `input-files TEXT ...`
 The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-\*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.
-
 
 ## Options:
 `--version`
@@ -76,7 +76,6 @@ When the input is a directory, scan for files in it recursively.
 
 `--output-folder TEXT`
 Instead of overwriting the input files, put the processed audio files are put into the given output folder. Subfolders are not created within the output folder; all files are put at the same level. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.
-
 
 # Audio Commands
 ## :sound: auto-tune
@@ -131,7 +130,6 @@ Only correct the audio if the detected target pitch matches the one given (or an
 Example: fix-pitch-drift --expected-note ".\*-note-(\d+)-.\*" 0
 This would find the digits after the text '-note-' in the filename and interpret them as the expected pitch of the track using 0 as the octave number for MIDI note 0.
 
-
 ## :sound: fade
 ### Description:
 Adds a fade-in to the start and/or a fade-out to the end of the file(s). This subcommand has itself 2 subcommands, 'in' and 'out'; one of which must be specified. For each, you must specify first the fade length. You can then optionally specify the shape of the fade curve.
@@ -143,7 +141,6 @@ Adds a fade-in to the start and/or a fade-out to the end of the file(s). This su
 #### in
 ##### Description:
 Fade in the volume at the start of the file(s).
-
 
 ##### Arguments:
 `fade-in length TEXT REQUIRED`
@@ -157,15 +154,12 @@ The shape of the fade-in curve. The default is the 'sine' shape.
 ##### Description:
 Fade out the volume at the end of the file(s).
 
-
 ##### Arguments:
 `fade-out length TEXT REQUIRED`
 The length of the fade out. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 `fade-out shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
 The shape of the fade-out curve. The default is the 'sine' shape.
-
-
 
 ## :sound: fix-pitch-drift
 ### Description:
@@ -225,7 +219,6 @@ This would find the digits after the text '-note-' in the filename and interpret
 `--print-csv`
 Print a block of CSV data that can be loaded into a spreadsheet in order to determine what fix-pitch-drift is doing to the audio over time.
 
-
 ## :sound: gain
 ### Description:
 Changes the volume of the file(s).
@@ -236,7 +229,6 @@ Changes the volume of the file(s).
 ### Arguments:
 `gain-amount TEXT REQUIRED`
 The gain amount. This is a number followed by a unit. The unit can be % or db. For example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% makes it twice as loud.
-
 
 ## :sound: lowpass
 ### Description:
@@ -249,7 +241,6 @@ Lowpass: removes frequencies above the given cutoff.
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies above this should be removed.
 
-
 ## :sound: highpass
 ### Description:
 Removes frequencies below the given cutoff.
@@ -261,7 +252,6 @@ Removes frequencies below the given cutoff.
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies below this should be removed.
 
-
 ## :sound: norm
 ### Description:
 Sets the peak amplitude to a given level (normalisation). When this is used on multiple files, each file is altered by the same amount; preserving their volume levels relative to each other (sometimes known as common-gain normalisation). Alternatively, you can make each file always normalise to the target by specifying the flag --independently.
@@ -272,7 +262,6 @@ Sets the peak amplitude to a given level (normalisation). When this is used on m
 ### Arguments:
 `target-decibels FLOAT:INT in [-200 - 0] REQUIRED`
 The target level in decibels, where 0dB is the max volume.
-
 
 ### Options:
 `--independently`
@@ -290,7 +279,6 @@ The mix of the normalised signal, where 100% means normalise to exactly to the t
 `--mix-channels FLOAT:INT in [0 - 100] Needs: --independent-channels`
 When --independent-channels is also given, this option controls the mix of each channels normalised signal, where 100% means normalise to exactly to the target, and 50% means apply a gain to get halfway from the current level to the target. The default is 100%.
 
-
 ## :sound: pan
 ### Description:
 Changes the pan of stereo file(s). Does not work on non-stereo files.
@@ -302,7 +290,6 @@ Changes the pan of stereo file(s). Does not work on non-stereo files.
 `pan-amount TEXT REQUIRED`
 The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
-
 ## :sound: remove-silence
 ### Description:
 Removes silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
@@ -313,7 +300,6 @@ Removes silence from the start or end of the file(s). Silence is considered anyt
 ### Arguments:
 `start-or-end ENUM:value in {Both->2,End->1,Start->0} OR {2,1,0}`
 Specify whether the removal should be at the start, the end or both.
-
 
 ### Options:
 `--sample-sets TEXT x 2`
@@ -357,7 +343,6 @@ This is the same as --sample-sets, but just takes a single filename for all of t
 `--threshold FLOAT:INT in [-200 - 0]`
 The threshold in decibels to which anything under it should be considered silence.
 
-
 ## :sound: seamless-loop
 ### Description:
 Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
@@ -368,7 +353,6 @@ Turns the file(s) into seamless loops by crossfading a given percentage of audio
 ### Arguments:
 `crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
 The size of the crossfade region as a percent of the whole file.
-
 
 ## :sound: trim
 ### Description:
@@ -382,7 +366,6 @@ Removes the start or end of the file(s). This command has 2 subcommands, 'start'
 ##### Description:
 Removes the start of the file.
 
-
 ##### Arguments:
 `trim-start-length TEXT REQUIRED`
 The amount to remove from the start. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
@@ -392,24 +375,26 @@ The amount to remove from the start. This value is a number directly followed by
 ##### Description:
 Removes the end of the file.
 
-
 ##### Arguments:
 `trim-end-length TEXT REQUIRED`
 The amount to remove from the end. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
-
-
 
 ## :sound: tune
 ### Description:
 Changes the tune of the file(s) by stretching or shrinking them. Uses a high-quality resampling algorithm. Tuning up will result in audio that is shorter in duration, and tuning down will result in longer audio.
 
 ### Usage:
-  `tune` `tune cents`
+  `tune` `cents`
 
 ### Arguments:
-`tune cents FLOAT REQUIRED`
+`cents FLOAT REQUIRED`
 The cents to change the pitch by. For example, a value of 1200 would tune the audio up an octave. A value of -80 would tune the audio down by nearly an octave.
 
+### Examples:
+```
+  signet file.wav tune -100
+  signet folder-name tune 1200
+```
 
 ## :sound: zcross-offset
 ### Description:
@@ -422,11 +407,9 @@ Offsets the start of an audio file to the nearest zero-crossing (or the closest 
 `search_size TEXT REQUIRED`
 The maximum length that it is allowed to offset to. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
-
 ### Options:
 `--append`
 Append the frames offsetted to the end of the file - useful when the sample is a seamless loop.
-
 
 # File Data Commands
 ## :sound: convert
@@ -441,7 +424,6 @@ Converts the file format, bit-depth or sample rate. Features a high quality resa
 ##### Description:
 Change the sample rate using a high quality resampler.
 
-
 ##### Arguments:
 `sample-rate UINT:UINT in [1 - 4300000000] REQUIRED`
 The target sample rate in Hz. For example 44100
@@ -450,7 +432,6 @@ The target sample rate in Hz. For example 44100
 #### bit-depth
 ##### Description:
 Change the bit depth of the file(s).
-
 
 ##### Arguments:
 `bit-depth UINT:{8,16,20,24,32,64} REQUIRED`
@@ -461,12 +442,9 @@ The target bit depth.
 ##### Description:
 Change the file format.
 
-
 ##### Arguments:
 `file-format ENUM:value in {Flac->1,Wav->0} OR {1,0} REQUIRED`
 The output file format.
-
-
 
 ## :sound: embed-sampler-info
 ### Description:
@@ -484,7 +462,6 @@ Remove all sampler metadata from the file(s)
 #### root
 ##### Description:
 Embed the root note of the audio file
-
 
 ##### Arguments:
 `Root note value TEXT REQUIRED`
@@ -509,7 +486,6 @@ Sets the root note by running a pitch detection algorithm on the file. If the au
 #### note-range
 ##### Description:
 Embed the low and high notes.
-
 
 ##### Arguments:
 `Note range value(s) TEXT REQUIRED`
@@ -541,7 +517,6 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
 ##### Description:
 Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI velocity. In order to do this, the sampler needs to know what the minimum and maximum MIDI velocity values that a sample should play in. The whole MIDI velocity range is between 1 and 127.
 
-
 ##### Arguments:
 `Low and high velocity values TEXT x 2 REQUIRED`
 2 values to represent the low and high velocity mapping.
@@ -560,8 +535,6 @@ Sets the low velocity to 1 and leaves the high velocity unchanged. If the high v
 DESCRIPTION
 
 2 values must be given. The first one represents the low velocity and the second one represents the high velocity. Each value can be 1 of 3 formats. (1) A number from 1 to 127, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 1 for the low velocity or 127 for the high velocity.
-
-
 
 # Filepath Commands
 ## :sound: rename
@@ -621,7 +594,6 @@ The camel-case name of the folder that contains the audio file.
 ##### Description:
 Add text to the start of the filename.
 
-
 ##### Arguments:
 `prefix-text TEXT REQUIRED`
 The text to add, may contain substitution variables.
@@ -631,7 +603,6 @@ The text to add, may contain substitution variables.
 ##### Description:
 Add text to the end of the filename (before the extension).
 
-
 ##### Arguments:
 `suffix-text TEXT REQUIRED`
 The text to add, may contain substitution variables.
@@ -640,7 +611,6 @@ The text to add, may contain substitution variables.
 #### regex-replace
 ##### Description:
 Replace names that match the given regex pattern. The replacement can contain regex-groups from the matched filename.
-
 
 ##### Arguments:
 `regex-pattern TEXT REQUIRED`
@@ -653,7 +623,6 @@ The new filename for files that matched the regex. This may contain substitution
 #### note-to-midi
 ##### Description:
 Replace all occurrences of note names with the corresponding MIDI note number. For example replace C3 with 60.
-
 
 ##### Options:
 `--midi-zero-note TEXT`
@@ -668,7 +637,6 @@ First you specify a regex pattern that captures a number representing the MIDI r
 
 You control the format of the renaming by specifing a pattern containing substitution variables for `<lo>`, `<root>` and `<high>`. These variables are replaced by the MIDI note numbers in the range 0 to 127.
 
-
 ##### Arguments:
 `auto-map-filename-pattern TEXT REQUIRED`
 The ECMAScript-style regex the should match against filename (excluding extension). This regex should contain a capture group to represent the root note of the sample.
@@ -678,8 +646,6 @@ The group number that represents the MIDI root note number. Remember regex group
 
 `auto-map-renamed-filename TEXT REQUIRED`
 The name of the output file (excluding extension). This should contain substitution variables `<lo>`, `<root>` and `<hi>` which will be replaced by the low MIDI note number, the root MIDI note number and the high MIDI note number. The low and high numbers are generated by the auto-mapper so that all samples in each folder will fill out the entire range 0-127. Matching groups from the regex can also be substituted into this new name. To do this, add the regex group index in the angle-brackets (such as `<1>`).
-
-
 
 ## :sound: move
 ### Description:
@@ -691,7 +657,6 @@ Moves all input files to a given folder.
 ### Arguments:
 `destination-folder TEXT`
 The folder to put all of the input files in.
-
 
 ## :sound: folderise
 ### Description:
@@ -706,7 +671,6 @@ The ECMAScript-style regex pattern used to match filenames against. The file ext
 
 `out-folder TEXT REQUIRED`
 The output folder that the matching files should be put into. This will be created if it does not exist. It can contain numbers in angle brackets to signify where groups from the matching regex should be inserted. These means files can end up in multiple folders. For example, 'folderise file(\d+).wav C:/folder`<1>`' would create folders 'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.
-
 
 # Generate Commands
 ## :sound: sample-blend
@@ -726,11 +690,9 @@ The semitone interval at which to generate new samples by
 `out-filename TEXT REQUIRED`
 The filename of the generated files (excluding extension). It should contain either the substitution variable `<root-num>` or `<root-note>` which will be replaced by the root note of the generated file. `<root-num>` is replaced by the MIDI note number, and `<root-name>` is replaced by the note name, such as C3.
 
-
 ### Options:
 `--make-same-length`
 For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.
-
 
 # Info Commands
 ## :sound: detect-pitch
@@ -772,5 +734,4 @@ Creates a Github flavour markdown file containing the full CLI - based on runnin
 ### Arguments:
 `output-file TEXT REQUIRED`
 The filepath for the generated markdown file.
-
 

@@ -8,7 +8,8 @@ void IdenticalProcessingSet::AddCli(CLI::App &command) {
     command
         .add_option(
             "--sample-sets", m_sample_set_args,
-            R"foo(Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
+            fmt::format(
+                R"foo(Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
     
 For example, you might have a set of samples of something recorded simultaneously with different microphones; you can use this tool to process all of the samples in the same way based on the close mic.
     
@@ -36,9 +37,10 @@ The second argument required for this command is used to determine what should b
 
 Putting it all together, here's what the full command would look like for our example:
 
-signet sample-* process --sample-sets ".*(close|room|ambient).*" "close"
+signet sample-* {} --sample-sets ".*(close|room|ambient).*" "close"
 
-The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.)foo")
+The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.)foo",
+                command.get_name()))
         ->expected(2);
 
     command.add_option_function<std::string>(

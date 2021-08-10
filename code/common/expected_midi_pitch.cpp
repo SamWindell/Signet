@@ -11,7 +11,7 @@
 static const char *expected_midi_pitch_description =
 R"aa(Only correct the audio if the detected target pitch matches the one given{}. To do this, specify a regex pattern that has a single capture group. This will be compared against each filename (excluding folder or file extension). The bit that you capture should be the MIDI note number of the audio file. You can also optionally specify an additional argument: the octave number for MIDI note zero (the default is that MIDI note 0 is C-1).
 
-Example: fix-pitch-drift --expected-note ".*-note-(\d+)-.*" 0
+Example: {} --expected-note ".*-note-(\d+)-.*" 0
 This would find the digits after the text '-note-' in the filename and interpret them as the expected pitch of the track using 0 as the octave number for MIDI note 0.)aa";
 // clang-format on
 
@@ -26,7 +26,7 @@ void ExpectedMidiPitch::AddCli(CLI::App &command, bool accept_any_octave) {
                 }
             },
             fmt::format(expected_midi_pitch_description,
-                        accept_any_octave ? " (or any octave of that note)" : ""))
+                        accept_any_octave ? " (or any octave of that note)" : "", command.get_name()))
         ->expected(1, 2);
 }
 

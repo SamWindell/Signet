@@ -49,6 +49,11 @@ Any text added via this command can contain special substitution variables; thes
     m_note_to_midi_processor.CreateCLI(*rename);
     m_auto_mapper.CreateCLI(*rename);
 
+    rename->footer(R"aa(Examples:
+  signet my-folder rename prefix "clarinet-"
+  signet **.wav rename suffix "-root-<detected-midi-note>"
+  signet session1 rename regex-replace "")aa");
+
     return rename;
 }
 

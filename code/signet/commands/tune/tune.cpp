@@ -12,6 +12,10 @@ CLI::App *TuneCommand::CreateCommandCLI(CLI::App &app) {
             "cents", m_tune_cents,
             "The cents to change the pitch by. For example, a value of 1200 would tune the audio up an octave. A value of -80 would tune the audio down by nearly an octave.")
         ->required();
+    tune->footer(R"aa(Examples:
+  signet file.wav tune -100
+  signet folder-name tune 1200)aa");
+
     return tune;
 }
 

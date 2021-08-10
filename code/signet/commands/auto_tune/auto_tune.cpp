@@ -15,6 +15,12 @@ CLI::App *AutoTuneCommand::CreateCommandCLI(CLI::App &app) {
         "auto-tune",
         "Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command (i.e. sped up or slowed down). This command works surprising well for almost any type of sample - transparently shifting it by the smallest amount possible to be more musically in-tune.");
 
+    auto_tune->footer(R"aa(Examples:
+  signet file.wav auto-tune
+  signet sample-* auto-tune --sample-sets ".*(close|room|ambient).*" "close"
+  signet sample-*.wav auto --authority-file "sample-close"
+  signet piano-root-*-*.wav auto --expected-note "piano-root-(\d+)-.*")aa");
+
     m_identical_processing_set.AddCli(*auto_tune);
     m_expected_midi_pitch.AddCli(*auto_tune, true);
 

@@ -11,6 +11,10 @@ CLI::App *ConvertCommand::CreateCommandCLI(CLI::App &app) {
                    "requires at least one of sample-rate, bit-depth or file-format to be specified.");
     convert->require_subcommand();
 
+    convert->footer(R"aa(Examples:
+  signet . convert file-format flac sample-rate 44100 bit-depth 16
+  signet *.wav convert file-format wav bit-depth 24)aa");
+
     auto sample_rate =
         convert->add_subcommand("sample-rate", "Change the sample rate using a high quality resampler.");
     sample_rate

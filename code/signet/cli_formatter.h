@@ -245,6 +245,11 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         out << TrimWhitespaceIfNeeded(make_groups(app, mode));
         out << TrimWhitespaceIfNeeded(make_subcommands(app, mode));
 
+        auto result = out.str();
+        if (m_mode == OutputMode::Markdown) {
+            Replace(result, "*", "\\*");
+        }
+
         auto footer = make_footer(app);
         if (StartsWith(footer, "Examples:")) {
             if (m_mode == OutputMode::Markdown) {
@@ -253,12 +258,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
             }
             Replace(footer, "Examples:", FormatHeading("Examples:"));
         }
-        out << TrimWhitespaceIfNeeded(footer);
-
-        auto result = out.str();
-        if (m_mode == OutputMode::Markdown) {
-            Replace(result, "*", "\\*");
-        }
+        result += TrimWhitespaceIfNeeded(footer);
 
         return result;
     }

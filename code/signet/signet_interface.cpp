@@ -143,7 +143,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 os << fmt::format("- [{} Commands](#{}-Commands)\n", c.first, link_name);
                 std::sort(c.second.begin(), c.second.end());
                 for (auto &i : c.second) {
-                    os << fmt::format("  - [{}](#{})\n", i, i);
+                    os << fmt::format("  - [{}](#sound-{})\n", i, i);
                     auto command = std::find_if(all_commands_sorted.begin(), all_commands_sorted.end(),
                                                 [i](const CLI::App *cmd) { return cmd->get_name() == i; });
                     for (auto ss : (*command)->get_subcommands({})) {

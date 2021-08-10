@@ -401,14 +401,14 @@ The amount to remove from the end. This value is a number directly followed by a
 
 ## :sound: tune
 ### Description:
-Changes the tune the file(s) by stretching or shrinking them. Uses a high quality resampling algorithm.
+Changes the tune of the file(s) by stretching or shrinking them. Uses a high-quality resampling algorithm. Tuning up will result in audio that is shorter in duration, and tuning down will result in longer audio.
 
 ### Usage:
   `tune` `tune cents`
 
 ### Arguments:
 `tune cents FLOAT REQUIRED`
-The cents to change the pitch by.
+The cents to change the pitch by. For example, a value of 1200 would tune the audio up an octave. A value of -80 would tune the audio down by nearly an octave.
 
 
 ## :sound: zcross-offset

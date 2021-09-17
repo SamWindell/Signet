@@ -3,6 +3,7 @@ project(Signet VERSION 0.1.2)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 option(DEPLOYMENT_BUILD "A build for deployment to end-users" NO)
 option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)

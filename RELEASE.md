@@ -1,4 +1,17 @@
 Changes:
+
+1.1.3:
+- Add --independent-channels and --mix-channels to norm command
+- Improve the wording and usefulness of messages
+- Add --output-folder option to Signet instead of always overwriting files
+- --sample-sets now searches for sets across all input files rather than just in each folder
+- Fix AudioDurations ms being interpreted as s
+- Improve backup system
+- Add --expected-note to auto-tune
+- Improve usage.md style
+- Compile with static runtime libraries on Windows
+
+1.1.2:
 - Add --make-same-length option to sample-blend
 - Tweak fix-pitch drift algorithm and add extra utility options
 - Add pan command

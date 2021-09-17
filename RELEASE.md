@@ -1,6 +1,6 @@
 Changes:
 
-1.1.3:
+0.1.3:
 - Add --independent-channels and --mix-channels to norm command
 - Improve the wording and usefulness of messages
 - Add --output-folder option to Signet instead of always overwriting files
@@ -11,7 +11,7 @@ Changes:
 - Improve usage.md style
 - Compile with static runtime libraries on Windows
 
-1.1.2:
+0.1.2:
 - Add --make-same-length option to sample-blend
 - Tweak fix-pitch drift algorithm and add extra utility options
 - Add pan command

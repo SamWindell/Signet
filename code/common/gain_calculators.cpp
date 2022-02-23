@@ -31,6 +31,15 @@ double GetRMS(const tcb::span<const double> samples) {
     return std::sqrt(result);
 }
 
+double GetPeak(const tcb::span<const double> samples) {
+    if (!samples.size()) return 0;
+    double result = 0;
+    for (const auto s : samples) {
+        result = std::max(result, std::abs(s));
+    }
+    return result;
+}
+
 TEST_CASE_TEMPLATE("[NormaliseCommand] gain calcs", T, RMSGainCalculator, PeakGainCalculator) {
     T calc;
     INFO(calc.GetName());

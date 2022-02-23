@@ -80,7 +80,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag_callback(
         "--version",
         [&]() {
-            fmt::print("Signet version {}\n", SIGNET_VERSION);
+            fmt::print("Signet version {}", SIGNET_VERSION);
+#ifdef SIGNET_DEBUG
+            fmt::print(" (debug)");
+#endif
+            fmt::print("\n");
             success_thrown = true;
             throw CLI::Success();
         },

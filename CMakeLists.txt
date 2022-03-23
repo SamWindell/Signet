@@ -173,6 +173,8 @@ add_custom_command(
     TARGET signet
     POST_BUILD
     COMMAND signet make-docs ${PROJECT_SOURCE_DIR}/docs/usage.md)
+    
+install(TARGETS signet RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Tests
 add_executable(tests code/tests/tests_main.cpp)

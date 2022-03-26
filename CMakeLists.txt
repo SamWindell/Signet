@@ -47,7 +47,7 @@ target_include_directories(third_party_libs PUBLIC code/third_party_libs/FLAC/sr
                                                    code/third_party_libs)
 target_compile_definitions(third_party_libs PUBLIC FLAC__NO_DLL)
 
-add_subdirectory(code/third_party_libs/cereal)
+add_subdirectory(code/third_party_libs/cereal EXCLUDE_FROM_ALL)
 add_subdirectory(code/third_party_libs/fmt)
 target_link_libraries(third_party_libs PUBLIC cereal fmt::fmt)
 

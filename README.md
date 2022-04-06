@@ -37,7 +37,7 @@ I'm a full-time audio plugin and sample library developer. I created this tool t
 Currently only supports reading and writing WAV and FLAC files.
 
 ## How to get Signet
-There are experimental binaries available for Signet in the Releases section of the Github page. The Mac version in all likelihood will not work due to not being codesigned or notarized.
+There are experimental binaries available for Signet in the Releases section of the Github page. The Mac version is not yet codesigned or notarized, so for now you will need to right click the application and select "open" and go through the prompts the first time.
 
 Alternatively, you can build Signet from the source code. This process is designed to be simple for those familiar with building C++ programs. There are no library dependencies external to this repo. Just run CMake to generate a configuration for your preferred build tool (Visual Studio Solution, makefile, etc.), and then build using that.
 

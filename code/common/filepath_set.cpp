@@ -356,4 +356,20 @@ TEST_CASE("Pathname Expansion") {
         CheckMatches({"sandbox/*/*.wav", "-sandbox/processed/*"},
                      {"sandbox/unprocessed-piano/hello.wav", "sandbox/unprocessed-piano/there.wav"});
     }
+    SUBCASE("single wildcard folder") {
+        CheckMatches({"sandbox/*/*.*"}, {
+                                            "sandbox/unprocessed-piano/hello.wav",
+                                            "sandbox/unprocessed-piano/there.wav",
+                                            "sandbox/processed/file.wav",
+                                            "sandbox/processed/file.flac",
+                                        });
+    }
+    SUBCASE("wildcard at start") {
+        CheckMatches({"*/*.*"}, {
+                                    "sandbox/file1.wav",
+                                    "sandbox/file2.wav",
+                                    "sandbox/file3.wav",
+                                    "sandbox/foo.wav",
+                                });
+    }
 }

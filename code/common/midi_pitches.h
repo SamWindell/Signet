@@ -48,7 +48,8 @@ static constexpr MIDIPitch g_midi_pitches[] = {
     {124, "E9", 10548.08}, {125, "F9", 11175.3},  {126, "F#9", 11839.82}, {127, "G9", 12543.85},
 };
 
-static constexpr char *g_note_names[] = {"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+static constexpr const char *g_note_names[] = {"C",  "C#", "D",  "D#", "E",  "F",
+                                               "F#", "G",  "G#", "A",  "A#", "B"};
 
 MIDIPitch FindClosestMidiPitch(const double freq);
 int ScaleByOctavesToBeNearestToMiddleC(int midi_note);

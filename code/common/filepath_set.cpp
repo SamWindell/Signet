@@ -36,34 +36,33 @@ static bool IsPathExcluded(const fs::path &path, const std::vector<std::string> 
     return false;
 }
 
-static std::vector<fs::path> GetFilepathsThatMatchPattern(std::string_view pattern) {
-    std::string generic_pattern {pattern};
-    Replace(generic_pattern, '\\', '/');
-    pattern = generic_pattern;
+static std::vector<fs::path> GetFilepathsThatMatchPattern(std::string pattern) {
+    Replace(pattern, '\\', '/');
 
-    std::string added_slash;
-    if (pattern.find('/') == std::string_view::npos) {
-        added_slash = "./" + std::string(pattern);
-        pattern = added_slash;
+    {
+        auto slash_pos = pattern.find("/");
+        if (slash_pos == std::string::npos || (pattern.substr(0, slash_pos).find("*") != std::string::npos)) {
+            pattern.insert(0, "./");
+        }
     }
 
     std::vector<std::string> possible_folders;
 
     size_t pos = 0;
     size_t prev_pos = 0;
-    while ((pos = pattern.find('/', pos)) != std::string_view::npos) {
+    while ((pos = pattern.find('/', pos)) != std::string::npos) {
         const auto folder = pattern.substr(0, pos);
         const auto part = pattern.substr(prev_pos, pos - prev_pos);
 
         if (!possible_folders.size()) {
-            possible_folders.push_back(std::string(folder));
+            possible_folders.push_back(folder);
         } else {
             std::vector<std::string> new_possible_folders;
 
             for (const auto &f : possible_folders) {
-                const std::string with_part = f + "/" + std::string(part);
+                const std::string with_part = f + "/" + part;
 
-                if (part.find("**") != std::string_view::npos) {
+                if (part.find("**") != std::string::npos) {
                     for (const auto &entry : fs::recursive_directory_iterator(f)) {
                         if (entry.is_directory()) {
                             const auto path = entry.path().generic_string();
@@ -72,7 +71,7 @@ static std::vector<fs::path> GetFilepathsThatMatchPattern(std::string_view patte
                             }
                         }
                     }
-                } else if (part.find('*') != std::string_view::npos) {
+                } else if (part.find('*') != std::string::npos) {
                     for (const auto &entry : fs::directory_iterator(f)) {
                         if (entry.is_directory()) {
                             const auto path = entry.path().generic_string();
@@ -93,7 +92,7 @@ static std::vector<fs::path> GetFilepathsThatMatchPattern(std::string_view patte
         prev_pos = pos;
     }
 
-    const std::string_view last_file_section = pattern.substr(prev_pos);
+    const std::string last_file_section = pattern.substr(prev_pos);
 
     std::vector<fs::path> matching_filepaths;
     const auto CheckAndRegisterFile = [&](auto path) {
@@ -104,9 +103,9 @@ static std::vector<fs::path> GetFilepathsThatMatchPattern(std::string_view patte
     };
 
     for (const auto &f : possible_folders) {
-        if (last_file_section.find("**") != std::string_view::npos) {
+        if (last_file_section.find("**") != std::string::npos) {
             ForEachFileInDirectory<fs::recursive_directory_iterator>(f, CheckAndRegisterFile);
-        } else if (last_file_section.find("*") != std::string_view::npos) {
+        } else if (last_file_section.find("*") != std::string::npos) {
             ForEachFileInDirectory<fs::directory_iterator>(f, CheckAndRegisterFile);
         } else {
             fs::path path = f;
@@ -239,7 +238,8 @@ TEST_CASE("Pathname Expansion") {
     CreateFile("sandbox/processed/file.flac");
 
     const auto CheckMatches = [](const std::vector<std::string> &parts,
-                                 const std::initializer_list<const std::string> expected_matches) {
+                                 const std::initializer_list<const std::string> expected_matches,
+                                 bool allow_additional_matches = false) {
         std::string parse_error;
         const auto matches = FilepathSet::CreateFromPatterns(parts, false, &parse_error);
         CAPTURE(parse_error);
@@ -258,9 +258,23 @@ TEST_CASE("Pathname Expansion") {
         }
         std::sort(canonical_expected.begin(), canonical_expected.end());
 
-        REQUIRE(canonical_matches.size() == canonical_expected.size());
-        for (usize i = 0; i < canonical_expected.size(); i++) {
-            REQUIRE(canonical_matches[i] == canonical_expected[i]);
+        if (!allow_additional_matches) {
+            REQUIRE(canonical_matches.size() == canonical_expected.size());
+            for (usize i = 0; i < canonical_expected.size(); i++) {
+                REQUIRE(canonical_matches[i] == canonical_expected[i]);
+            }
+        } else {
+            REQUIRE(canonical_matches.size() >= canonical_expected.size());
+            for (const auto &p1 : canonical_expected) {
+                bool found = false;
+                for (const auto &p2 : canonical_matches) {
+                    if (p1 == p2) {
+                        found = true;
+                        break;
+                    }
+                }
+                REQUIRE(found);
+            }
         }
     };
 
@@ -365,11 +379,13 @@ TEST_CASE("Pathname Expansion") {
                                         });
     }
     SUBCASE("wildcard at start") {
-        CheckMatches({"*/*.*"}, {
-                                    "sandbox/file1.wav",
-                                    "sandbox/file2.wav",
-                                    "sandbox/file3.wav",
-                                    "sandbox/foo.wav",
-                                });
+        CheckMatches({"*/*.*"},
+                     {
+                         "sandbox/file1.wav",
+                         "sandbox/file2.wav",
+                         "sandbox/file3.wav",
+                         "sandbox/foo.wav",
+                     },
+                     true);
     }
 }

@@ -18,6 +18,11 @@ CLI::App *SampleBlendCommand::CreateCommandCLI(CLI::App &app) {
         "sample-blend",
         R"aa(Creates samples in between other samples that are different pitches. It takes 2 samples and generates a set of samples in between them at a given semitone interval. Each generated sample is a different blend of the 2 base samples, tuned to match each other. This tool is useful when you have a multi-sampled instrument that was sampled only at large intervals; such as every octave. This tool can be used to create an instrument that sounds like it was sampled at smaller intervals.)aa");
 
+    cli->footer(R"aa(Examples:
+  signet Clav_40.wav Clav_52.wav sample-blend "Clav_.*(40|52).*" 2 "Clavout_<root-num>"
+  signet Clav_*.wav sample-blend "Clav_.*(\d+).*" 2 "Clavout_<root-num>"
+  signet sustain_sample_*.flac sample-blend --make-same-length "sustain_sample_(\d+).flac" 1 "sustain_sample_<root-num>")aa");
+
     cli->add_option("root_note_regex", m_regex,
                     "Regex pattern containing 1 group that is to match the root note")
         ->required();

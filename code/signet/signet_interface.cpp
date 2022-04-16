@@ -162,8 +162,15 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 // brackets. In order for them to show up nicely in the markdown, we wrap them in ` characters
                 // to make them markdown 'code'.
                 std::string result {};
+                bool inside_code_block = false;
                 for (auto l : Split(markdown, "\n", true)) {
-                    result += std::regex_replace(std::string(l), std::regex("<[\\w-]+>"), "`$&`") + "\n";
+                    if (Contains(l, "```")) inside_code_block = !inside_code_block;
+                    if (!inside_code_block) {
+                        result +=
+                            std::regex_replace(std::string(l), std::regex("<[a-z0-9-]{2,}>"), "`$&`") + "\n";
+                    } else {
+                        result += std::string(l) + "\n";
+                    }
                 }
                 return result;
             };

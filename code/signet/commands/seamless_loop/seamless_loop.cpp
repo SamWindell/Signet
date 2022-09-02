@@ -10,7 +10,7 @@
 CLI::App *SeamlessLoopCommand::CreateCommandCLI(CLI::App &app) {
     auto looper = app.add_subcommand(
         "seamless-loop",
-        "Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, the algorithm will trim the file down to the smallest possible seamless-sounding loop, which starts and ends on a zero crossings. If you specify a non-zero crossfade-percent, the given percentage of audio from the start of the file will be faded onto the end of the file. Due to this overlap, the resulting file is shorter.");
+        "Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, the algorithm will trim the file down to the smallest possible seamless-sounding loop, which starts and ends on a zero crossings. Useful if you have samples that you know are regularly repeating (for example a synth sawtooth). If you specify a non-zero crossfade-percent, the given percentage of audio from the start of the file will be faded onto the end of the file. Due to this overlap, the resulting file is shorter.");
     looper
         ->add_option(
             "crossfade-percent", m_crossfade_percent,

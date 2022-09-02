@@ -14,6 +14,8 @@ enum class AudioFileFormat {
     Flac,
 };
 
+bool ApproxEqual(double a, double b, double epsilon);
+
 struct AudioData {
     std::vector<double> interleaved_samples {};
     unsigned num_channels {};

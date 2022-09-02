@@ -170,7 +170,7 @@ static std::optional<double> DetectSinglePitch(const AudioData &audio) {
     return std::nullopt;
 }
 
-static bool ApproxEqual(double a, double b, double epsilon) {
+bool ApproxEqual(double a, double b, double epsilon) {
     return a > (b - epsilon / 2) && a < (b + epsilon / 2);
 }
 

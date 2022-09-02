@@ -83,7 +83,7 @@ void MessageWithNewLine(std::string_view heading,
 }
 
 template <typename... Args>
-void DebugWithNewLine(std::string_view format, Args &&...args) {
+void DebugWithNewLine([[maybe_unused]] std::string_view format, [[maybe_unused]] Args &&...args) {
 #if SIGNET_DEBUG
     PrintDebugPrefix();
     fmt::vprint(format, fmt::make_format_args(args...));

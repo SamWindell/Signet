@@ -10,10 +10,11 @@
 CLI::App *SeamlessLoopCommand::CreateCommandCLI(CLI::App &app) {
     auto looper = app.add_subcommand(
         "seamless-loop",
-        "Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.");
+        "Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, the algorithm will trim the file down to the smallest possible seamless-sounding loop, which starts and ends on a zero crossings. If you specify a non-zero crossfade-percent, the given percentage of audio from the start of the file will be faded onto the end of the file. Due to this overlap, the resulting file is shorter.");
     looper
-        ->add_option("crossfade-percent", m_crossfade_percent,
-                     "The size of the crossfade region as a percent of the whole file.")
+        ->add_option(
+            "crossfade-percent", m_crossfade_percent,
+            "The size of the crossfade region as a percent of the whole file. If this is zero then the algorithm will scan the file for the smallest possible loop, starting and ending on zero-crossings, and trim the file to that be that loop.")
         ->required()
         ->check(CLI::Range(0, 100));
     return looper;
@@ -48,13 +49,17 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
         } else {
             auto &audio = f.GetAudio();
 
-            constexpr double short_similarity_scan_frames = 20;
+            // With this algorithm, we scan the file in small chunks. We do this using 2 scan windows. In each
+            // window we find the best zero-crossing and then check how the audio will play if it were to
+            // seamlessly loop from these 2 zero-crossings.
+            constexpr double chunk_length_ms = 60;
+            const size_t chunk_size = (size_t)(audio.sample_rate * (chunk_length_ms / 1000.0));
+
+            // The scan the after each of the zero-crossings that we find. Here we specify the length of that
+            // scan. See the "Stage 2" comment below for more info.
             constexpr double similarity_scan_length_ms = 35;
             const size_t similarity_scan_length_frames =
                 (size_t)(audio.sample_rate * (similarity_scan_length_ms / 1000.0));
-
-            constexpr double chunk_length_ms = 60;
-            const size_t chunk_size = (size_t)(audio.sample_rate * (chunk_length_ms / 1000.0));
 
             if (chunk_size > audio.NumFrames())
                 WarningWithNewLine(GetName(), f.GetPath(), "File is too short to process");
@@ -88,6 +93,14 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
                     if ((start_zcross + similarity_scan_length_frames) > end_zcross) continue;
                     if ((audio.NumFrames() - end_pos) < similarity_scan_length_frames) continue;
 
+                    // Stage 1: We check a small number of frames at the start/end. When the sample is played
+                    // as a seamless loop these will be the first samples that make up the transition.
+                    // Therefore it is important that the match is really strong. So here we check for a
+                    // strong match, and if not, we bail.
+
+                    constexpr double short_similarity_scan_frames = 20;
+                    assert(short_similarity_scan_frames <= similarity_scan_length_frames);
+
                     bool loop_point_is_incredibly_similar = true;
                     for (size_t i = 0; i < short_similarity_scan_frames * audio.num_channels; ++i) {
                         auto &samples = audio.interleaved_samples;
@@ -99,6 +112,10 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
                     }
 
                     if (!loop_point_is_incredibly_similar) break;
+
+                    // Stage 2: We check a longer region for similarity. We give the strength of the match a
+                    // percentage and store it in a buffer, so that later on we can pick the region that has
+                    // the greatest match.
 
                     size_t num_samples_equal = 0;
                     for (size_t i = 0; i < similarity_scan_length_frames * audio.num_channels; ++i) {
@@ -121,8 +138,9 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
             if (!matches.size() || matches[0].percent_match < 60)
                 WarningWithNewLine(GetName(), f.GetPath(), "Failed to find a seamless loop");
 
-            MessageWithNewLine(GetName(), f.GetPath(), "Found a seamless loop of length {}",
-                               matches[0].end_frame - matches[0].start_frame);
+            MessageWithNewLine(GetName(), f.GetPath(), "Found a seamless loop of length {:.2f} seconds",
+                               (double)(matches[0].end_frame - matches[0].start_frame) /
+                                   (double)audio.sample_rate);
 
             auto &writable_audio = f.GetWritableAudio();
             auto &samples = writable_audio.interleaved_samples;

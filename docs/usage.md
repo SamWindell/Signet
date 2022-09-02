@@ -353,14 +353,14 @@ The threshold in decibels to which anything under it should be considered silenc
 
 ## :sound: seamless-loop
 ### Description:
-Turns the file(s) into seamless loops by crossfading a given percentage of audio from the start of the file to the end of the file. Due to this overlap, the resulting file is shorter.
+Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, the algorithm will trim the file down to the smallest possible seamless-sounding loop, which starts and ends on a zero crossings. If you specify a non-zero crossfade-percent, the given percentage of audio from the start of the file will be faded onto the end of the file. Due to this overlap, the resulting file is shorter.
 
 ### Usage:
   `seamless-loop` `crossfade-percent`
 
 ### Arguments:
 `crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
-The size of the crossfade region as a percent of the whole file.
+The size of the crossfade region as a percent of the whole file. If this is zero then the algorithm will scan the file for the smallest possible loop, starting and ending on zero-crossings, and trim the file to that be that loop.
 
 ## :sound: trim
 ### Description:

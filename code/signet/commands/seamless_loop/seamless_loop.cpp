@@ -57,7 +57,7 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
 
             // The scan the after each of the zero-crossings that we find. Here we specify the length of that
             // scan. See the "Stage 2" comment below for more info.
-            constexpr double similarity_scan_length_ms = 35;
+            constexpr double similarity_scan_length_ms = 59;
             const size_t similarity_scan_length_frames =
                 (size_t)(audio.sample_rate * (similarity_scan_length_ms / 1000.0));
 
@@ -90,15 +90,15 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
                                             end_pos;
                     assert(ApproxEqual(audio.interleaved_samples[end_zcross * audio.num_channels], 0, 0.2));
 
-                    if ((start_zcross + similarity_scan_length_frames) > end_zcross) continue;
-                    if ((audio.NumFrames() - end_pos) < similarity_scan_length_frames) continue;
+                    // if ((start_zcross + similarity_scan_length_frames) > end_zcross) continue;
+                    if ((end_zcross + similarity_scan_length_frames) > audio.NumFrames()) continue;
 
                     // Stage 1: We check a small number of frames at the start/end. When the sample is played
                     // as a seamless loop these will be the first samples that make up the transition.
                     // Therefore it is important that the match is really strong. So here we check for a
                     // strong match, and if not, we bail.
 
-                    constexpr double short_similarity_scan_frames = 20;
+                    constexpr double short_similarity_scan_frames = 10;
                     assert(short_similarity_scan_frames <= similarity_scan_length_frames);
 
                     bool loop_point_is_incredibly_similar = true;
@@ -121,7 +121,7 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
                     for (size_t i = 0; i < similarity_scan_length_frames * audio.num_channels; ++i) {
                         auto &samples = audio.interleaved_samples;
                         if (ApproxEqual(samples[start_zcross * audio.num_channels + i],
-                                        samples[end_zcross * audio.num_channels + i], 0.2))
+                                        samples[end_zcross * audio.num_channels + i], 0.14))
                             ++num_samples_equal;
                     }
                     const double num_frames_equal = (double)num_samples_equal / audio.num_channels;
@@ -132,29 +132,38 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
                 }
             }
 
-            std::sort(matches.begin(), matches.end(),
-                      [](const Match &a, const Match &b) { return a.percent_match < b.percent_match; });
+            std::sort(matches.begin(), matches.end(), [](const Match &a, const Match &b) {
+                if (a.percent_match > 99 && b.percent_match > 99) {
+                    // If they're incredibly strong matches, go for the one that's shorter.
+                    return (a.end_frame - a.start_frame) > (b.end_frame - b.start_frame);
+                }
+                return a.percent_match > b.percent_match;
+            });
 
-            if (!matches.size() || matches[0].percent_match < 60)
-                WarningWithNewLine(GetName(), f.GetPath(), "Failed to find a seamless loop");
+            if (!matches.size()) WarningWithNewLine(GetName(), f.GetPath(), "Failed to find a seamless loop");
 
-            MessageWithNewLine(GetName(), f.GetPath(), "Found a seamless loop of length {:.2f} seconds",
-                               (double)(matches[0].end_frame - matches[0].start_frame) /
-                                   (double)audio.sample_rate);
+            auto best_match = matches[0];
+            if (best_match.percent_match < 70)
+                WarningWithNewLine(GetName(), f.GetPath(),
+                                   "Failed to find a seamless loop; the best match is {:.1f}%",
+                                   best_match.percent_match);
+
+            MessageWithNewLine(GetName(), f.GetPath(),
+                               "Found a seamless loop of length {:.2f} seconds, with {:.0f}% certainty",
+                               (double)(best_match.end_frame - best_match.start_frame) /
+                                   (double)audio.sample_rate,
+                               best_match.percent_match);
 
             auto &writable_audio = f.GetWritableAudio();
             auto &samples = writable_audio.interleaved_samples;
-            auto best_match = matches[0];
 
             assert(ApproxEqual(samples[best_match.start_frame * audio.num_channels], 0, 0.2));
             assert(ApproxEqual(samples[best_match.end_frame * audio.num_channels], 0, 0.2));
 
-            samples.erase(samples.begin(), samples.begin() + best_match.start_frame * audio.num_channels);
+            samples.erase(samples.begin(), samples.begin() + (best_match.start_frame * audio.num_channels));
             writable_audio.FramesWereRemovedFromStart(best_match.start_frame);
 
-            samples.erase(samples.begin() +
-                              (best_match.end_frame - best_match.start_frame) * audio.num_channels,
-                          samples.end());
+            samples.resize((best_match.end_frame - best_match.start_frame) * audio.num_channels);
             writable_audio.FramesWereRemovedFromEnd();
         }
     }

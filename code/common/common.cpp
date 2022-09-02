@@ -121,6 +121,7 @@ FILE *OpenFileRaw(const fs::path &path, const char *mode, std::error_code *ec_ou
     FILE *f;
     std::array<wchar_t, 8> wchar_mode {};
     for (size_t i = 0; i < wchar_mode.size() - 1; ++i) {
+        // TODO: fix this - I'm pretty sure this is not valid ascii to UTF-16 conversion.
         wchar_mode[i] = mode[i];
         if (mode[i] == '\0') break;
     }

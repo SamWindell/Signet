@@ -20,7 +20,6 @@ ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(const tcb::span<const dou
             index_of_min = frame;
         }
     }
-    MessageWithNewLine(GetNameInternal(), {}, "Best zero-crossing range is {}", minimum_range);
     return index_of_min;
 }
 

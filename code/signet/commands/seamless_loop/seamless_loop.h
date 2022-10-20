@@ -10,4 +10,5 @@ class SeamlessLoopCommand final : public Command {
 
   private:
     double m_crossfade_percent;
+    double m_strictness_percent = 50;
 };

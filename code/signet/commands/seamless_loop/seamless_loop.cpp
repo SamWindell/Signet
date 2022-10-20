@@ -4,6 +4,7 @@
 
 #include "commands/fade/fade.h"
 #include "commands/zcross_offset/zcross_offset.h"
+#include "common.h"
 #include "test_helpers.h"
 #include "tests_config.h"
 
@@ -17,6 +18,11 @@ CLI::App *SeamlessLoopCommand::CreateCommandCLI(CLI::App &app) {
             "The size of the crossfade region as a percent of the whole file. If this is zero then the algorithm will scan the file for the smallest possible loop, starting and ending on zero-crossings, and trim the file to that be that loop.")
         ->required()
         ->check(CLI::Range(0, 100));
+    looper
+        ->add_option(
+            "strictness-percent", m_strictness_percent,
+            "How strict should the algorithm be when detecting loops when you specify 0 for crossfade-percent. Has no use if crossfade-percent is non-zero. Default is 50.")
+        ->check(CLI::Range(1, 100));
     return looper;
 }
 
@@ -53,7 +59,7 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
             // window we find the best zero-crossing and then check how the audio will play if it were to
             // seamlessly loop from these 2 zero-crossings.
             constexpr double chunk_length_ms = 60;
-            const size_t chunk_size = (size_t)(audio.sample_rate * (chunk_length_ms / 1000.0));
+            const size_t chunk_frames = (size_t)(audio.sample_rate * (chunk_length_ms / 1000.0));
 
             // The scan the after each of the zero-crossings that we find. Here we specify the length of that
             // scan. See the "Stage 2" comment below for more info.
@@ -61,7 +67,7 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
             const size_t similarity_scan_length_frames =
                 (size_t)(audio.sample_rate * (similarity_scan_length_ms / 1000.0));
 
-            if (chunk_size > audio.NumFrames())
+            if (chunk_frames > audio.NumFrames())
                 WarningWithNewLine(GetName(), f.GetPath(), "File is too short to process");
 
             bool performed_seamless_loop = false;
@@ -72,46 +78,60 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
             };
             std::vector<Match> matches;
 
-            for (size_t pos = 0; pos < audio.NumFrames(); pos += chunk_size) {
-                const auto start_region =
-                    tcb::span<const double> {audio.interleaved_samples}.subspan(pos * audio.num_channels);
-                const auto start_zcross =
+            for (size_t start_frame = 0; start_frame < audio.NumFrames(); start_frame += chunk_frames) {
+                const auto start_region = tcb::span<const double> {audio.interleaved_samples}.subspan(
+                    start_frame * audio.num_channels);
+                const auto start_zcross_frame =
                     ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(
-                        start_region, std::min(audio.NumFrames() - pos, chunk_size), audio.num_channels) +
-                    pos;
-                assert(ApproxEqual(audio.interleaved_samples[start_zcross * audio.num_channels], 0, 0.2));
+                        start_region, std::min(audio.NumFrames() - start_frame, chunk_frames),
+                        audio.num_channels) +
+                    start_frame;
 
-                for (size_t end_pos = pos + chunk_size; end_pos < audio.NumFrames(); end_pos += chunk_size) {
+                if (!ApproxEqual(audio.interleaved_samples[start_zcross_frame * audio.num_channels], 0, 0.2))
+                    continue;
+
+                for (size_t end_frame = start_frame + chunk_frames; end_frame < audio.NumFrames();
+                     end_frame += chunk_frames) {
                     const auto end_region = tcb::span<const double> {audio.interleaved_samples}.subspan(
-                        end_pos * audio.num_channels);
-                    const auto end_zcross = ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(
-                                                end_region, std::min(audio.NumFrames() - end_pos, chunk_size),
-                                                audio.num_channels) +
-                                            end_pos;
-                    assert(ApproxEqual(audio.interleaved_samples[end_zcross * audio.num_channels], 0, 0.2));
+                        end_frame * audio.num_channels);
+                    const auto end_region_num_frames = std::min(audio.NumFrames() - end_frame, chunk_frames);
+                    const auto end_zcross_frame = ZeroCrossOffsetCommand::FindFrameNearestToZeroInBuffer(
+                                                      end_region, end_region_num_frames, audio.num_channels) +
+                                                  end_frame;
 
-                    // if ((start_zcross + similarity_scan_length_frames) > end_zcross) continue;
-                    if ((end_zcross + similarity_scan_length_frames) > audio.NumFrames()) continue;
+                    if (!ApproxEqual(audio.interleaved_samples[end_zcross_frame * audio.num_channels], 0,
+                                     0.2))
+                        continue;
+
+                    if ((end_zcross_frame + similarity_scan_length_frames) > audio.NumFrames()) continue;
+
+                    if ((end_zcross_frame - start_zcross_frame) < (chunk_frames / 4)) continue;
 
                     // Stage 1: We check a small number of frames at the start/end. When the sample is played
                     // as a seamless loop these will be the first samples that make up the transition.
                     // Therefore it is important that the match is really strong. So here we check for a
                     // strong match, and if not, we bail.
 
-                    constexpr double short_similarity_scan_frames = 10;
+                    constexpr double short_similarity_scan_ms = 0.227;
+                    const double short_similarity_scan_frames =
+                        audio.sample_rate * (short_similarity_scan_ms / 1000.0);
+                    DebugWithNewLine("short_similarity_scan_frames is {}", short_similarity_scan_frames);
                     assert(short_similarity_scan_frames <= similarity_scan_length_frames);
+
+                    const auto equality_epsilon = (100 - m_strictness_percent) * 0.001;
 
                     bool loop_point_is_incredibly_similar = true;
                     for (size_t i = 0; i < short_similarity_scan_frames * audio.num_channels; ++i) {
                         auto &samples = audio.interleaved_samples;
-                        if (!ApproxEqual(samples[start_zcross * audio.num_channels + i],
-                                         samples[end_zcross * audio.num_channels + i], 0.05)) {
+                        if (!ApproxEqual(samples[start_zcross_frame * audio.num_channels + i],
+                                         samples[end_zcross_frame * audio.num_channels + i],
+                                         equality_epsilon)) {
                             loop_point_is_incredibly_similar = false;
                             break;
                         }
                     }
 
-                    if (!loop_point_is_incredibly_similar) break;
+                    if (!loop_point_is_incredibly_similar) continue;
 
                     // Stage 2: We check a longer region for similarity. We give the strength of the match a
                     // percentage and store it in a buffer, so that later on we can pick the region that has
@@ -120,15 +140,15 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
                     size_t num_samples_equal = 0;
                     for (size_t i = 0; i < similarity_scan_length_frames * audio.num_channels; ++i) {
                         auto &samples = audio.interleaved_samples;
-                        if (ApproxEqual(samples[start_zcross * audio.num_channels + i],
-                                        samples[end_zcross * audio.num_channels + i], 0.14))
+                        if (ApproxEqual(samples[start_zcross_frame * audio.num_channels + i],
+                                        samples[end_zcross_frame * audio.num_channels + i], 0.14))
                             ++num_samples_equal;
                     }
                     const double num_frames_equal = (double)num_samples_equal / audio.num_channels;
 
                     const auto percent_equal =
                         (num_frames_equal / (double)similarity_scan_length_frames) * 100.0;
-                    matches.push_back({percent_equal, start_zcross, end_zcross});
+                    matches.push_back({percent_equal, start_zcross_frame, end_zcross_frame});
                 }
             }
 
@@ -143,16 +163,26 @@ void SeamlessLoopCommand::ProcessFiles(AudioFiles &files) {
             if (!matches.size()) WarningWithNewLine(GetName(), f.GetPath(), "Failed to find a seamless loop");
 
             auto best_match = matches[0];
-            if (best_match.percent_match < 70)
+            if (best_match.percent_match < 70) {
                 WarningWithNewLine(GetName(), f.GetPath(),
                                    "Failed to find a seamless loop; the best match is {:.1f}%",
                                    best_match.percent_match);
+                continue;
+            }
+
+            const auto best_match_seconds =
+                (double)(best_match.end_frame - best_match.start_frame) / (double)audio.sample_rate;
+
+            if (best_match_seconds < 0.001) {
+                WarningWithNewLine(GetName(), f.GetPath(),
+                                   "The seamless loop is too short, it's only {:.4f} seconds",
+                                   best_match_seconds);
+                continue;
+            }
 
             MessageWithNewLine(GetName(), f.GetPath(),
                                "Found a seamless loop of length {:.2f} seconds, with {:.0f}% certainty",
-                               (double)(best_match.end_frame - best_match.start_frame) /
-                                   (double)audio.sample_rate,
-                               best_match.percent_match);
+                               best_match_seconds, best_match.percent_match);
 
             auto &writable_audio = f.GetWritableAudio();
             auto &samples = writable_audio.interleaved_samples;

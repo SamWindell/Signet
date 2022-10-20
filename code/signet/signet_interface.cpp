@@ -221,7 +221,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         "--silent", []() { g_messages_enabled = false; }, "Disable all messages");
 
     app.add_flag_callback(
-        "--warnings-are-errors", [this]() { g_warnings_as_errors = true; },
+        "--warnings-are-errors", []() { g_warnings_as_errors = true; },
         "Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.");
 
     app.add_flag("--recursive", m_recursive_directory_search,

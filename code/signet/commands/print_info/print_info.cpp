@@ -36,6 +36,9 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
 
         info_text += fmt::format("Channels: {}\n", f.GetAudio().num_channels);
         info_text += fmt::format("Sample Rate: {}\n", f.GetAudio().sample_rate);
+        info_text += fmt::format("Frames: {}\n", f.GetAudio().NumFrames());
+        info_text += fmt::format("Length: {:.2f} seconds\n",
+                                 (double)f.GetAudio().NumFrames() / (double)f.GetAudio().sample_rate);
         info_text += fmt::format("Bit-depth: {}\n", f.GetAudio().bits_per_sample);
         info_text += fmt::format("RMS: {:.5f} dB\n", AmpToDB(GetRMS(f.GetAudio().interleaved_samples)));
         info_text += fmt::format("Peak: {:.5f} dB\n", AmpToDB(GetPeak(f.GetAudio().interleaved_samples)));

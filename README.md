@@ -31,7 +31,7 @@ Signet is not exclusively useful for sample library development though. The edit
 
 This tool is currently in-development. There are no guarantees that the commands will stay the same, or that the tools will continue to function in the same way.
 
-I'm a full-time audio plugin and sample library developer. I created this tool to improve and speed-up my workflow. I'm happy to take bug reports and provide Signet-support. If you would like substantial custom features, I'm available to hire to help speed up your workflow too! Please get in touch.
+I'm an [audio plugin and sample library developer](https://frozenplain.com). I created this tool to improve and speed-up my workflow. I'm happy to take bug reports and provide Signet-support. However, if you would like substantial custom features let me know, I may be available to hire.
 
 ## Limitations
 Currently only supports reading and writing WAV and FLAC files.

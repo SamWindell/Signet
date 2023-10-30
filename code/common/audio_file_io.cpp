@@ -1246,7 +1246,7 @@ TEST_CASE("[AudioData]") {
         for (const auto &s : setups) {
             for (const auto bit_depth : s.valid_bit_depths) {
                 CAPTURE(bit_depth);
-                for (const auto sample_rate : {44100u, 96000u, 192000u}) {
+                for (const auto sample_rate : {44100u, 48000u, 96000u, 192000u}) {
                     const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, sample_rate, 1, 440);
                     CAPTURE(sample_rate);
                     const fs::path filename = "test_sine_440" + s.ext;
@@ -1422,6 +1422,24 @@ TEST_CASE("[AudioData]") {
             auto out_f = ReadAudioFile(out_filename);
             REQUIRE(out_f);
             REQUIRE(out_f->flac_metadata.size() >= 1);
+        }
+    }
+
+    SUBCASE("read and write wav files with large sample rates") {
+        struct Setup {
+            fs::path path;
+            unsigned int sample_rate;
+        };
+        const Setup setup[] = {{TEST_DATA_DIRECTORY "/test_96khz_24bit.wav", 96000u},
+                               {TEST_DATA_DIRECTORY "/test_192khz_24bit.wav", 192000u}};
+        for (const auto &s : setup) {
+            auto f = ReadAudioFile(s.path);
+            REQUIRE(f);
+            REQUIRE(f->sample_rate == s.sample_rate);
+            const fs::path out_path = "test_write_large_sample_rate.wav";
+            REQUIRE(WriteAudioFile(out_path, f.value(), 24));
+            REQUIRE(fs::is_regular_file(out_path));
+            REQUIRE(fs::file_size(out_path) > 100);
         }
     }
 }

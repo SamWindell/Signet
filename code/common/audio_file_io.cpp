@@ -1237,24 +1237,23 @@ TEST_CASE("[AudioData]") {
         }
     }
 
-    SUBCASE("writing and reading all bitdepths") {
-        const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, 44100, 1, 440);
-        SUBCASE("wave") {
-            for (const auto bit_depth : valid_wave_bit_depths) {
+    SUBCASE("writing and reading all bitdepths and sample-rates") {
+        struct Setup {
+            std::string ext;
+            tcb::span<const unsigned int> valid_bit_depths;
+        };
+        const Setup setups[2] = {{".wav", valid_wave_bit_depths}, {".flac", valid_flac_bit_depths}};
+        for (const auto &s : setups) {
+            for (const auto bit_depth : s.valid_bit_depths) {
                 CAPTURE(bit_depth);
-                const fs::path filename = "test_sine_440.wav";
-                REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
-                REQUIRE(fs::is_regular_file(filename));
-                REQUIRE(ReadAudioFile(filename));
-            }
-        }
-        SUBCASE("flac") {
-            for (const auto bit_depth : valid_flac_bit_depths) {
-                CAPTURE(bit_depth);
-                const fs::path filename = "test_sine_440.flac";
-                REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
-                REQUIRE(fs::is_regular_file(filename));
-                REQUIRE(ReadAudioFile(filename));
+                for (const auto sample_rate : {44100u, 96000u, 192000u}) {
+                    const auto sine_wave_440 = TestHelpers::CreateSineWaveAtFrequency(2, sample_rate, 1, 440);
+                    CAPTURE(sample_rate);
+                    const fs::path filename = "test_sine_440" + s.ext;
+                    REQUIRE(WriteAudioFile(filename, sine_wave_440, bit_depth));
+                    REQUIRE(fs::is_regular_file(filename));
+                    REQUIRE(ReadAudioFile(filename));
+                }
             }
         }
     }

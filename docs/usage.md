@@ -134,8 +134,8 @@ This would find the digits after the text '-note-' in the filename and interpret
 ```
   signet file.wav auto-tune
   signet sample-* auto-tune --sample-sets ".*(close|room|ambient).*" "close"
-  signet sample-*.wav auto --authority-file "sample-close"
-  signet piano-root-*-*.wav auto --expected-note "piano-root-(\d+)-.*"
+  signet sample-*.wav auto-tune --authority-file "sample-close"
+  signet piano-root-*-*.wav auto-tune --expected-note "piano-root-(\d+)-.*"
 ```
 
 ## :sound: fade

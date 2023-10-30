@@ -4,6 +4,7 @@ project(Signet VERSION 0.1.4)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+set(CMAKE_ENABLE_EXPORTS ON)
 
 option(DEPLOYMENT_BUILD "A build for deployment to end-users" NO)
 option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)
@@ -59,29 +60,29 @@ add_library(
     code/common/audio_file_io.cpp
     code/common/audio_files.cpp
     code/common/backup.cpp
-    code/common/expected_midi_pitch.cpp
-    code/common/drwav_tests.cpp
     code/common/common.cpp
+    code/common/drwav_tests.cpp
+    code/common/expected_midi_pitch.cpp
     code/common/filepath_set.cpp
     code/common/filter.cpp
     code/common/gain_calculators.cpp
+    code/common/identical_processing_set.cpp
     code/common/midi_pitches.cpp
     code/common/string_utils.cpp
-    code/common/identical_processing_set.cpp
     code/signet/commands/auto_tune/auto_tune.cpp
     code/signet/commands/convert/convert.cpp
     code/signet/commands/detect_pitch/detect_pitch.cpp
     code/signet/commands/embed_sampler_info/embed_sampler_info.cpp
     code/signet/commands/fade/fade.cpp
     code/signet/commands/filter/filters.cpp
+    code/signet/commands/fix_pitch_drift/fix_pitch_drift_command.cpp
+    code/signet/commands/fix_pitch_drift/pitch_drift_corrector.cpp
     code/signet/commands/folderise/folderise.cpp
     code/signet/commands/gain/gain.cpp
     code/signet/commands/move/move.cpp
     code/signet/commands/normalise/normalise.cpp
     code/signet/commands/pan/pan.cpp
     code/signet/commands/print_info/print_info.cpp
-    code/signet/commands/fix_pitch_drift/fix_pitch_drift_command.cpp
-    code/signet/commands/fix_pitch_drift/pitch_drift_corrector.cpp
     code/signet/commands/remove_silence/remove_silence.cpp
     code/signet/commands/rename/auto_mapper.cpp
     code/signet/commands/rename/note_to_midi.cpp
@@ -93,10 +94,12 @@ add_library(
     code/signet/commands/tune/tune.cpp
     code/signet/commands/zcross_offset/zcross_offset.cpp
     code/signet/signet_interface.cpp
-    code/tests/test_helpers.cpp)
+    code/tests/test_helpers.cpp
+    code/third_party_libs/backward.cpp)
 
 target_include_directories(common PUBLIC code/third_party_libs code/common code/tests code/signet)
 target_compile_definitions(common PUBLIC NOMINMAX DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+
 # set_target_properties(common PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS YES)
 target_precompile_headers(
     common
@@ -173,7 +176,7 @@ add_custom_command(
     TARGET signet
     POST_BUILD
     COMMAND signet make-docs ${PROJECT_SOURCE_DIR}/docs/usage.md)
-    
+
 install(TARGETS signet RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 # Tests

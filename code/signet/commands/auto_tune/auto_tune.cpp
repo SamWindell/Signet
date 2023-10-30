@@ -18,8 +18,8 @@ CLI::App *AutoTuneCommand::CreateCommandCLI(CLI::App &app) {
     auto_tune->footer(R"aa(Examples:
   signet file.wav auto-tune
   signet sample-* auto-tune --sample-sets ".*(close|room|ambient).*" "close"
-  signet sample-*.wav auto --authority-file "sample-close"
-  signet piano-root-*-*.wav auto --expected-note "piano-root-(\d+)-.*")aa");
+  signet sample-*.wav auto-tune --authority-file "sample-close"
+  signet piano-root-*-*.wav auto-tune --expected-note "piano-root-(\d+)-.*")aa");
 
     m_identical_processing_set.AddCli(*auto_tune);
     m_expected_midi_pitch.AddCli(*auto_tune, true);

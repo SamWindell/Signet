@@ -4,6 +4,10 @@ There are experimental binaries available for the Windows, Linux and Mac version
 
 Changes:
 
+0.1.5:
+- Prints a stack trace when a fatal error occurs
+- Build universal binaries on macOS
+
 0.1.4:
 - print-info now shows peak meter info (dB) and length (seconds)
 - Fix crash caused by having a wildcard at the start of the glob as well as a slash

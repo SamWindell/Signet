@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.16.0)
-project(Signet VERSION 0.1.4)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 set(CMAKE_ENABLE_EXPORTS ON)
+set(CMAKE_OSX_ARCHITECTURES
+    "x86_64;arm64"
+    CACHE STRING "Build universal binary")
+
+project(Signet VERSION 0.1.4)
 
 option(DEPLOYMENT_BUILD "A build for deployment to end-users" NO)
 option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)

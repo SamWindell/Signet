@@ -1,4 +1,13 @@
+There are experimental binaries available for the Windows, Linux and Mac versions of Signet. These can be found in the assets section of this Github release. Just download and extract the file to start using it.
+
+**Note for macOS**: The macOS version is not codesigned or notarized. The first time you use Signet you will need to right click it, and select "open".
+
 Changes:
+
+0.1.4:
+- print-info now shows peak meter info (dB) and length (seconds)
+- Fix crash caused by having a wildcard at the start of the glob as well as a slash
+- Add a mode to seamless-loop that can make a loop without using crossfades: this is used when the crossfade-size is 0. See seamless-loop documentation for more info.
 
 0.1.3:
 - Add --independent-channels and --mix-channels to norm command
@@ -22,7 +31,3 @@ Changes:
 - Add --warnings-are-errors to require Signet to exit if any warning is issued
 - Add option to norm to normalise each channel independently
 - Fix-pitch-drift: add --expected-note, so as to only correct drift if the detected pitch is as expected
-
-There are experimental binaries available for the Windows, Linux and Mac versions of Signet. These can be found in the assets section of this Github release. Just download and extract the file to start using it.
-
-In all likelihood, **the Mac version will not run** due to it not being codesigned or notarized. Deploying software on Mac often requires these extra steps.

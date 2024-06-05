@@ -80,7 +80,7 @@ void ConvertCommand::ProcessFiles(AudioFiles &files) {
             const auto &audio = f.GetAudio();
             bool edited = false;
             if (m_bit_depth) {
-                MessageWithNewLine(GetName(), f, "Seting the bit rate from {} to {}", audio.bits_per_sample,
+                MessageWithNewLine(GetName(), f, "Setting the bit rate from {} to {}", audio.bits_per_sample,
                                    *m_bit_depth);
                 f.GetWritableAudio().bits_per_sample = *m_bit_depth;
                 edited = true;

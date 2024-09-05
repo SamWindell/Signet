@@ -37,12 +37,12 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: zip signet_linux signet
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: signet_linux.zip
         path: build/signet_linux.zip
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: RELEASE.md
         path: ./RELEASE.md
@@ -70,7 +70,7 @@ jobs:
       shell: bash
       run: zip signet_macos signet
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: signet_macos.zip
         path: build/signet_macos.zip
@@ -103,7 +103,7 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: 7z a signet_windows.zip signet.exe
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v4
       with:
         name: signet_windows.zip
         path: build/signet_windows.zip
@@ -113,7 +113,7 @@ jobs:
     needs: [create-linux-binary, create-windows-binary, create-macos-binary]
     steps:
     - name: Get Artifacts
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
 
     - name: Display structure of downloaded files
       run: ls -la

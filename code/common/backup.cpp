@@ -240,10 +240,7 @@ bool SignetBackup::CreateFile(const fs::path &path, const AudioData &data, bool 
     if (create_directories) {
         if (!CreateParentDirectories(path)) return false;
     }
-    if (fs::exists(path)) {
-        WarningWithNewLine("Signet", path, "Overwriting file; this may not be the expected behaviour");
-        return OverwriteFile(path, data);
-    }
+    if (fs::exists(path)) return OverwriteFile(path, data);
 
     MessageWithNewLine("Signet", path, "Creating file");
     if (!WriteFile(path, data)) return false;

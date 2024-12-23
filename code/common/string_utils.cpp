@@ -61,10 +61,9 @@ static bool NeedsRegexEscape(const char c) {
     return false;
 }
 
-bool WildcardMatch(std::string_view pattern, std::string_view name) {
+bool WildcardMatch(std::string_view pattern, std::string_view str, bool case_insensitive) {
     std::string re_pattern;
     re_pattern.reserve(pattern.size() * 2);
-
     for (usize i = 0; i < pattern.size(); ++i) {
         if (pattern[i] == '*') {
             if (i + 1 < pattern.size() && pattern[i + 1] == '*') {
@@ -81,8 +80,10 @@ bool WildcardMatch(std::string_view pattern, std::string_view name) {
         }
     }
 
-    const std::regex regex {re_pattern};
-    return std::regex_match(std::string(name), regex);
+    const std::regex regex {re_pattern, case_insensitive ? std::regex::ECMAScript | std::regex::icase
+                                                         : std::regex::ECMAScript};
+
+    return std::regex_match(std::string(str), regex);
 }
 
 std::string GetJustFilenameWithNoExtension(fs::path path) {
@@ -309,5 +310,13 @@ TEST_CASE("String Utils") {
         for (usize i = 0; i < s.size(); ++i) {
             REQUIRE(s[i] == expected.begin()[i]);
         }
+    }
+
+    // test case-insensitve wildcard match
+    {
+        CHECK(WildcardMatch("*.WAV", "file.wav", true));
+        CHECK(WildcardMatch("*.WAV", "file.WAV", true));
+        CHECK(WildcardMatch("*.WAV", "file.Wav", true));
+        CHECK(!WildcardMatch("*.WAV", "file.wav", false));
     }
 }

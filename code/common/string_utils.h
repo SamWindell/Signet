@@ -4,6 +4,7 @@
 #include <string_view>
 #include <vector>
 
+#include "defs.h"
 #include "filesystem.hpp"
 #include "types.h"
 
@@ -11,7 +12,9 @@ bool EndsWith(std::string_view str, std::string_view suffix);
 bool StartsWith(std::string_view str, std::string_view prefix);
 bool Contains(std::string_view haystack, std::string_view needle);
 
-bool WildcardMatch(std::string_view pattern, std::string_view name);
+bool WildcardMatch(std::string_view pattern,
+                   std::string_view str,
+                   bool case_insensitive = target_os != TargetOs::Linux);
 
 bool RegexReplace(std::string &str, std::string pattern, std::string replacement);
 bool Replace(std::string &str, std::string_view a, std::string_view b);

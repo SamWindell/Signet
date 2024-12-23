@@ -1,8 +1,13 @@
 There are experimental binaries available for the Windows, Linux and Mac versions of Signet. These can be found in the assets section of this Github release. Just download and extract the file to start using it.
 
-**Note for macOS**: The macOS version is not codesigned or notarized. The first time you use Signet you will need to right click it, and select "open".
+**Note for macOS**: The macOS version is not codesigned or notarized. The first time you use Signet you might need to right click it, and select "open".
 
 Changes:
+
+0.1.6:
+- Add --output-file option for specifying a single output file instead of overwriting the input file
+- Fix filepath case sensitivity issues on Window and macOS
+- Fix norm --rms when using --independent-channels
 
 0.1.5:
 - Prints a stack trace when a fatal error occurs

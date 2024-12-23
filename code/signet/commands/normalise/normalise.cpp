@@ -62,40 +62,37 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
 
     auto gain_calculator = MakeGainCalculator();
 
-    const auto GetMixedGain = [&]() {
+    bool normalising_independently = false;
+    if (files.Size() > 1 && !m_normalise_independently) {
+        for (auto &f : files) {
+            if (!gain_calculator->RegisterBufferMagnitudes(f.GetAudio(), {})) {
+                ErrorWithNewLine(
+                    GetName(), {},
+                    "Unable to perform normalisation because the common gain was not successfully found");
+                return;
+            }
+        }
+    } else {
+        normalising_independently = true;
+    }
+
+    const auto GetGain = [&](AudioData &audio) {
+        if (normalising_independently) {
+            gain_calculator->Reset();
+            gain_calculator->RegisterBufferMagnitudes(audio, {});
+        }
         return ScaleMultiplier(gain_calculator->GetGain(DBToAmp(m_target_decibels)),
                                m_norm_mix_percent / 100.0);
     };
 
-    bool use_common_gain = false;
-    if (files.Size() > 1 && !m_normalise_independently) {
-        use_common_gain = true;
-        for (auto &f : files) {
-            if (!gain_calculator->RegisterBufferMagnitudes(f.GetAudio(), {})) {
-                use_common_gain = false;
-                break;
-            }
-        }
-        if (!use_common_gain) {
-            ErrorWithNewLine(
-                GetName(), {},
-                "Unable to perform normalisation because the common gain was not successfully found");
-            return;
-        }
-    }
-
-    auto channels_gain_calculator = MakeGainCalculator();
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (!m_normalise_channels_separately) {
-            if (!use_common_gain) {
-                gain_calculator->Reset();
-                gain_calculator->RegisterBufferMagnitudes(audio, {});
-            }
-            const auto gain = GetMixedGain();
+            const auto gain = GetGain(audio);
             MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", gain);
             audio.MultiplyByScalar(gain);
         } else {
+            auto channels_gain_calculator = MakeGainCalculator();
             std::vector<double> channel_peaks;
             for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                 channels_gain_calculator->Reset();
@@ -104,11 +101,7 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
             }
             const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
 
-            if (!use_common_gain) {
-                gain_calculator->Reset();
-                gain_calculator->RegisterBufferMagnitudes(audio, {});
-            }
-            const auto gain = GetMixedGain();
+            const auto gain = GetGain(audio);
 
             for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                 auto channel_gain = gain * ScaleMultiplier(max_channel_gain / channel_peaks[chan],
@@ -159,6 +152,17 @@ TEST_CASE("NormaliseCommand") {
         CHECK(FindMaxSample(*out) == doctest::Approx(0.85).epsilon(0.1));
     }
 
+    SUBCASE("single file RMS") {
+        const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm -12 --rms", sine);
+        REQUIRE(out);
+        const auto currentPeak = 0.5;
+        const auto currentRms = currentPeak / std::sqrt(2);
+        const auto targetRms = DBToAmp(-12);
+        const auto scaling = targetRms / currentRms;
+        const auto newPeak = currentPeak * scaling;
+        CHECK(FindMaxSample(*out) == doctest::Approx(newPeak).epsilon(0.01));
+    }
+
     SUBCASE("multiple files common gain") {
         auto sine_half_vol = sine;
         auto sine_3_quarters_vol = sine;
@@ -194,6 +198,25 @@ TEST_CASE("NormaliseCommand") {
             CHECK(FindMaxSampleChannel(*outs[0], 1) == doctest::Approx(1.0));
             CHECK(FindMaxSampleChannel(*outs[1], 0) == doctest::Approx(1.0));
             CHECK(FindMaxSampleChannel(*outs[1], 1) == doctest::Approx(1.0));
+        }
+
+        SUBCASE("non-common with independent channels rms") {
+            const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
+                "norm -12 --independently --independent-channels --rms", {stereo_sine_a, stereo_sine_b});
+            for (const auto &out : outs) {
+                REQUIRE(out);
+            }
+
+            std::array<double, 4> max_samples;
+            max_samples[0] = FindMaxSampleChannel(*outs[0], 0);
+            max_samples[1] = FindMaxSampleChannel(*outs[0], 1);
+            max_samples[2] = FindMaxSampleChannel(*outs[1], 0);
+            max_samples[3] = FindMaxSampleChannel(*outs[1], 1);
+
+            // check that they are all approximately the same
+            for (size_t i = 1; i < max_samples.size(); ++i) {
+                CHECK(max_samples[i] == doctest::Approx(max_samples[0]).epsilon(0.01));
+            }
         }
 
         SUBCASE("common with independent channels") {

@@ -113,18 +113,23 @@ double GetFreqWithCentDifference(const double starting_hz, const double cents) {
     return starting_hz * multiplier;
 }
 
+#if _WIN32
+std::wstring ConvertUTF8ToUTF16(const char *utf8) {
+    const auto utf8_size = std::strlen(utf8);
+    const auto utf16_size = MultiByteToWideChar(CP_UTF8, 0, utf8, utf8_size, nullptr, 0);
+    std::wstring utf16(utf16_size, 0);
+    MultiByteToWideChar(CP_UTF8, 0, utf8, utf8_size, utf16.data(), utf16_size);
+    return utf16;
+}
+#endif
+
 FILE *OpenFileRaw(const fs::path &path, const char *mode, std::error_code *ec_out) {
     if (ec_out) *ec_out = {};
 
     int ec;
 #if _WIN32
     FILE *f;
-    std::array<wchar_t, 8> wchar_mode {};
-    for (size_t i = 0; i < wchar_mode.size() - 1; ++i) {
-        // TODO: fix this - I'm pretty sure this is not valid ascii to UTF-16 conversion.
-        wchar_mode[i] = mode[i];
-        if (mode[i] == '\0') break;
-    }
+    const auto wchar_mode = ConvertUTF8ToUTF16(mode);
     ec = _wfopen_s(&f, path.wstring().data(), wchar_mode.data());
     if (ec == 0) {
         return f;

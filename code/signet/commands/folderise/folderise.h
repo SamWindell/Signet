@@ -10,6 +10,7 @@ class FolderiseCommand final : public Command {
     void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "Folderise"; }
     bool AllowsOutputFolder() const override { return false; }
+    bool AllowsSingleOutputFile() const override { return false; }
 
   private:
     std::string m_filename_pattern;

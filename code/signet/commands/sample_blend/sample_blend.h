@@ -13,6 +13,7 @@ class SampleBlendCommand : public Command {
     std::string GetName() const override { return "SampleBlend"; }
 
     bool AllowsOutputFolder() const override { return false; }
+    bool AllowsSingleOutputFile() const override { return true; }
 
   private:
     struct BaseBlendFile {

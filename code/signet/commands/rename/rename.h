@@ -4,8 +4,8 @@
 #include <unordered_map>
 
 #include "auto_mapper.h"
-#include "note_to_midi.h"
 #include "command.h"
+#include "note_to_midi.h"
 #include "types.h"
 
 class RenameCommand final : public Command {
@@ -13,6 +13,7 @@ class RenameCommand final : public Command {
     CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "Rename"; }
+    bool AllowsSingleOutputFile() const override { return false; }
 
   private:
     AutoMapper m_auto_mapper;

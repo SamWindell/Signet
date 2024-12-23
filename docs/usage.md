@@ -74,8 +74,11 @@ Attempt to exit Signet and return a non-zero value as soon as possible if a warn
 `--recursive`
 When the input is a directory, scan for files in it recursively.
 
-`--output-folder TEXT`
+`--output-folder TEXT Excludes: --output-file`
 Instead of overwriting the input files, put the processed audio files are put into the given output folder. Subfolders are not created within the output folder; all files are put at the same level. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.
+
+`--output-file TEXT Excludes: --output-folder`
+Write to a single output file rather than overwrite the original. Only valid if there's only 1 input file. If the output file already exists it is overwritten. Directories are created. Some commands do not allow this option - such as move.
 
 # Audio Commands
 ## :sound: auto-tune

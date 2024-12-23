@@ -217,8 +217,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             throw CLI::Success();
         });
 
-    app.add_flag_callback(
-        "--silent", []() { g_messages_enabled = false; }, "Disable all messages");
+    app.add_flag_callback("--silent", []() { g_messages_enabled = false; }, "Disable all messages");
 
     app.add_flag_callback(
         "--warnings-are-errors", []() { g_warnings_as_errors = true; },
@@ -234,13 +233,25 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         },
         R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
 
-    auto output_option =
+    auto output_folder_option =
         app.add_option(
                "--output-folder", m_output_path,
                "Instead of overwriting the input files, put the processed audio files are put into the given output folder. Subfolders are not created within the output folder; all files are put at the same level. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.")
             ->check([&](const std::string &str) -> std::string {
                 if (fs::exists(str) && !fs::is_directory(str)) {
                     return "The given output is a file that already exists.";
+                }
+                return {};
+            });
+
+    auto output_file_option =
+        app.add_option(
+               "--output-file", m_single_output_file,
+               "Write to a single output file rather than overwrite the original. Only valid if there's only 1 input file. If the output file already exists it is overwritten. Directories are created. Some commands do not allow this option - such as move.")
+            ->excludes(output_folder_option)
+            ->check([&](const std::string &) -> std::string {
+                if (m_input_audio_files.Size() != 1) {
+                    return "You can only specify one input file when using --output-file";
                 }
                 return {};
             });
@@ -274,7 +285,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             MessageWithNewLine(command->GetName(), {}, "Total audio file paths edited: {}", num_path_edits);
         });
         if (!command->AllowsOutputFolder()) {
-            s->excludes(output_option);
+            s->excludes(output_folder_option);
+        }
+        if (!command->AllowsSingleOutputFile()) {
+            s->excludes(output_file_option);
         }
     }
 
@@ -291,9 +305,13 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                     auto new_path = *m_output_path / f.GetPath().filename();
                     f.SetPath(new_path);
                 }
+            } else if (m_single_output_file) {
+                REQUIRE(m_input_audio_files.Size() == 1);
+                m_input_audio_files.begin()[0].SetPath(*m_single_output_file);
             }
 
-            if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(m_backup, m_output_path ? true : false)) {
+            if (!m_input_audio_files.WriteFilesThatHaveBeenEdited(
+                    m_backup, m_output_path || m_single_output_file ? true : false)) {
                 return SignetResult::FailedToWriteFiles;
             }
         }

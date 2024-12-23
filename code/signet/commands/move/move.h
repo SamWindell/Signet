@@ -8,6 +8,7 @@ class MoveCommand final : public Command {
     void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "Move"; }
     bool AllowsOutputFolder() const override { return false; }
+    bool AllowsSingleOutputFile() const override { return false; }
 
   private:
     fs::path m_destination_dir;

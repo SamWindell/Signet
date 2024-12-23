@@ -3,6 +3,7 @@
 #include "CLI11.hpp"
 #include "doctest.hpp"
 
+#include "gain_calculators.h"
 #include "test_helpers.h"
 
 CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {

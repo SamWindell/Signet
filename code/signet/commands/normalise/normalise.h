@@ -1,10 +1,5 @@
 #pragma once
-#include <memory>
-#include <optional>
-
-#include "common.h"
-#include "gain_calculators.h"
-#include "signet_interface.h"
+#include "command.h"
 
 class NormaliseCommand final : public Command {
   public:

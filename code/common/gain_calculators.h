@@ -22,8 +22,6 @@ class NormalisationGainCalculator {
 class RMSGainCalculator : public NormalisationGainCalculator {
   public:
     bool RegisterBufferMagnitudes(const AudioData &audio, std::optional<unsigned> channel) override {
-        // TODO: use channel
-        (void)channel;
         if (!m_sum_of_squares_channels.size()) {
             m_sum_of_squares_channels.resize(audio.num_channels);
         }
@@ -34,9 +32,13 @@ class RMSGainCalculator : public NormalisationGainCalculator {
             return false;
         }
         for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
-            for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
-                const auto sample_index = frame * audio.num_channels + chan;
-                m_sum_of_squares_channels[chan] += std::pow(audio.interleaved_samples[sample_index], 2.0);
+            if (channel) {
+                m_sum_of_squares_channels[*channel] += std::pow(audio.GetSample(*channel, frame), 2.0);
+            } else {
+                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                    const auto sample_index = frame * audio.num_channels + chan;
+                    m_sum_of_squares_channels[chan] += std::pow(audio.interleaved_samples[sample_index], 2.0);
+                }
             }
         }
         m_num_frames += audio.NumFrames();

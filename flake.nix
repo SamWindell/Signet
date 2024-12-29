@@ -9,7 +9,8 @@
       nixpkgs,
       flake-utils,
     }:
-    flake-utils.lib.eachDefaultSystem (
+    # NOTE: not used for macOS - we need AppleClang (installed via Xcode probably)
+    flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (
       system:
       let
         pkgs = import nixpkgs { inherit system; };

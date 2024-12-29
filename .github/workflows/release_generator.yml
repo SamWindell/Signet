@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  CMAKE_BUILD_TYPE: Debug
+  CMAKE_BUILD_TYPE: RelWithDebInfo
 
 jobs:
   create-linux-binary:

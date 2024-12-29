@@ -143,7 +143,7 @@ jobs:
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
-        draft: true
+        draft: false
         body_path: RELEASE.md/RELEASE.md
         files: |
           RELEASE.md/*

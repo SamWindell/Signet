@@ -8,7 +8,7 @@ set(CMAKE_OSX_ARCHITECTURES
     "x86_64;arm64"
     CACHE STRING "Build universal binary")
 
-project(Signet VERSION 0.1.6.1)
+project(Signet VERSION 0.1.7)
 
 option(DEPLOYMENT_BUILD "A build for deployment to end-users" NO)
 option(ENABLE_SANITIZERS "Enable ASan and UBSan" OFF)

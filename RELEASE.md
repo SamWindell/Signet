@@ -1,6 +1,11 @@
 There are binaries available for the Windows, Linux (Ubuntu) and Mac versions of Signet. These can be found in the assets section of this Github release. Just download and extract the file to start using it.
 
+The macOS version is a universal binary, codesigned and notarized.
+
 Changes:
+
+0.1.8:
+- Notarize the macOS version
 
 0.1.7:
 - Codesign the macOS version

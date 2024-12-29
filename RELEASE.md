@@ -1,6 +1,4 @@
-There are experimental binaries available for the Windows, Linux and Mac versions of Signet. These can be found in the assets section of this Github release. Just download and extract the file to start using it.
-
-**Note for macOS**: The macOS version is not codesigned or notarized. The first time you use Signet you might need to right click it, and select "open".
+There are binaries available for the Windows, Linux (Ubuntu) and Mac versions of Signet. These can be found in the assets section of this Github release. Just download and extract the file to start using it.
 
 Changes:
 

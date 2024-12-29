@@ -4,6 +4,9 @@ There are experimental binaries available for the Windows, Linux and Mac version
 
 Changes:
 
+0.1.7:
+- Codesign the macOS version
+
 0.1.6:
 - Add --output-file option for specifying a single output file instead of overwriting the input file
 - Fix filepath case sensitivity issues on Window and macOS

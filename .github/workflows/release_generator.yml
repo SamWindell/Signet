@@ -90,11 +90,6 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: |
         xcrun notarytool submit signet_macos.zip --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" --wait
-        rm signet
-        unzip signet_macos.zip
-        rm signet_macos.zip
-        xcrun stapler staple signet
-        zip signet_macos.zip signet
 
     - uses: actions/upload-artifact@v4
       with:

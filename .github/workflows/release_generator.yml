@@ -59,7 +59,8 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DDEPLOYMENT_BUILD:BOOL=YES
 
-    - uses: apple-actions/import-codesign-certs@v3
+    - name: Install Code Signing Certificate
+      uses: apple-actions/import-codesign-certs@v3
       with: 
         p12-file-base64: ${{ secrets.APPLE_CODESIGN_CERT_P12_BASE64  }}
         p12-password: ${{ secrets.APPLE_CODESIGN_CERT_PASSWORD  }}
@@ -69,7 +70,8 @@ jobs:
       shell: bash
       run: cmake --build . --config $CMAKE_BUILD_TYPE --target signet
     
-    - env:
+    - name: Sign executable
+      env:
         IDENTITY: ${{ secrets.APPLE_CODESIGN_CERT_IDENTITY }}
       working-directory: ${{github.workspace}}/build
       run:

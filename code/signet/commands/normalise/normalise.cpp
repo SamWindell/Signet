@@ -39,6 +39,11 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
         ->check(CLI::Range(0, 100))
         ->needs(independent_chans);
 
+    norm->add_option(
+            "--crest-factor-scaling", m_crest_factor_scaling,
+            "Add an additional volume reduction for audio that has very low crest factors; in other words, audio that is consistently loud. This is useful when trying to achieve a consistent perceived loudness. A value of 0 means no reduction, and 100 means reduce the volume of non-peaky audio by 12dB. The default is 0.")
+        ->check(CLI::Range(0, 100));
+
     return norm;
 }
 
@@ -76,19 +81,48 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         normalising_independently = true;
     }
 
-    const auto GetGain = [&](AudioData &audio) {
+    const auto GetGain = [&](AudioData &audio, EditTrackedAudioFile const &f) {
         if (normalising_independently) {
             gain_calculator->Reset();
             gain_calculator->RegisterBufferMagnitudes(audio, {});
         }
-        return ScaleMultiplier(gain_calculator->GetGain(DBToAmp(m_target_decibels)),
-                               m_norm_mix_percent / 100.0);
+        auto gain =
+            ScaleMultiplier(gain_calculator->GetGain(DBToAmp(m_target_decibels)), m_norm_mix_percent / 100.0);
+        if (m_crest_factor_scaling) {
+            auto const rms = GetRMS(audio.interleaved_samples);
+            auto const peak = GetPeak(audio.interleaved_samples);
+
+            constexpr auto k_max_crest_factor = 200.0;
+            constexpr auto k_max_reduction_db = -12.0;
+
+            auto const crest_factor = std::min(peak / rms, k_max_crest_factor);
+
+            // The larger the crest factor the larger the 'peakiness' of the audio. We want to reduce the
+            // volume of non-peaky audio since it may be perceived as louder than peaky.
+            // A crest factor of 1 should have the largest volume reduction.
+            // A crest factor of 300 should have the smallest volume reduction.
+
+            auto map = [](double x, double in_min, double in_max, double out_min, double out_max) {
+                return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+            };
+
+            auto const non_peakiness_01 = map(crest_factor, 1.0, k_max_crest_factor, 1.0, 0.0);
+            auto const reduction_db = (non_peakiness_01 * m_crest_factor_scaling / 100) * k_max_reduction_db;
+            auto const reduction_amp = DBToAmp(reduction_db);
+
+            MessageWithNewLine(GetName(), f,
+                               "Crest factor: {:.2f}, non-peakiness: {:.2f}%, reducing volume by {:.2f} dB",
+                               crest_factor, non_peakiness_01 * 100, reduction_db);
+
+            gain *= reduction_amp;
+        }
+        return gain;
     };
 
     for (auto &f : files) {
         auto &audio = f.GetWritableAudio();
         if (!m_normalise_channels_separately) {
-            const auto gain = GetGain(audio);
+            const auto gain = GetGain(audio, f);
             MessageWithNewLine(GetName(), f, "Applying a gain of {:.2f}", gain);
             audio.MultiplyByScalar(gain);
         } else {
@@ -101,7 +135,7 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
             }
             const auto max_channel_gain = *std::max_element(channel_peaks.begin(), channel_peaks.end());
 
-            const auto gain = GetGain(audio);
+            const auto gain = GetGain(audio, f);
 
             for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
                 auto channel_gain = gain * ScaleMultiplier(max_channel_gain / channel_peaks[chan],

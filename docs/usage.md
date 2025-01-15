@@ -290,6 +290,9 @@ The mix of the normalised signal, where 100% means normalise to exactly to the t
 `--mix-channels FLOAT:INT in [0 - 100] Needs: --independent-channels`
 When --independent-channels is also given, this option controls the mix of each channels normalised signal, where 100% means normalise to exactly to the target, and 50% means apply a gain to get halfway from the current level to the target. The default is 100%.
 
+`--crest-factor-scaling FLOAT:INT in [0 - 100]`
+Add an additional volume reduction for audio that has very low crest factors; in other words, audio that is consistently loud. This is useful when trying to achieve a consistent perceived loudness. A value of 0 means no reduction, and 100 means reduce the volume of non-peaky audio by 12dB. The default is 0.
+
 ## :sound: pan
 ### Description:
 Changes the pan of stereo file(s). Does not work on non-stereo files.

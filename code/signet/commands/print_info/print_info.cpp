@@ -40,8 +40,13 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
         info_text += fmt::format("Length: {:.2f} seconds\n",
                                  (double)f.GetAudio().NumFrames() / (double)f.GetAudio().sample_rate);
         info_text += fmt::format("Bit-depth: {}\n", f.GetAudio().bits_per_sample);
-        info_text += fmt::format("RMS: {:.5f} dB\n", AmpToDB(GetRMS(f.GetAudio().interleaved_samples)));
-        info_text += fmt::format("Peak: {:.5f} dB\n", AmpToDB(GetPeak(f.GetAudio().interleaved_samples)));
+
+        auto const rms = GetRMS(f.GetAudio().interleaved_samples);
+        auto const peak = GetPeak(f.GetAudio().interleaved_samples);
+        auto const crest_factor = peak / rms;
+        info_text += fmt::format("RMS: {:.2f} dB\n", AmpToDB(rms));
+        info_text += fmt::format("Peak: {:.2f} dB\n", AmpToDB(peak));
+        info_text += fmt::format("Crest Factor: {:.2f} dB ({:.2f})\n", AmpToDB(crest_factor), crest_factor);
 
         if (EndsWith(info_text, "\n")) info_text.resize(info_text.size() - 1);
         MessageWithNewLine(GetName(), f, "Info:\n{}", info_text);

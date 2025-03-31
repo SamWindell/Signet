@@ -116,6 +116,74 @@ class PeakGainCalculator : public NormalisationGainCalculator {
     double m_max_magnitude {};
 };
 
+class EnergyGainCalculator : public NormalisationGainCalculator {
+  public:
+    bool RegisterBufferMagnitudes(const AudioData &audio, std::optional<unsigned> channel) override {
+        if (!m_energy_per_channel.size()) {
+            m_energy_per_channel.resize(audio.num_channels);
+        }
+        if (m_energy_per_channel.size() != audio.num_channels) {
+            ErrorWithNewLine(
+                "Norm", {},
+                "Audio file has a different number of channels to a previous one - for Energy normalisation, all files must have the same number of channels");
+            return false;
+        }
+
+        for (size_t frame = 0; frame < audio.NumFrames(); ++frame) {
+            if (channel) {
+                m_energy_per_channel[*channel] += std::pow(audio.GetSample(*channel, frame), 2.0);
+            } else {
+                for (unsigned chan = 0; chan < audio.num_channels; ++chan) {
+                    const auto sample_index = frame * audio.num_channels + chan;
+                    m_energy_per_channel[chan] += std::pow(audio.interleaved_samples[sample_index], 2.0);
+                }
+            }
+        }
+
+        m_total_frames += audio.NumFrames();
+        return true;
+    }
+
+    double GetLargestRegisteredMagnitude() const override {
+        if (!m_total_frames) return 0;
+
+        double max_energy = 0;
+        for (const auto energy : m_energy_per_channel) {
+            max_energy = std::max(max_energy, energy);
+        }
+
+        return std::sqrt(max_energy / m_total_frames);
+    }
+
+    double GetGain(double target_energy) const override {
+        double smallest_gain = DBL_MAX;
+
+        for (const auto channel_energy : m_energy_per_channel) {
+            if (channel_energy <= 0.0) continue;
+
+            const auto gain = GetLinearGainForTargetEnergy(target_energy * m_total_frames, channel_energy);
+            smallest_gain = std::min(smallest_gain, gain);
+        }
+
+        return std::isinf(smallest_gain) || smallest_gain == DBL_MAX ? 0.0 : smallest_gain;
+    }
+
+    const char *GetName() const override { return "Energy"; }
+
+    void Reset() override {
+        m_energy_per_channel.clear();
+        m_total_frames = 0;
+    }
+
+  private:
+    static double GetLinearGainForTargetEnergy(double target_energy, double actual_energy) {
+        return std::sqrt(target_energy / actual_energy);
+    }
+
+    size_t m_total_frames {};
+    std::vector<double> m_energy_per_channel {};
+};
+
 void NormaliseToTarget(AudioData &audio, const double target_amp);
 void NormaliseToTarget(std::vector<double> &samples, const double target_amp);
 double GetRMS(const tcb::span<const double> samples);

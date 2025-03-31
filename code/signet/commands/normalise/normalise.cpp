@@ -4,6 +4,7 @@
 #include "doctest.hpp"
 
 #include "gain_calculators.h"
+#include "magic_enum.hpp"
 #include "test_helpers.h"
 
 CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
@@ -24,9 +25,36 @@ CLI::App *NormaliseCommand::CreateCommandCLI(CLI::App &app) {
         norm->add_flag("--independent-channels", m_normalise_channels_separately,
                        "Normalise each channel independently rather than scale them together.");
 
-    norm->add_flag(
-        "--rms", m_use_rms,
-        "Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.");
+    {
+        std::map<std::string, NormaliseCommand::Mode> mode_dictionary;
+        for (const auto &e : magic_enum::enum_entries<NormaliseCommand::Mode>()) {
+            if (e.first == NormaliseCommand::Mode::Count) continue;
+            mode_dictionary[std::string(e.second)] = e.first;
+        }
+
+        std::string mode_description_string =
+            "The mode for normalisation calculations. The default is peak. ";
+        for (size_t i = 0; i < (size_t)NormaliseCommand::Mode::Count; ++i) {
+            switch ((NormaliseCommand::Mode)i) {
+                case NormaliseCommand::Mode::Peak:
+                    mode_description_string +=
+                        "Use peak calculations to work out the required gain amount. This is the default.";
+                    break;
+                case NormaliseCommand::Mode::Rms:
+                    mode_description_string +=
+                        "Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.";
+                    break;
+                case NormaliseCommand::Mode::Energy:
+                    mode_description_string +=
+                        "Use energy (power) normalization to calculate the required gain amount. This sums the squares of all samples and normalizes based on total energy content. Particularly effective for impulse responses and convolution reverb sources, as it helps consistent perceived loudness when different IRs are applied to audio.";
+                    break;
+                default: assert(false);
+            }
+        }
+
+        norm->add_option("--mode", m_mode, mode_description_string)
+            ->transform(CLI::CheckedTransformer(mode_dictionary, CLI::ignore_case));
+    }
 
     norm->add_option(
             "--mix", m_norm_mix_percent,
@@ -60,9 +88,14 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
         return;
     }
 
-    const auto MakeGainCalculator = [rms = m_use_rms]() -> std::unique_ptr<NormalisationGainCalculator> {
-        if (rms) return std::make_unique<RMSGainCalculator>();
-        return std::make_unique<PeakGainCalculator>();
+    const auto MakeGainCalculator = [mode = m_mode]() -> std::unique_ptr<NormalisationGainCalculator> {
+        switch (mode) {
+            case Mode::Rms: return std::make_unique<RMSGainCalculator>();
+            case Mode::Peak: return std::make_unique<PeakGainCalculator>();
+            case Mode::Energy: return std::make_unique<EnergyGainCalculator>();
+            default: assert(false);
+        }
+        return nullptr;
     };
 
     auto gain_calculator = MakeGainCalculator();

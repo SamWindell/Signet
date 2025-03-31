@@ -281,8 +281,8 @@ When there are multiple files, normalise each one individually rather than by a 
 `--independent-channels`
 Normalise each channel independently rather than scale them together.
 
-`--rms`
-Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.
+`--mode ENUM:value in {Energy->2,Peak->0,Rms->1} OR {2,0,1}`
+The mode for normalisation calculations. The default is peak. Use peak calculations to work out the required gain amount. This is the default.Use average RMS (root mean squared) calculations to work out the required gain amount. In other words, the whole file's loudness is analysed, rather than just the peak. This does not work well with audio that has large fluctuations in volume level.Use energy (power) normalization to calculate the required gain amount. This sums the squares of all samples and normalizes based on total energy content. Particularly effective for impulse responses and convolution reverb sources, as it helps consistent perceived loudness when different IRs are applied to audio.
 
 `--mix FLOAT:INT in [0 - 100]`
 The mix of the normalised signal, where 100% means normalise to exactly to the target, and 50% means apply a gain to get halfway from the current level to the target. The default is 100%.

@@ -8,11 +8,13 @@ class NormaliseCommand final : public Command {
     std::string GetName() const override { return "Normalise"; }
 
   private:
+    enum class Mode { Peak, Rms, Energy, Count };
+
     double m_norm_mix_percent {100.0};
     double m_norm_channel_mix_percent {100.0};
     double m_crest_factor_scaling {0.0};
     bool m_normalise_independently = false;
     bool m_normalise_channels_separately = false;
     double m_target_decibels = 0.0;
-    bool m_use_rms = false;
+    Mode m_mode {Mode::Peak};
 };

@@ -87,7 +87,7 @@ add_library(
     code/signet/commands/normalise/normalise.cpp
     code/signet/commands/pan/pan.cpp
     code/signet/commands/print_info/print_info.cpp
-    code/signet/commands/remove_silence/remove_silence.cpp
+    code/signet/commands/trim_silence/trim_silence.cpp
     code/signet/commands/rename/auto_mapper.cpp
     code/signet/commands/rename/note_to_midi.cpp
     code/signet/commands/rename/rename.cpp

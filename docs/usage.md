@@ -14,11 +14,11 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [lowpass](#sound-lowpass)
   - [norm](#sound-norm)
   - [pan](#sound-pan)
-  - [remove-silence](#sound-remove-silence)
   - [seamless-loop](#sound-seamless-loop)
   - [trim](#sound-trim)
     - [start](#start)
     - [end](#end)
+  - [trim-silence](#sound-trim-silence)
   - [tune](#sound-tune)
   - [zcross-offset](#sound-zcross-offset)
 - [File Data Commands](#File-Data-Commands)
@@ -304,12 +304,12 @@ Changes the pan of stereo file(s). Does not work on non-stereo files.
 `pan-amount TEXT REQUIRED`
 The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
-## :sound: remove-silence
+## :sound: trim-silence
 ### Description:
-Removes silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
+Trims silence from the start or end of the file(s). Silence is considered anything under -90dB, however this threshold can be changed with the --threshold option.
 
 ### Usage:
-  `remove-silence` `[OPTIONS]` `[start-or-end]`
+  `trim-silence` `[OPTIONS]` `[start-or-end]`
 
 ### Arguments:
 `start-or-end ENUM:value in {Both->2,End->1,Start->0} OR {2,1,0}`
@@ -345,7 +345,7 @@ The second argument required for this command is used to determine what should b
 
 Putting it all together, here's what the full command would look like for our example:
 
-signet sample-\* remove-silence --sample-sets ".\*(close|room|ambient).\*" "close"
+signet sample-\* trim-silence --sample-sets ".\*(close|room|ambient).\*" "close"
 
 The entire folder of different mic positions can be processed in a single command. For a simpler version of this option, see --authority-file.
 

@@ -19,11 +19,11 @@
 #include "commands/normalise/normalise.h"
 #include "commands/pan/pan.h"
 #include "commands/print_info/print_info.h"
-#include "commands/remove_silence/remove_silence.h"
 #include "commands/rename/rename.h"
 #include "commands/sample_blend/sample_blend.h"
 #include "commands/seamless_loop/seamless_loop.h"
 #include "commands/trim/trim.h"
+#include "commands/trim_silence/trim_silence.h"
 #include "commands/tune/tune.h"
 #include "commands/zcross_offset/zcross_offset.h"
 #include "test_helpers.h"
@@ -48,7 +48,7 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<RenameCommand>());
     m_commands.push_back(std::make_unique<SampleBlendCommand>());
     m_commands.push_back(std::make_unique<SeamlessLoopCommand>());
-    m_commands.push_back(std::make_unique<RemoveSilenceCommand>());
+    m_commands.push_back(std::make_unique<TrimSilenceCommand>());
     m_commands.push_back(std::make_unique<TrimCommand>());
     m_commands.push_back(std::make_unique<TuneCommand>());
     m_commands.push_back(std::make_unique<ZeroCrossOffsetCommand>());
@@ -119,8 +119,8 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             command_categories["Signet Utility"] = {"undo", "clear-backup", "make-docs"};
             command_categories["Filepath"] = {"rename", "move", "folderise"};
             command_categories["Audio"] = {
-                "auto-tune", "fade",           "fix-pitch-drift", "gain", "lowpass", "highpass",     "norm",
-                "pan",       "remove-silence", "seamless-loop",   "trim", "tune",    "zcross-offset"};
+                "auto-tune", "fade",         "fix-pitch-drift", "gain", "lowpass", "highpass",     "norm",
+                "pan",       "trim-silence", "seamless-loop",   "trim", "tune",    "zcross-offset"};
             command_categories["File Data"] = {"convert", "embed-sampler-info"};
             command_categories["Info"] = {"detect-pitch", "print-info"};
             command_categories["Generate"] = {"sample-blend"};

@@ -4,6 +4,11 @@ The macOS version is a universal binary, codesigned and notarized.
 
 Changes:
 
+0.1.9:
+- Rename subcommand `remove-silence` to `trim-silence`
+- Change `norm` subcommand to take a `--mode` argument; one of `peak` or `rms` rather than `--rms` flag. Default mode is `peak`.
+- Add `energy` mode to `norm` subcommand allowing for normalisation based on the energy of the audio - good for impulse responses.
+
 0.1.8:
 - Notarize the macOS version
 

@@ -43,6 +43,10 @@ Alternatively, you can build Signet from the source code. This process is design
 
 A C++17 compiler is required. The compiler must also be [compatible with the magic_enum library](https://github.com/Neargye/magic_enum#compiler-compatibility) which is used by Signet. Signet has been tested with MSVC 16.5.1, Apple Clang 11.0.0, GCC 9.3.0 and Clang 10 on Linux.
 
+## Usage tips
+- If you are going to do multiple operations on files, then first convert the files to 64-bit WAV (`convert file-format wav bit-depth 64`), do all necessary processing, then convert back to your desired format and bit depth. While both WAV and FLAC are lossless, there is the possibility of degradation when working with lower bit-depths when the signal is very quiet.
+
+
 ## Examples
 The general pattern is `signet <input-file(s)> <command>`. You can have one or more commands, in which case each command will process the set of input-files in the order that you specify them.
 

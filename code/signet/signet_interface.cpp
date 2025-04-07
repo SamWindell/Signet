@@ -34,24 +34,24 @@
 SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<AutoTuneCommand>());
     m_commands.push_back(std::make_unique<ConvertCommand>());
+    m_commands.push_back(std::make_unique<DetectPitchCommand>());
     m_commands.push_back(std::make_unique<EmbedSamplerInfo>());
     m_commands.push_back(std::make_unique<FadeCommand>());
+    m_commands.push_back(std::make_unique<FixPitchDriftCommand>());
     m_commands.push_back(std::make_unique<FolderiseCommand>());
     m_commands.push_back(std::make_unique<GainCommand>());
     m_commands.push_back(std::make_unique<HighpassCommand>());
     m_commands.push_back(std::make_unique<LowpassCommand>());
-    m_commands.push_back(std::make_unique<PanCommand>());
-    m_commands.push_back(std::make_unique<PrintInfoCommand>());
     m_commands.push_back(std::make_unique<MoveCommand>());
     m_commands.push_back(std::make_unique<NormaliseCommand>());
-    m_commands.push_back(std::make_unique<DetectPitchCommand>());
-    m_commands.push_back(std::make_unique<FixPitchDriftCommand>());
+    m_commands.push_back(std::make_unique<PanCommand>());
+    m_commands.push_back(std::make_unique<PrintInfoCommand>());
     m_commands.push_back(std::make_unique<RenameCommand>());
     m_commands.push_back(std::make_unique<ReverseCommand>());
     m_commands.push_back(std::make_unique<SampleBlendCommand>());
     m_commands.push_back(std::make_unique<SeamlessLoopCommand>());
-    m_commands.push_back(std::make_unique<TrimSilenceCommand>());
     m_commands.push_back(std::make_unique<TrimCommand>());
+    m_commands.push_back(std::make_unique<TrimSilenceCommand>());
     m_commands.push_back(std::make_unique<TuneCommand>());
     m_commands.push_back(std::make_unique<ZeroCrossOffsetCommand>());
 }
@@ -127,6 +127,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             command_categories["File Data"] = {"convert", "embed-sampler-info"};
             command_categories["Info"] = {"detect-pitch", "print-info"};
             command_categories["Generate"] = {"sample-blend"};
+
+            // Sort each command category
+            for (auto &c : command_categories) {
+                std::sort(c.second.begin(), c.second.end());
+            }
 
             for (auto cmd : all_commands_sorted) {
                 bool found = false;

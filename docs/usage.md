@@ -242,17 +242,6 @@ Changes the volume of the file(s).
 `gain-amount TEXT REQUIRED`
 The gain amount. This is a number followed by a unit. The unit can be % or db. For example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% makes it twice as loud.
 
-## :sound: lowpass
-### Description:
-Lowpass: removes frequencies above the given cutoff.
-
-### Usage:
-  `lowpass` `cutoff-freq-hz`
-
-### Arguments:
-`cutoff-freq-hz FLOAT REQUIRED`
-The cutoff point where frequencies above this should be removed.
-
 ## :sound: highpass
 ### Description:
 Removes frequencies below the given cutoff.
@@ -263,6 +252,17 @@ Removes frequencies below the given cutoff.
 ### Arguments:
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies below this should be removed.
+
+## :sound: lowpass
+### Description:
+Lowpass: removes frequencies above the given cutoff.
+
+### Usage:
+  `lowpass` `cutoff-freq-hz`
+
+### Arguments:
+`cutoff-freq-hz FLOAT REQUIRED`
+The cutoff point where frequencies above this should be removed.
 
 ## :sound: norm
 ### Description:
@@ -311,6 +311,45 @@ Reverses the audio in the file(s).
 
 ### Usage:
   `reverse`
+
+## :sound: seamless-loop
+### Description:
+Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, the algorithm will trim the file down to the smallest possible seamless-sounding loop, which starts and ends on a zero crossings. Useful if you have samples that you know are regularly repeating (for example a synth sawtooth). If you specify a non-zero crossfade-percent, the given percentage of audio from the start of the file will be faded onto the end of the file. Due to this overlap, the resulting file is shorter.
+
+### Usage:
+  `seamless-loop` `crossfade-percent [strictness-percent]`
+
+### Arguments:
+`crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
+The size of the crossfade region as a percent of the whole file. If this is zero then the algorithm will scan the file for the smallest possible loop, starting and ending on zero-crossings, and trim the file to that be that loop.
+
+`strictness-percent FLOAT:INT in [1 - 100]`
+How strict should the algorithm be when detecting loops when you specify 0 for crossfade-percent. Has no use if crossfade-percent is non-zero. Default is 50.
+
+## :sound: trim
+### Description:
+Removes the start or end of the file(s). This command has 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
+
+### Usage:
+  `trim` `COMMAND`
+
+### Commands:
+#### start
+##### Description:
+Removes the start of the file.
+
+##### Arguments:
+`trim-start-length TEXT REQUIRED`
+The amount to remove from the start. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+
+
+#### end
+##### Description:
+Removes the end of the file.
+
+##### Arguments:
+`trim-end-length TEXT REQUIRED`
+The amount to remove from the end. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 ## :sound: trim-silence
 ### Description:
@@ -364,45 +403,6 @@ This is the same as --sample-sets, but just takes a single filename for all of t
 
 `--threshold FLOAT:INT in [-200 - 0]`
 The threshold in decibels to which anything under it should be considered silence.
-
-## :sound: seamless-loop
-### Description:
-Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, the algorithm will trim the file down to the smallest possible seamless-sounding loop, which starts and ends on a zero crossings. Useful if you have samples that you know are regularly repeating (for example a synth sawtooth). If you specify a non-zero crossfade-percent, the given percentage of audio from the start of the file will be faded onto the end of the file. Due to this overlap, the resulting file is shorter.
-
-### Usage:
-  `seamless-loop` `crossfade-percent [strictness-percent]`
-
-### Arguments:
-`crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
-The size of the crossfade region as a percent of the whole file. If this is zero then the algorithm will scan the file for the smallest possible loop, starting and ending on zero-crossings, and trim the file to that be that loop.
-
-`strictness-percent FLOAT:INT in [1 - 100]`
-How strict should the algorithm be when detecting loops when you specify 0 for crossfade-percent. Has no use if crossfade-percent is non-zero. Default is 50.
-
-## :sound: trim
-### Description:
-Removes the start or end of the file(s). This command has 2 subcommands, 'start' and 'end'; one of which must be specified. For each, the amount to remove must be specified.
-
-### Usage:
-  `trim` `COMMAND`
-
-### Commands:
-#### start
-##### Description:
-Removes the start of the file.
-
-##### Arguments:
-`trim-start-length TEXT REQUIRED`
-The amount to remove from the start. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
-
-
-#### end
-##### Description:
-Removes the end of the file.
-
-##### Arguments:
-`trim-end-length TEXT REQUIRED`
-The amount to remove from the end. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 ## :sound: tune
 ### Description:
@@ -568,6 +568,31 @@ DESCRIPTION
 2 values must be given. The first one represents the low velocity and the second one represents the high velocity. Each value can be 1 of 3 formats. (1) A number from 1 to 127, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 1 for the low velocity or 127 for the high velocity.
 
 # Filepath Commands
+## :sound: folderise
+### Description:
+Moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
+
+### Usage:
+  `folderise` `filename-regex out-folder`
+
+### Arguments:
+`filename-regex TEXT REQUIRED`
+The ECMAScript-style regex pattern used to match filenames against. The file extension is not part of this comparison.
+
+`out-folder TEXT REQUIRED`
+The output folder that the matching files should be put into. This will be created if it does not exist. It can contain numbers in angle brackets to signify where groups from the matching regex should be inserted. These means files can end up in multiple folders. For example, 'folderise file(\d+).wav C:/folder<1>' would create folders 'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.
+
+## :sound: move
+### Description:
+Moves all input files to a given folder.
+
+### Usage:
+  `move` `[destination-folder]`
+
+### Arguments:
+`destination-folder TEXT`
+The folder to put all of the input files in.
+
 ## :sound: rename
 ### Description:
 Various commands for renaming files.
@@ -685,31 +710,6 @@ The name of the output file (excluding extension). This should contain substitut
   signet session1 rename regex-replace ""
 ```
 
-## :sound: move
-### Description:
-Moves all input files to a given folder.
-
-### Usage:
-  `move` `[destination-folder]`
-
-### Arguments:
-`destination-folder TEXT`
-The folder to put all of the input files in.
-
-## :sound: folderise
-### Description:
-Moves files into folders based on their names. This is done by specifying a regex pattern to match the name against. The folder in which the matched file should be moved to can be based off of the name. These folders are created if they do not already exist.
-
-### Usage:
-  `folderise` `filename-regex out-folder`
-
-### Arguments:
-`filename-regex TEXT REQUIRED`
-The ECMAScript-style regex pattern used to match filenames against. The file extension is not part of this comparison.
-
-`out-folder TEXT REQUIRED`
-The output folder that the matching files should be put into. This will be created if it does not exist. It can contain numbers in angle brackets to signify where groups from the matching regex should be inserted. These means files can end up in multiple folders. For example, 'folderise file(\d+).wav C:/folder<1>' would create folders 'C:/folder1' and 'C:/folder2' if there were files 'file1.wav' and 'file2.wav'.
-
 # Generate Commands
 ## :sound: sample-blend
 ### Description:
@@ -755,13 +755,6 @@ Prints information about the audio file(s), such as the embedded metadata, sampl
   `print-info`
 
 # Signet Utility Commands
-## :sound: undo
-### Description:
-Undo any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
-
-### Usage:
-  `undo`
-
 ## :sound: clear-backup
 ### Description:
 Deletes all temporary files created by Signet. These files are needed for the undo system and are saved to your OS's temporary folder. These files are cleared and new ones created every time you run Signet. This option is only really useful if you have just processed lots of files and you won't be using Signet for a long time afterwards. You cannot use undo directly after clearing the backup.
@@ -779,4 +772,11 @@ Creates a Github flavour markdown file containing the full CLI - based on runnin
 ### Arguments:
 `output-file TEXT REQUIRED`
 The filepath for the generated markdown file.
+
+## :sound: undo
+### Description:
+Undo any changes made by the last run of Signet; files that were overwritten are restored, new files that were created are destroyed, and files that were renamed are un-renamed. You can only undo once - you cannot keep going back in history.
+
+### Usage:
+  `undo`
 

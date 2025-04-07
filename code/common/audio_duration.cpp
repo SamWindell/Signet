@@ -8,10 +8,11 @@ TEST_CASE("Audio Duration") {
         REQUIRE_NOTHROW(AudioDuration("100s"));
         REQUIRE_NOTHROW(AudioDuration("100ms"));
         REQUIRE_NOTHROW(AudioDuration("100%"));
+        REQUIRE_NOTHROW(AudioDuration("-10%"));
         REQUIRE_NOTHROW(AudioDuration("22.334%"));
         REQUIRE_THROWS(AudioDuration("foo"));
-        REQUIRE_THROWS(AudioDuration("10"));
 
+        REQUIRE(*AudioDuration::GetUnit("10") == AudioDuration::Unit::Samples);
         REQUIRE(*AudioDuration::GetUnit("10s") == AudioDuration::Unit::Seconds);
         REQUIRE(*AudioDuration::GetUnit("10ms") == AudioDuration::Unit::Milliseconds);
         REQUIRE(*AudioDuration::GetUnit("10smp") == AudioDuration::Unit::Samples);

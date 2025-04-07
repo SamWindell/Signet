@@ -25,9 +25,10 @@ class AudioDuration {
     AudioDuration(const std::string &string) {
         const auto unit = GetUnit(string);
         if (!unit) {
-            throw CLI::ValidationError("AudioDuration",
-                                       "This value must be a number followed by one of these units: " +
-                                           GetListOfUnits());
+            throw CLI::ValidationError(
+                "AudioDuration",
+                "This value must be a number of sample or a number followed by one of these units: " +
+                    GetListOfUnits());
         }
         m_unit = *unit;
         m_value = std::stof(string);
@@ -49,10 +50,16 @@ class AudioDuration {
         return std::min(num_frames, (size_t)result);
     }
 
+    Unit GetUnit() const { return m_unit; }
+    double GetValue() const { return m_value; }
+
     static std::optional<Unit> GetUnit(const std::string &str) {
         std::string_view suffix {str};
-        const auto suffix_size = str.find_first_not_of("0123456789.");
-        if (suffix_size == std::string::npos) return {};
+        const auto suffix_size = str.find_first_not_of("0123456789.-");
+        if (suffix_size == std::string::npos) {
+            // It's only a number, we default to samples
+            return Unit::Samples;
+        }
         suffix.remove_prefix(suffix_size);
 
         for (const auto &u : available_units) {
@@ -75,7 +82,7 @@ class AudioDuration {
     static std::string ValidatorDescription() { return "AUDIO-DURATION"; }
 
     static std::string TypeDescription() {
-        return "This value is a number directly followed by a unit. The unit can be one of {" +
+        return "This value is a number in samples, or a number directly followed by a unit: the unit can be one of {" +
                GetCommaSeparatedUnits() + "}. These represent {" + GetCommaSeparatedUnitsNames() +
                "} respectively. The percent option specifies the duration relative to the whole "
                "length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.";
@@ -100,10 +107,12 @@ class AudioDuration {
         return result.substr(0, result.size() - divider.size());
     }
 
-    static constexpr std::pair<const char *, Unit> available_units[] = {{"s", Unit::Seconds},
-                                                                        {"ms", Unit::Milliseconds},
-                                                                        {"%", Unit::Percent},
-                                                                        {"smp", Unit::Samples}};
+    static constexpr std::pair<const char *, Unit> available_units[] = {
+        {"s", Unit::Seconds},
+        {"ms", Unit::Milliseconds},
+        {"%", Unit::Percent},
+        {"smp", Unit::Samples},
+    };
     Unit m_unit {};
     double m_value {};
 };

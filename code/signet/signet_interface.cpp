@@ -6,6 +6,7 @@
 
 #include "audio_file_io.h"
 #include "cli_formatter.h"
+#include "commands/add_loop/add_loop.h"
 #include "commands/auto_tune/auto_tune.h"
 #include "commands/convert/convert.h"
 #include "commands/detect_pitch/detect_pitch.h"
@@ -32,6 +33,7 @@
 #include "version.h"
 
 SignetInterface::SignetInterface() {
+    m_commands.push_back(std::make_unique<AddLoopCommand>());
     m_commands.push_back(std::make_unique<AutoTuneCommand>());
     m_commands.push_back(std::make_unique<ConvertCommand>());
     m_commands.push_back(std::make_unique<DetectPitchCommand>());
@@ -121,7 +123,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             command_categories["Signet Utility"] = {"undo", "clear-backup", "make-docs"};
             command_categories["Filepath"] = {"rename", "move", "folderise"};
             command_categories["Audio"] = {
-                "auto-tune", "fade",    "fix-pitch-drift", "gain", "highpass",     "lowpass", "norm",
+                "add-loop", "auto-tune", "fade",    "fix-pitch-drift", "gain", "highpass",     "lowpass", "norm",
                 "pan",       "reverse", "seamless-loop",   "trim", "trim-silence", "tune",    "zcross-offset",
             };
             command_categories["File Data"] = {"convert", "embed-sampler-info"};

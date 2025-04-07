@@ -4,6 +4,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 
 - [General Usage](#General-Usage)
 - [Audio Commands](#Audio-Commands)
+  - [add-loop](#sound-add-loop)
   - [auto-tune](#sound-auto-tune)
   - [fade](#sound-fade)
     - [in](#in)
@@ -82,6 +83,33 @@ Instead of overwriting the input files, put the processed audio files are put in
 Write to a single output file rather than overwrite the original. Only valid if there's only 1 input file. If the output file already exists it is overwritten. Directories are created. Some commands do not allow this option - such as move.
 
 # Audio Commands
+## :sound: add-loop
+### Description:
+Adds a loop to the audio file(s). The loop is defined by a start point and either an end point or number of frames. These points can be negative, meaning they are relative to the end of the file.
+
+### Usage:
+  `add-loop` `[OPTIONS]` `start-point [end-point]`
+
+### Arguments:
+`start-point TEXT REQUIRED`
+The start point of the loop. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp. If negative, it's measured from the end of the file.
+
+`end-point TEXT Excludes: --num-frames`
+The end point of the loop. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp. If negative, it's measured from the end of the file. 0 means the end sample.
+
+### Options:
+`--num-frames TEXT Excludes: end-point`
+Number of frames in the loop.  Can be used instead of specifying an end-point. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+
+`--name TEXT`
+Optional name for the loop.
+
+`--type ENUM:value in {Backward->1,Forward->0,PingPong->2} OR {1,0,2}=0`
+Type of loop. Default is Forward.
+
+`--loop-count UINT=0`
+Number of times to loop. 0 means infinite looping (default).
+
 ## :sound: auto-tune
 ### Description:
 Tunes the file(s) to their nearest detected musical pitch. For example, a file with a detected pitch of 450Hz will be tuned to 440Hz (A4). The whole audio is analysed, and the most frequent and prominent pitch is determined. The whole audio is then retuned as if by using Signet's tune command (i.e. sped up or slowed down). This command works surprising well for almost any type of sample - transparently shifting it by the smallest amount possible to be more musically in-tune.
@@ -156,7 +184,7 @@ Fade in the volume at the start of the file(s).
 
 ##### Arguments:
 `fade-in length TEXT REQUIRED`
-The length of the fade in. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+The length of the fade in. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 `fade-in shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
 The shape of the fade-in curve. The default is the 'sine' shape.
@@ -168,7 +196,7 @@ Fade out the volume at the end of the file(s).
 
 ##### Arguments:
 `fade-out length TEXT REQUIRED`
-The length of the fade out. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+The length of the fade out. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 `fade-out shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
 The shape of the fade-out curve. The default is the 'sine' shape.
@@ -340,7 +368,7 @@ Removes the start of the file.
 
 ##### Arguments:
 `trim-start-length TEXT REQUIRED`
-The amount to remove from the start. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+The amount to remove from the start. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 
 #### end
@@ -349,7 +377,7 @@ Removes the end of the file.
 
 ##### Arguments:
 `trim-end-length TEXT REQUIRED`
-The amount to remove from the end. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+The amount to remove from the end. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 ## :sound: trim-silence
 ### Description:
@@ -430,7 +458,7 @@ Offsets the start of an audio file to the nearest zero-crossing (or the closest 
 
 ### Arguments:
 `search_size TEXT REQUIRED`
-The maximum length that it is allowed to offset to. This value is a number directly followed by a unit. The unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
+The maximum length that it is allowed to offset to. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 ### Options:
 `--append`

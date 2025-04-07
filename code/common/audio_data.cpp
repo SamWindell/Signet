@@ -279,6 +279,18 @@ void AudioData::AudioDataWasStretched(double stretch_factor) {
     }
 }
 
+void AudioData::AudioDataWasReversed() {
+    for (auto &r : metadata.regions) {
+        r.start_frame = NumFrames() - r.start_frame - r.num_frames;
+    }
+    for (auto &r : metadata.markers) {
+        r.start_frame = NumFrames() - r.start_frame;
+    }
+    for (auto &r : metadata.loops) {
+        r.start_frame = NumFrames() - r.start_frame - r.num_frames;
+    }
+}
+
 void AudioData::PrintMetadataRemovalWarning(std::string_view metadata_name) {
     WarningWithNewLine("Signet", {},
                        "One or more metadata {} were removed from the file because the file changed size",

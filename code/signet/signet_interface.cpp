@@ -20,6 +20,7 @@
 #include "commands/pan/pan.h"
 #include "commands/print_info/print_info.h"
 #include "commands/rename/rename.h"
+#include "commands/reverse/reverse.h"
 #include "commands/sample_blend/sample_blend.h"
 #include "commands/seamless_loop/seamless_loop.h"
 #include "commands/trim/trim.h"
@@ -46,6 +47,7 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<DetectPitchCommand>());
     m_commands.push_back(std::make_unique<FixPitchDriftCommand>());
     m_commands.push_back(std::make_unique<RenameCommand>());
+    m_commands.push_back(std::make_unique<ReverseCommand>());
     m_commands.push_back(std::make_unique<SampleBlendCommand>());
     m_commands.push_back(std::make_unique<SeamlessLoopCommand>());
     m_commands.push_back(std::make_unique<TrimSilenceCommand>());
@@ -119,8 +121,9 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             command_categories["Signet Utility"] = {"undo", "clear-backup", "make-docs"};
             command_categories["Filepath"] = {"rename", "move", "folderise"};
             command_categories["Audio"] = {
-                "auto-tune", "fade",         "fix-pitch-drift", "gain", "lowpass", "highpass",     "norm",
-                "pan",       "trim-silence", "seamless-loop",   "trim", "tune",    "zcross-offset"};
+                "auto-tune", "fade",    "fix-pitch-drift", "gain", "highpass",     "lowpass", "norm",
+                "pan",       "reverse", "seamless-loop",   "trim", "trim-silence", "tune",    "zcross-offset",
+            };
             command_categories["File Data"] = {"convert", "embed-sampler-info"};
             command_categories["Info"] = {"detect-pitch", "print-info"};
             command_categories["Generate"] = {"sample-blend"};

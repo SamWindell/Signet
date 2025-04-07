@@ -14,6 +14,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [lowpass](#sound-lowpass)
   - [norm](#sound-norm)
   - [pan](#sound-pan)
+  - [reverse](#sound-reverse)
   - [seamless-loop](#sound-seamless-loop)
   - [trim](#sound-trim)
     - [start](#start)
@@ -303,6 +304,13 @@ Changes the pan of stereo file(s). Does not work on non-stereo files.
 ### Arguments:
 `pan-amount TEXT REQUIRED`
 The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
+
+## :sound: reverse
+### Description:
+Reverses the audio in the file(s).
+
+### Usage:
+  `reverse`
 
 ## :sound: trim-silence
 ### Description:

@@ -55,6 +55,7 @@ struct AudioData {
     void FramesWereRemovedFromStart(size_t num_frames);
     void FramesWereRemovedFromEnd();
     void AudioDataWasStretched(double stretch_factor);
+    void AudioDataWasReversed();
 
   private:
     void PrintMetadataRemovalWarning(std::string_view metadata_name);

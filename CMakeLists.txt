@@ -87,14 +87,15 @@ add_library(
     code/signet/commands/normalise/normalise.cpp
     code/signet/commands/pan/pan.cpp
     code/signet/commands/print_info/print_info.cpp
-    code/signet/commands/trim_silence/trim_silence.cpp
     code/signet/commands/rename/auto_mapper.cpp
     code/signet/commands/rename/note_to_midi.cpp
     code/signet/commands/rename/rename.cpp
     code/signet/commands/rename/rename_substitutions.cpp
+    code/signet/commands/reverse/reverse.cpp
     code/signet/commands/sample_blend/sample_blend.cpp
     code/signet/commands/seamless_loop/seamless_loop.cpp
     code/signet/commands/trim/trim.cpp
+    code/signet/commands/trim_silence/trim_silence.cpp
     code/signet/commands/tune/tune.cpp
     code/signet/commands/zcross_offset/zcross_offset.cpp
     code/signet/signet_interface.cpp

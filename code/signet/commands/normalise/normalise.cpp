@@ -220,7 +220,7 @@ TEST_CASE("NormaliseCommand") {
     }
 
     SUBCASE("single file RMS") {
-        const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm -12 --rms", sine);
+        const auto out = TestHelpers::ProcessBufferWithCommand<NormaliseCommand>("norm -12 --mode rms", sine);
         REQUIRE(out);
         const auto currentPeak = 0.5;
         const auto currentRms = currentPeak / std::sqrt(2);
@@ -269,7 +269,7 @@ TEST_CASE("NormaliseCommand") {
 
         SUBCASE("non-common with independent channels rms") {
             const auto outs = TestHelpers::ProcessBuffersWithCommand<NormaliseCommand>(
-                "norm -12 --independently --independent-channels --rms", {stereo_sine_a, stereo_sine_b});
+                "norm -12 --independently --independent-channels --mode rms", {stereo_sine_a, stereo_sine_b});
             for (const auto &out : outs) {
                 REQUIRE(out);
             }

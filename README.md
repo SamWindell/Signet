@@ -78,6 +78,10 @@ Convert all audio files in the folder "my_folder" (not recursively) to a sample 
 
 ```signet my_folder convert sample-rate 44100 bit-depth 24```
 
+Non-destructive processing:
+
+```signet my_folder --output-folder my_processed_folder script script_file```
+
 ## Key Features
 ### Process files, whole folders or pattern-matching filenames
 Signet is flexible in terms of what files to process. You can specify one or more of any of the following input options: 
@@ -128,6 +132,31 @@ There are lots of ways to process audio files using Signet. See the [documentati
 The metadata in the file is preserved even after stretching, chopping, resampling, or converting from WAV to FLAC. This includes loop points, MIDI mapping data, etc. However, in the case that Signet chops away part of the audio that contained a marker or loop, a warning will be issued as there is no reasonable way to resolve this. 
 
 With WAV files, metadata is read and written in the most commonly used RIFF chunks - so should transfer to other tools. FLAC does not have the same benefit - for the types of metadata we want to use, there is no standardisation. To work around this, Signet stores data in the FLAC 'application' block using the id 'SGNT'. This is a block designed for application-specific data. A JSON string is stored there containing all of the metadata that Signet cares about. Developers of other software are welcome to read this data. It is the same format as the metadata printed when using the print-info command.
+
+### Multiple commands
+You can run multiple commands in one go. For example, you can normalise a file and then fade it in:
+
+```signet filename.wav norm -3 fade in 1s```
+
+This has the advantage of keeping the audio in-memory and therefore processing entirely with 64-bit floats rather than potentially subtly degrading the audio quality when reducing the bit-depth for writing to disk.
+
+There's a caveat: you cannot specify the same command twice in one go. You will get an error about invalid input files. However, there's a workaround: scripts.
+
+Signet's `script` command allows you run commands from a file. This makes it easier to do complex processing and you can use the same command as many times as you want. The script file is a simple text file with a command on each line - just the same as you would type in the command line. For example:
+
+```text
+norm 0 
+trim-silence end
+fade out 0.5s
+tune -4
+norm 0
+```
+
+Run using:
+
+```signet filename.wav script my_script.txt```
+
+Combine these features with `--output-folder` to achieve a non-destructive workflow.
 
 ## Documentation
 [See the documentation page.](docs/usage.md)

@@ -246,7 +246,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     auto output_folder_option =
         app.add_option(
                "--output-folder", m_output_path,
-               "Instead of overwriting the input files, put the processed audio files are put into the given output folder. Subfolders are not created within the output folder; all files are put at the same level. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.")
+               "Instead of overwriting the input files, processed audio files are put into the given output folder. If your input files are within the current working directory they will be placed inside the output folder with the same structure of subfolders. If not, then the files are put at the top level of the output folder. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.")
             ->check([&](const std::string &str) -> std::string {
                 if (fs::exists(str) && !fs::is_directory(str)) {
                     return "The given output is a file that already exists.";
@@ -312,8 +312,14 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         if (m_input_audio_files.GetNumFilesProcessed()) {
             if (m_output_path) {
                 for (auto &f : m_input_audio_files) {
-                    auto new_path = *m_output_path / f.GetPath().filename();
-                    f.SetPath(new_path);
+                    auto const path = f.GetPath();
+
+                    auto const relative_path = fs::relative(path);
+                    if (!StartsWith(relative_path.u8string(), "..")) {
+                        f.SetPath(*m_output_path / relative_path);
+                    } else {
+                        f.SetPath(*m_output_path / path.filename());
+                    }
                 }
             } else if (m_single_output_file) {
                 REQUIRE(m_input_audio_files.Size() == 1);

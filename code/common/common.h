@@ -112,3 +112,4 @@ double GetFreqWithCentDifference(double starting_hz, double cents);
 
 std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const char *mode);
 FILE *OpenFileRaw(const fs::path &path, const char *mode, std::error_code *ec = nullptr);
+std::string ReadEntireFile(const fs::path &path);

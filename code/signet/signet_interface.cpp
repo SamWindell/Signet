@@ -120,11 +120,12 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                       [](const CLI::App *a, const CLI::App *b) { return a->get_name() < b->get_name(); });
 
             std::map<std::string, std::vector<std::string>> command_categories;
-            command_categories["Signet Utility"] = {"undo", "clear-backup", "make-docs"};
+            command_categories["Signet Utility"] = {"undo", "clear-backup", "make-docs", "script"};
             command_categories["Filepath"] = {"rename", "move", "folderise"};
             command_categories["Audio"] = {
-                "add-loop", "auto-tune", "fade",    "fix-pitch-drift", "gain", "highpass",     "lowpass", "norm",
-                "pan",       "reverse", "seamless-loop",   "trim", "trim-silence", "tune",    "zcross-offset",
+                "add-loop",     "auto-tune", "fade",          "fix-pitch-drift", "gain",          "highpass",
+                "lowpass",      "norm",      "pan",           "reverse",         "seamless-loop", "trim",
+                "trim-silence", "tune",      "zcross-offset",
             };
             command_categories["File Data"] = {"convert", "embed-sampler-info"};
             command_categories["Info"] = {"detect-pitch", "print-info"};
@@ -300,6 +301,58 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         if (!command->AllowsSingleOutputFile()) {
             s->excludes(output_file_option);
         }
+    }
+
+    {
+        auto script = app.add_subcommand(
+            "script",
+            "Run a script file containing a list of commands to run. The script file should be a text file with one command per line. The commands should be in the same format as you would use on the command line. Empty lines or lines starting with # are ignored.");
+        script->add_option("script-file", m_script_filepath, "The filepath for the script file.")
+            ->check(CLI::ExistingPath);
+        script->final_callback([&]() {
+            auto file_data = ReadEntireFile(m_script_filepath);
+            if (file_data.empty()) {
+                throw CLI::ParseError("script file not accessible or empty", 1);
+            }
+
+            Replace(file_data, "\r\n", "\n");
+            Replace(file_data, "\r", "\n");
+            auto lines = Split(file_data, "\n", false);
+
+            for (auto line : lines) {
+                while (line.size() && std::isspace(line.front()))
+                    line.remove_prefix(1);
+                while (line.size() && std::isspace(line.back()))
+                    line.remove_suffix(1);
+
+                if (line.empty()) continue;
+                if (line[0] == '#') continue;
+
+                std::string_view command_name {};
+                {
+                    size_t pos = 0;
+                    while (pos < line.size() && !std::isspace(line[pos])) {
+                        ++pos;
+                    }
+                    command_name = line.substr(0, pos);
+                }
+
+                bool found = false;
+                for (auto subcommand : app.get_subcommands({})) {
+                    if (subcommand == script) continue;
+                    if (subcommand->get_name() != command_name) continue;
+
+                    subcommand->clear();
+                    subcommand->parse(std::string(line.substr(command_name.size())));
+                    found = true;
+                    break;
+                }
+
+                if (!found) {
+                    WarningWithNewLine("Signet", {}, "Unknown command: {}", command_name);
+                }
+            }
+        });
     }
 
     const auto PrintSuccess = []() {

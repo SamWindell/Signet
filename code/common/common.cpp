@@ -162,6 +162,24 @@ std::unique_ptr<FILE, void (*)(FILE *)> OpenFile(const fs::path &path, const cha
     return {nullptr, SafeFClose};
 }
 
+std::string ReadEntireFile(const fs::path &path) {
+    std::string result {};
+    auto f = OpenFile(path, "rb");
+    if (!f) return result;
+
+    fseek(f.get(), 0, SEEK_END);
+    const auto size = ftell(f.get());
+    fseek(f.get(), 0, SEEK_SET);
+
+    result.resize(size);
+    auto const num_read = fread(result.data(), 1, size, f.get());
+    if (num_read != (size_t)size) {
+        WarningWithNewLine("Signet", {}, "could not read file {} for reason: {}", path, strerror(errno));
+        return {};
+    }
+    return result;
+}
+
 TEST_CASE("Common") {
     {
         REQUIRE(GetFreqWithCentDifference(100, 1200) == 200);

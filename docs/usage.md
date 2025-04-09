@@ -50,6 +50,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 - [Signet Utility Commands](#Signet-Utility-Commands)
   - [clear-backup](#sound-clear-backup)
   - [make-docs](#sound-make-docs)
+  - [script](#sound-script)
   - [undo](#sound-undo)
 
 # General Usage
@@ -805,6 +806,17 @@ Creates a Github flavour markdown file containing the full CLI - based on runnin
 ### POSITIONALS:
 `output-file TEXT REQUIRED`
 The filepath for the generated markdown file.
+
+## :sound: script
+### Description:
+Run a script file containing a list of commands to run. The script file should be a text file with one command per line. The commands should be in the same format as you would use on the command line. Empty lines or lines starting with # are ignored.
+
+### Usage:
+  `script` `[script-file]`
+
+### POSITIONALS:
+`script-file TEXT:PATH(existing)`
+The filepath for the script file.
 
 ## :sound: undo
 ### Description:

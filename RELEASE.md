@@ -4,6 +4,10 @@ The macOS version is a universal binary, codesigned and notarized.
 
 Changes:
 
+0.3.0:
+- Slightly change behaviour of `--output-folder`: now, if the input files are within the CWD, the output files will be put into the output folder with the same structure of subfolders.
+- Add `script` command to run a series of subcommands.
+
 0.2.0:
 - Rename subcommand `remove-silence` to `trim-silence`
 - Change `norm` subcommand to take a `--mode` argument; one of `peak` or `rms` rather than `--rms` flag. Default mode is `peak`.

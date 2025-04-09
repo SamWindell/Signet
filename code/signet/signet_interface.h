@@ -36,6 +36,7 @@ class SignetInterface final {
     AudioFiles m_input_audio_files {};
     bool m_recursive_directory_search {};
     fs::path m_make_docs_filepath {};
+    fs::path m_script_filepath {};
     std::optional<fs::path> m_output_path {};
     std::optional<fs::path> m_single_output_file {};
 };

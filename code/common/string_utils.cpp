@@ -99,6 +99,13 @@ std::string TrimWhitespace(std::string_view str) {
     return std::string(str);
 }
 
+std::string TrimWhitespaceFront(std::string_view str) {
+    while (str.size() && std::isspace(str.front())) {
+        str.remove_prefix(1);
+    }
+    return std::string(str);
+}
+
 void Lowercase(std::string &str) {
     for (auto &c : str) {
         c = (char)std::tolower(c);

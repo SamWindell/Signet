@@ -23,6 +23,7 @@ bool Remove(std::string &str, char c);
 
 void Lowercase(std::string &str);
 std::string TrimWhitespace(std::string_view str);
+std::string TrimWhitespaceFront(std::string_view str);
 std::string ToSnakeCase(std::string_view str);
 std::string ToCamelCase(std::string_view str);
 

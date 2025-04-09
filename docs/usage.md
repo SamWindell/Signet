@@ -59,11 +59,11 @@ Signet is a command-line program designed for bulk editing audio files. It has c
 ## Usage:
   `signet` `[OPTIONS]` `[input-files...]` `COMMAND`
 
-## Arguments:
+## POSITIONALS:
 `input-files TEXT ...`
 The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-\*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.
 
-## Options:
+## OPTIONS:
 `--version`
 Display the version of Signet
 
@@ -90,24 +90,24 @@ Adds a loop to the audio file(s). The loop is defined by a start point and eithe
 ### Usage:
   `add-loop` `[OPTIONS]` `start-point [end-point]`
 
-### Arguments:
+### POSITIONALS:
 `start-point TEXT REQUIRED`
 The start point of the loop. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp. If negative, it's measured from the end of the file.
 
 `end-point TEXT Excludes: --num-frames`
 The end point of the loop. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp. If negative, it's measured from the end of the file. 0 means the end sample.
 
-### Options:
+### OPTIONS:
 `--num-frames TEXT Excludes: end-point`
 Number of frames in the loop.  Can be used instead of specifying an end-point. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
 `--name TEXT`
 Optional name for the loop.
 
-`--type ENUM:value in {Backward->1,Forward->0,PingPong->2} OR {1,0,2}=0`
+`--type ENUM:value in {Backward->1,Forward->0,PingPong->2} OR {1,0,2} [0] `
 Type of loop. Default is Forward.
 
-`--loop-count UINT=0`
+`--loop-count UINT [0] `
 Number of times to loop. 0 means infinite looping (default).
 
 ## :sound: auto-tune
@@ -117,7 +117,7 @@ Tunes the file(s) to their nearest detected musical pitch. For example, a file w
 ### Usage:
   `auto-tune` `[OPTIONS]`
 
-### Options:
+### OPTIONS:
 `--sample-sets TEXT x 2`
 Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
     
@@ -162,6 +162,7 @@ Only correct the audio if the detected target pitch matches the one given (or an
 Example: auto-tune --expected-note ".\*-note-(\d+)-.\*" 0
 This would find the digits after the text '-note-' in the filename and interpret them as the expected pitch of the track using 0 as the octave number for MIDI note 0.
 
+
 ### Examples:
 ```
   signet file.wav auto-tune
@@ -182,11 +183,11 @@ Adds a fade-in to the start and/or a fade-out to the end of the file(s). This su
 ##### Description:
 Fade in the volume at the start of the file(s).
 
-##### Arguments:
-`fade-in length TEXT REQUIRED`
+##### POSITIONALS:
+`fade-in-length TEXT REQUIRED`
 The length of the fade in. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
-`fade-in shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
+`fade-in-shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
 The shape of the fade-in curve. The default is the 'sine' shape.
 
 
@@ -194,11 +195,11 @@ The shape of the fade-in curve. The default is the 'sine' shape.
 ##### Description:
 Fade out the volume at the end of the file(s).
 
-##### Arguments:
-`fade-out length TEXT REQUIRED`
+##### POSITIONALS:
+`fade-out-length TEXT REQUIRED`
 The length of the fade out. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
-`fade-out shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
+`fade-out-shape ENUM:value in {Exp->4,Linear->0,Log->3,SCurve->2,Sine->1,Sqrt->5} OR {4,0,3,2,1,5}`
 The shape of the fade-out curve. The default is the 'sine' shape.
 
 ## :sound: fix-pitch-drift
@@ -208,7 +209,7 @@ Automatically corrects regions of drifting pitch in the file(s). This tool is id
 ### Usage:
   `fix-pitch-drift` `[OPTIONS]`
 
-### Options:
+### OPTIONS:
 `--sample-sets TEXT x 2`
 Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
     
@@ -266,7 +267,7 @@ Changes the volume of the file(s).
 ### Usage:
   `gain` `gain-amount`
 
-### Arguments:
+### POSITIONALS:
 `gain-amount TEXT REQUIRED`
 The gain amount. This is a number followed by a unit. The unit can be % or db. For example 10% or -3.5db. A gain of 50% makes the signal half as loud. A gain of 200% makes it twice as loud.
 
@@ -277,7 +278,7 @@ Removes frequencies below the given cutoff.
 ### Usage:
   `highpass` `cutoff-freq-hz`
 
-### Arguments:
+### POSITIONALS:
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies below this should be removed.
 
@@ -288,7 +289,7 @@ Lowpass: removes frequencies above the given cutoff.
 ### Usage:
   `lowpass` `cutoff-freq-hz`
 
-### Arguments:
+### POSITIONALS:
 `cutoff-freq-hz FLOAT REQUIRED`
 The cutoff point where frequencies above this should be removed.
 
@@ -299,11 +300,11 @@ Sets the peak amplitude to a given level (normalisation). When this is used on m
 ### Usage:
   `norm` `[OPTIONS]` `target-decibels`
 
-### Arguments:
+### POSITIONALS:
 `target-decibels FLOAT:INT in [-200 - 0] REQUIRED`
 The target level in decibels, where 0dB is the max volume.
 
-### Options:
+### OPTIONS:
 `--independently`
 When there are multiple files, normalise each one individually rather than by a common gain.
 
@@ -329,7 +330,7 @@ Changes the pan of stereo file(s). Does not work on non-stereo files.
 ### Usage:
   `pan` `pan-amount`
 
-### Arguments:
+### POSITIONALS:
 `pan-amount TEXT REQUIRED`
 The pan amount. This is a number from 0 to 100 followed by either L or R (representing left or right). For example: 100R (full right pan), 100L (full left pan), 10R (pan right with 10% intensity).
 
@@ -347,7 +348,7 @@ Turns the file(s) into seamless loops. If you specify a crossfade-percent of 0, 
 ### Usage:
   `seamless-loop` `crossfade-percent [strictness-percent]`
 
-### Arguments:
+### POSITIONALS:
 `crossfade-percent FLOAT:INT in [0 - 100] REQUIRED`
 The size of the crossfade region as a percent of the whole file. If this is zero then the algorithm will scan the file for the smallest possible loop, starting and ending on zero-crossings, and trim the file to that be that loop.
 
@@ -366,7 +367,7 @@ Removes the start or end of the file(s). This command has 2 subcommands, 'start'
 ##### Description:
 Removes the start of the file.
 
-##### Arguments:
+##### POSITIONALS:
 `trim-start-length TEXT REQUIRED`
 The amount to remove from the start. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
@@ -375,7 +376,7 @@ The amount to remove from the start. This value is a number in samples, or a num
 ##### Description:
 Removes the end of the file.
 
-##### Arguments:
+##### POSITIONALS:
 `trim-end-length TEXT REQUIRED`
 The amount to remove from the end. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
@@ -386,11 +387,11 @@ Trims silence from the start or end of the file(s). Silence is considered anythi
 ### Usage:
   `trim-silence` `[OPTIONS]` `[start-or-end]`
 
-### Arguments:
+### POSITIONALS:
 `start-or-end ENUM:value in {Both->2,End->1,Start->0} OR {2,1,0}`
 Specify whether the removal should be at the start, the end or both.
 
-### Options:
+### OPTIONS:
 `--sample-sets TEXT x 2`
 Rather than process each file individually, identify sets of files and process the files in each set in an identical manner based on a single authority file in that set. 
     
@@ -439,9 +440,10 @@ Changes the tune of the file(s) by stretching or shrinking them. Uses a high-qua
 ### Usage:
   `tune` `cents`
 
-### Arguments:
+### POSITIONALS:
 `cents FLOAT REQUIRED`
 The cents to change the pitch by. For example, a value of 1200 would tune the audio up an octave. A value of -80 would tune the audio down by nearly an octave.
+
 
 ### Examples:
 ```
@@ -456,11 +458,11 @@ Offsets the start of an audio file to the nearest zero-crossing (or the closest 
 ### Usage:
   `zcross-offset` `[OPTIONS]` `search_size`
 
-### Arguments:
+### POSITIONALS:
 `search_size TEXT REQUIRED`
 The maximum length that it is allowed to offset to. This value is a number in samples, or a number directly followed by a unit: the unit can be one of {s, ms, %, smp}. These represent {Seconds, Milliseconds, Percent, Samples} respectively. The percent option specifies the duration relative to the whole length of the sample. Examples of audio durations are: 5s, 12.5%, 250ms or 42909smp.
 
-### Options:
+### OPTIONS:
 `--append`
 Append the frames offsetted to the end of the file - useful when the sample is a seamless loop.
 
@@ -477,7 +479,7 @@ Converts the file format, bit-depth or sample rate. Features a high quality resa
 ##### Description:
 Change the sample rate using a high quality resampler.
 
-##### Arguments:
+##### POSITIONALS:
 `sample-rate UINT:UINT in [1 - 4300000000] REQUIRED`
 The target sample rate in Hz. For example 44100
 
@@ -486,7 +488,7 @@ The target sample rate in Hz. For example 44100
 ##### Description:
 Change the bit depth of the file(s).
 
-##### Arguments:
+##### POSITIONALS:
 `bit-depth UINT:{8,16,20,24,32,64} REQUIRED`
 The target bit depth.
 
@@ -495,9 +497,10 @@ The target bit depth.
 ##### Description:
 Change the file format.
 
-##### Arguments:
+##### POSITIONALS:
 `file-format ENUM:value in {Flac->1,Wav->0} OR {1,0} REQUIRED`
 The output file format.
+
 
 ### Examples:
 ```
@@ -522,8 +525,8 @@ Remove all sampler metadata from the file(s)
 ##### Description:
 Embed the root note of the audio file
 
-##### Arguments:
-`Root note value TEXT REQUIRED`
+##### POSITIONALS:
+`root-note-value TEXT REQUIRED`
 This value should be 1 of the following 3 formats:
 
 (1) A MIDI note number.
@@ -546,8 +549,8 @@ Sets the root note by running a pitch detection algorithm on the file. If the au
 ##### Description:
 Embed the low and high notes.
 
-##### Arguments:
-`Note range value(s) TEXT REQUIRED`
+##### POSITIONALS:
+`note-range-values TEXT REQUIRED`
 This value is either 'auto-map' or 2 separate values to set the low and high note range.
 
 EXAMPLES
@@ -576,8 +579,8 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
 ##### Description:
 Embeds the velocity mapping info. Samplers can often play different samples depending on the MIDI velocity. In order to do this, the sampler needs to know what the minimum and maximum MIDI velocity values that a sample should play in. The whole MIDI velocity range is between 1 and 127.
 
-##### Arguments:
-`Low and high velocity values TEXT x 2 REQUIRED`
+##### POSITIONALS:
+`low-and-high-velocity-values TEXT x 2 REQUIRED`
 2 values to represent the low and high velocity mapping.
 
 EXAMPLES
@@ -603,7 +606,7 @@ Moves files into folders based on their names. This is done by specifying a rege
 ### Usage:
   `folderise` `filename-regex out-folder`
 
-### Arguments:
+### POSITIONALS:
 `filename-regex TEXT REQUIRED`
 The ECMAScript-style regex pattern used to match filenames against. The file extension is not part of this comparison.
 
@@ -617,7 +620,7 @@ Moves all input files to a given folder.
 ### Usage:
   `move` `[destination-folder]`
 
-### Arguments:
+### POSITIONALS:
 `destination-folder TEXT`
 The folder to put all of the input files in.
 
@@ -678,7 +681,7 @@ The camel-case name of the folder that contains the audio file.
 ##### Description:
 Add text to the start of the filename.
 
-##### Arguments:
+##### POSITIONALS:
 `prefix-text TEXT REQUIRED`
 The text to add, may contain substitution variables.
 
@@ -687,7 +690,7 @@ The text to add, may contain substitution variables.
 ##### Description:
 Add text to the end of the filename (before the extension).
 
-##### Arguments:
+##### POSITIONALS:
 `suffix-text TEXT REQUIRED`
 The text to add, may contain substitution variables.
 
@@ -696,7 +699,7 @@ The text to add, may contain substitution variables.
 ##### Description:
 Replace names that match the given regex pattern. The replacement can contain regex-groups from the matched filename.
 
-##### Arguments:
+##### POSITIONALS:
 `regex-pattern TEXT REQUIRED`
 The ECMAScript-style regex pattern to match filenames against - folder names or file extensions are ignored.
 
@@ -708,7 +711,7 @@ The new filename for files that matched the regex. This may contain substitution
 ##### Description:
 Replace all occurrences of note names with the corresponding MIDI note number. For example replace C3 with 60.
 
-##### Options:
+##### OPTIONS:
 `--midi-zero-note TEXT`
 The note that should represent MIDI note number 0. Default is C-1.
 
@@ -721,7 +724,7 @@ First you specify a regex pattern that captures a number representing the MIDI r
 
 You control the format of the renaming by specifing a pattern containing substitution variables for `<lo>`, `<root>` and `<high>`. These variables are replaced by the MIDI note numbers in the range 0 to 127.
 
-##### Arguments:
+##### POSITIONALS:
 `auto-map-filename-pattern TEXT REQUIRED`
 The ECMAScript-style regex the should match against filename (excluding extension). This regex should contain a capture group to represent the root note of the sample.
 
@@ -730,6 +733,7 @@ The group number that represents the MIDI root note number. Remember regex group
 
 `auto-map-renamed-filename TEXT REQUIRED`
 The name of the output file (excluding extension). This should contain substitution variables `<lo>`, `<root>` and `<hi>` which will be replaced by the low MIDI note number, the root MIDI note number and the high MIDI note number. The low and high numbers are generated by the auto-mapper so that all samples in each folder will fill out the entire range 0-127. Matching groups from the regex can also be substituted into this new name. To do this, add the regex group index in the angle-brackets (such as <1>).
+
 
 ### Examples:
 ```
@@ -746,7 +750,7 @@ Creates samples in between other samples that are different pitches. It takes 2 
 ### Usage:
   `sample-blend` `[OPTIONS]` `root_note_regex semitone-interval out-filename`
 
-### Arguments:
+### POSITIONALS:
 `root_note_regex TEXT REQUIRED`
 Regex pattern containing 1 group that is to match the root note
 
@@ -756,9 +760,10 @@ The semitone interval at which to generate new samples by
 `out-filename TEXT REQUIRED`
 The filename of the generated files (excluding extension). It should contain either the substitution variable `<root-num>` or `<root-note>` which will be replaced by the root note of the generated file. `<root-num>` is replaced by the MIDI note number, and `<root-name>` is replaced by the note name, such as C3.
 
-### Options:
+### OPTIONS:
 `--make-same-length`
 For each generated file, if the 2 files that are being combined are not the same length, the longer one will be trimmed to the same length as the shorter before they are blended.
+
 
 ### Examples:
 ```
@@ -797,7 +802,7 @@ Creates a Github flavour markdown file containing the full CLI - based on runnin
 ### Usage:
   `make-docs` `output-file`
 
-### Arguments:
+### POSITIONALS:
 `output-file TEXT REQUIRED`
 The filepath for the generated markdown file.
 

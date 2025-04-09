@@ -112,7 +112,7 @@ CLI::App *EmbedSamplerInfo::CreateCommandCLI(CLI::App &app) {
 
     auto root = embedder->add_subcommand("root", "Embed the root note of the audio file");
     root->add_option_function<std::string>(
-            "Root note value",
+            "root-note-value",
             [this](const std::string &str) {
                 if (auto o = GetIntIfValid(str)) {
                     CLIValidateIntArgIsInRange("MIDI root note", o.value(), 0, 127);
@@ -143,7 +143,7 @@ CLI::App *EmbedSamplerInfo::CreateCommandCLI(CLI::App &app) {
     auto note_range = embedder->add_subcommand("note-range", "Embed the low and high notes.");
     note_range
         ->add_option_function<std::vector<std::string>>(
-            "Note range value(s)",
+            "note-range-values",
             [this](const std::vector<std::string> &args) {
                 if (args.size() == 1) {
                     const std::string auto_map_string {"auto-map"};
@@ -193,7 +193,7 @@ If not 'auto-map' then each of the 2 arguments can be 1 of 3 different formats. 
         "values that a sample should play in. The whole MIDI velocity range is between 1 and 127.");
     velocity_range
         ->add_option_function<std::vector<std::string>>(
-            "Low and high velocity values",
+            "low-and-high-velocity-values",
             [this](const std::vector<std::string> &args) {
                 CLISetArg("Velocity low number", args[0], 1, m_low_velo_number, m_low_velo_regex_pattern);
                 CLISetArg("Velocity high number", args[1], 1, m_high_velo_number, m_high_velo_regex_pattern);

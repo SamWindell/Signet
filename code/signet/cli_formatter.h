@@ -1,6 +1,7 @@
 #pragma once
 #include "CLI11.hpp"
 #include "fmt/color.h"
+#include "string_utils.h"
 
 // A hack to be able to easily override the const methods of CLI::Formatter
 int global_formatter_indent {};
@@ -102,7 +103,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         for (const auto com : subcommands) {
             if (com->get_name().empty()) {
                 if (!com->get_group().empty()) {
-                    out << make_expanded(com);
+                    out << make_expanded(com, mode);
                 }
                 continue;
             }
@@ -205,7 +206,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         return result + body;
     }
 
-    inline std::string make_expanded(const CLI::App *sub) const override {
+    inline std::string make_expanded(const CLI::App *sub, CLI::AppFormatMode) const override {
         std::stringstream out;
 
         global_formatter_indent += indent_size;
@@ -230,7 +231,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
 
         // This immediately forwards to the make_expanded method. This is done this way so that subcommands
         // can have overridden formatters
-        if (mode == CLI::AppFormatMode::Sub) return make_expanded(app);
+        if (mode == CLI::AppFormatMode::Sub) return make_expanded(app, mode);
 
         std::stringstream out;
         if ((app->get_name().empty()) && (app->get_parent() != nullptr)) {
@@ -251,7 +252,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
         }
 
         auto footer = make_footer(app);
-        if (StartsWith(footer, "Examples:")) {
+        if (StartsWith(TrimWhitespaceFront(footer), "Examples:")) {
             if (m_mode == OutputMode::Markdown) {
                 Replace(footer, "Examples:\n", "Examples:\n```\n");
                 footer = TrimWhitespace(footer) + "\n```";

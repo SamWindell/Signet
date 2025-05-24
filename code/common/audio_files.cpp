@@ -56,7 +56,6 @@ void AudioFiles::ReadAllAudioFiles(const FilepathSet &paths) {
             m_all_files.push_back(proximate);
         }
     }
-    MessageWithNewLine("Signet", {}, "Found {} matching files", m_all_files.size());
     CreateFoldersDataStructure();
 }
 

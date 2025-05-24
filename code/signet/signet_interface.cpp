@@ -228,6 +228,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             throw CLI::Success();
         });
 
+    g_messages_enabled = true;
     app.add_flag_callback("--silent", []() { g_messages_enabled = false; }, "Disable all messages");
 
     app.add_flag_callback(
@@ -267,10 +268,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 return {};
             });
 
+    bool printed_input_files_info = false;
+
     for (auto &command : m_commands) {
         auto s = command->CreateCommandCLI(app);
         s->needs(input_files_option);
         s->final_callback([&] {
+            // We print the input files message here because we want to allow subcommands to set
+            // g_messages_enabled to false, in which case this MessageWithNewLine will correctly be a no-op.
+            if (!printed_input_files_info) {
+                MessageWithNewLine("Signet", {}, "Found {} matching files", m_input_audio_files.Size());
+                printed_input_files_info = true;
+            }
+
             struct FileEditState {
                 int num_audio_edits, num_path_edits;
             };

@@ -786,7 +786,11 @@ Prints out the detected pitch of the file(s).
 Prints information about the audio file(s), such as the embedded metadata, sample-rate and RMS.
 
 ### Usage:
-  `print-info`
+  `print-info` `[OPTIONS]`
+
+### OPTIONS:
+`--json`
+Output the information as JSON array.
 
 # Signet Utility Commands
 ## :sound: clear-backup

@@ -10,4 +10,5 @@ class PrintInfoCommand : public Command {
 
   private:
     bool m_json_output = false;
+    bool m_detect_pitch = false;
 };

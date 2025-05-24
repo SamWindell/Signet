@@ -792,6 +792,9 @@ Prints information about the audio file(s), such as the embedded metadata, sampl
 `--json`
 Output the information as JSON array.
 
+`--detect-pitch`
+Detect the pitch of the audio file(s) and print it out.
+
 # Signet Utility Commands
 ## :sound: clear-backup
 ### Description:

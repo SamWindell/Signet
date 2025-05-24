@@ -9,6 +9,7 @@
 
 #include "doctest.hpp"
 #include "gain_calculators.h"
+#include "midi_pitches.h"
 #include "test_helpers.h"
 
 CLI::App *PrintInfoCommand::CreateCommandCLI(CLI::App &app) {
@@ -23,6 +24,8 @@ CLI::App *PrintInfoCommand::CreateCommandCLI(CLI::App &app) {
             m_json_output = true;
         },
         "Output the information as JSON array.");
+    printer->add_flag("--detect-pitch", m_detect_pitch,
+                      "Detect the pitch of the audio file(s) and print it out.");
     return printer;
 }
 
@@ -68,6 +71,17 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
             file_info["crest_factor_db"] = AmpToDB(crest_factor);
             file_info["crest_factor"] = crest_factor;
 
+            if (m_detect_pitch) {
+                if (auto const pitch = f.GetAudio().DetectPitch()) {
+                    const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+                    file_info["detected_pitch_hz"] = *pitch;
+                    file_info["detected_pitch_nearest_note"] = closest_musical_note.name;
+                    file_info["detected_pitch_nearest_note_midi"] = closest_musical_note.midi_note;
+                    file_info["detected_pitch_cents_to_nearest"] =
+                        GetCentsDifference(closest_musical_note.pitch, *pitch);
+                }
+            }
+
             output_array.push_back(file_info);
         }
 
@@ -106,6 +120,19 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
             info_text += fmt::format("Peak: {:.2f} dB\n", AmpToDB(peak));
             info_text +=
                 fmt::format("Crest Factor: {:.2f} dB ({:.2f})\n", AmpToDB(crest_factor), crest_factor);
+
+            if (m_detect_pitch) {
+                const auto pitch = f.GetAudio().DetectPitch();
+                if (pitch) {
+                    const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+
+                    info_text += fmt::format("Detected Pitch: {:.2f} Hz ({:.1f} cents from {}, MIDI {})\n",
+                                             *pitch, GetCentsDifference(closest_musical_note.pitch, *pitch),
+                                             closest_musical_note.name, closest_musical_note.midi_note);
+                } else {
+                    info_text += "Detected Pitch: No pitch could be found\n";
+                }
+            }
 
             if (EndsWith(info_text, "\n")) info_text.resize(info_text.size() - 1);
             MessageWithNewLine(GetName(), f, "Info:\n{}", info_text);

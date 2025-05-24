@@ -789,8 +789,14 @@ Prints information about the audio file(s), such as the embedded metadata, sampl
   `print-info` `[OPTIONS]`
 
 ### OPTIONS:
-`--json`
-Output the information as JSON array.
+`--format ENUM:value in {json->1,lua->2,text->0} OR {1,2,0}`
+Output format for the information. Default is text.
+
+`--path-as-key`
+If set, the path of the files will be used as the keys in the JSON/Lua output. Otherwise, it will be an array of objects with 'path' as a field.
+
+`--field-filter TEXT`
+If set, only the fields matching this regex will be printed in the output. For example, "(channels|sample_rate)" will only print the channels and sample_rate fields.
 
 `--detect-pitch`
 Detect the pitch of the audio file(s) and print it out.

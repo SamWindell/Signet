@@ -5,7 +5,7 @@ The macOS version is a universal binary, codesigned and notarized.
 Changes:
 
 0.3.0:
-- Add `--json` option to `print-info` subcommand to output the information in JSON format. Useful for passing into tools such as `jq`, for example.
+- Add `--format` option to `print-info` subcommand to output the information in JSON or Lua format. Useful for passing into tools such as `jq` or Floe, for example. Includes `--field-filter` and `--path-as-key` options to control the output.
 - Add `--detect-pitch` option to `print-info`.
 - Slightly change behaviour of `--output-folder`: now, if the input files are within the CWD, the output files will be put into the output folder with the same structure of subfolders.
 - Add `script` command to run a series of subcommands.

@@ -9,6 +9,9 @@ class PrintInfoCommand : public Command {
     std::string GetName() const override { return "PrintInfo"; }
 
   private:
-    bool m_json_output = false;
+    enum class Format { Text, Json, Lua };
+    Format m_format = Format::Text;
     bool m_detect_pitch = false;
+    bool m_path_as_key = false;
+    std::optional<std::string> m_field_filter_regex {};
 };

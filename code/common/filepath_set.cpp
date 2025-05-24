@@ -170,12 +170,15 @@ std::optional<FilepathSet> FilepathSet::CreateFromPatterns(const std::vector<std
     FilepathSet set {};
     for (const auto &include_part : include_parts) {
         if (include_part.find('*') != std::string::npos) {
-            MessageWithNewLine("Signet", {}, "Searching for files using the pattern {}", include_part);
+            // TODO: these DebugWithNewLine used to be Messages, but they don't play well with subcommands
+            // that want stdout to be silent other than their output (JSON output, for example). They are
+            // quite nice though, we should find a way to reintroduce them.
+            DebugWithNewLine("Searching for files using the pattern {}", include_part);
             const auto matching_paths = GetFilepathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
         } else if (fs::is_directory(include_part)) {
-            MessageWithNewLine("Signet", {}, "Searching for files {} in the directory {}",
-                               recursive_directory_search ? "recursively" : "non-recursively", include_part);
+            DebugWithNewLine("Searching for files {} in the directory {}",
+                             recursive_directory_search ? "recursively" : "non-recursively", include_part);
             const auto matching_paths = GetAllFilepathsInDirectory(include_part, recursive_directory_search);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
         } else if (fs::is_regular_file(include_part)) {

@@ -675,7 +675,11 @@ The snake-case name of the folder that contains the audio file.
 The camel-case name of the folder that contains the audio file.
 
 ### Usage:
-  `rename` `COMMAND`
+  `rename` `[OPTIONS]` `COMMAND`
+
+### OPTIONS:
+`--dry-run`
+If set, the command will not actually rename files, but will print what it would do instead.
 
 ### Commands:
 #### prefix

@@ -19,6 +19,8 @@ class RenameCommand final : public Command {
     AutoMapper m_auto_mapper;
     NoteToMIDIConverter m_note_to_midi_processor;
 
+    bool dry_run {};
+
     std::optional<std::string> m_prefix;
     std::optional<std::string> m_suffix;
     std::optional<std::string> m_regex_pattern;

@@ -9,6 +9,8 @@ Changes:
 - Add `--detect-pitch` option to `print-info`.
 - Slightly change behaviour of `--output-folder`: now, if the input files are within the CWD, the output files will be put into the output folder with the same structure of subfolders.
 - Add `script` command to run a series of subcommands.
+- Add `--dry-run` to `rename`.
+- Improve filesystem handling so that Signet can be reliably run at the same time as other Signet processes.
 
 0.2.0:
 - Rename subcommand `remove-silence` to `trim-silence`

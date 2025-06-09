@@ -20,6 +20,10 @@ Any text added via this command can contain special substitution variables; thes
                                                    RenameSubstitution::GetFullInfo());
     rename->require_subcommand();
 
+    rename->add_flag(
+        "--dry-run", dry_run,
+        "If set, the command will not actually rename files, but will print what it would do instead.");
+
     auto prefix = rename->add_subcommand("prefix", "Add text to the start of the filename.");
     prefix->add_option("prefix-text", m_prefix, "The text to add, may contain substitution variables.")
         ->required();
@@ -174,7 +178,11 @@ void RenameCommand::ProcessFiles(AudioFiles &files) {
                 const auto ext = path.extension();
                 path.replace_filename(filename);
                 path.replace_extension(ext);
-                f->SetPath(path);
+                if (!dry_run) {
+                    f->SetPath(path);
+                } else {
+                    MessageWithNewLine(GetName(), *f, "New name would be: {} for", path.generic_string());
+                }
             }
         }
     }

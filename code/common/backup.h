@@ -8,7 +8,7 @@ struct AudioData;
 class SignetBackup {
   public:
     SignetBackup();
-    bool LoadBackup();
+    bool LoadBackup() const;
     void ClearBackup();
 
     bool DeleteFile(const fs::path &path);
@@ -23,14 +23,12 @@ class SignetBackup {
     bool AddNewlyCreatedFileToBackup(const fs::path &path);
 
     bool WriteDatabaseFile();
-    bool CreateBackupFilesDirIfNeeded();
 
     void ClearOldBackIfNeeded();
 
     bool m_old_backup_cleared {false};
-    fs::path m_database_file {};
-    fs::path m_backup_dir {};
-    fs::path m_backup_files_dir {};
+    const fs::path m_backup_dir;
+    const fs::path m_backup_files_dir;
+    const fs::path m_database_file;
     nlohmann::json m_database {};
-    bool m_parsed_json {};
 };

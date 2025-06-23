@@ -123,7 +123,7 @@ void NormaliseCommand::ProcessFiles(AudioFiles &files) {
             ScaleMultiplier(gain_calculator->GetGain(DBToAmp(m_target_decibels)), m_norm_mix_percent / 100.0);
         if (m_crest_factor_scaling) {
             auto const rms = GetRMS(audio.interleaved_samples);
-            auto const peak = GetPeak(audio.interleaved_samples);
+            auto const peak = GetPeak(audio.interleaved_samples).value;
 
             constexpr auto k_max_crest_factor = 200.0;
             constexpr auto k_max_reduction_db = -12.0;

@@ -1,7 +1,5 @@
 #include "gain_calculators.h"
 
-#include <type_traits>
-
 #include "doctest.hpp"
 #include "test_helpers.h"
 
@@ -31,11 +29,15 @@ double GetRMS(const tcb::span<const double> samples) {
     return std::sqrt(result);
 }
 
-double GetPeak(const tcb::span<const double> samples) {
-    if (!samples.size()) return 0;
-    double result = 0;
-    for (const auto s : samples) {
-        result = std::max(result, std::abs(s));
+Peak GetPeak(const tcb::span<const double> samples) {
+    if (!samples.size()) return {0, 0};
+    Peak result {0, 0};
+    for (size_t i = 0; i < samples.size(); ++i) {
+        auto const s = std::abs(samples[i]);
+        if (s > result.value) {
+            result.value = s;
+            result.index = i;
+        }
     }
     return result;
 }

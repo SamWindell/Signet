@@ -154,11 +154,65 @@ static std::string JsonToLuaTable(const nlohmann::json &j, int indent = 0) {
     return oss.str();
 }
 
+nlohmann::json PrintInfoCommand::CalculateFileInfo(EditTrackedAudioFile &file) const {
+    nlohmann::json file_info;
+
+    if (!file.GetAudio().metadata.IsEmpty()) {
+        std::stringstream ss {};
+        try {
+            cereal::JSONOutputArchive archive(ss);
+            archive(cereal::make_nvp("Metadata", file.GetAudio().metadata));
+            ss << "}";
+
+            // Parse the cereal JSON output and add it to our nlohmann::json object
+            auto metadata_json = nlohmann::json::parse(ss.str());
+            if (metadata_json.contains("Metadata")) {
+                file_info["metadata"] = metadata_json["Metadata"];
+            }
+        } catch (const std::exception &e) {
+            ErrorWithNewLine(GetName(), file, "Internal error when writing the metadata: {}", e.what());
+            file_info["metadata_error"] = e.what();
+        }
+    } else {
+        file_info["metadata"] = nullptr;
+    }
+
+    file_info["channels"] = file.GetAudio().num_channels;
+    file_info["sample_rate"] = file.GetAudio().sample_rate;
+    file_info["frames"] = file.GetAudio().NumFrames();
+    file_info["length_seconds"] = (double)file.GetAudio().NumFrames() / (double)file.GetAudio().sample_rate;
+    file_info["bit_depth"] = file.GetAudio().bits_per_sample;
+
+    auto const rms = GetRMS(file.GetAudio().interleaved_samples);
+    auto const peak = GetPeak(file.GetAudio().interleaved_samples);
+    auto const crest_factor = peak.value / rms;
+    file_info["rms_db"] = AmpToDB(rms);
+    file_info["peak_db"] = AmpToDB(peak.value);
+    file_info["peak_frame"] = peak.index / file.GetAudio().num_channels;
+    file_info["crest_factor_db"] = AmpToDB(crest_factor);
+    file_info["crest_factor"] = crest_factor;
+
+    if (m_detect_pitch) {
+        if (auto const pitch = file.GetAudio().DetectPitch()) {
+            const auto closest_musical_note = FindClosestMidiPitch(*pitch);
+            file_info["detected_pitch_hz"] = *pitch;
+            file_info["detected_pitch_nearest_note"] = closest_musical_note.name;
+            file_info["detected_pitch_nearest_note_midi"] = closest_musical_note.midi_note;
+            file_info["detected_pitch_cents_to_nearest"] =
+                GetCentsDifference(closest_musical_note.pitch, *pitch);
+        }
+    }
+
+    return file_info;
+}
+
 void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
     if (m_format == Format::Text) {
         for (auto &f : files) {
+            auto file_info = CalculateFileInfo(f);
             std::string info_text;
-            if (!f.GetAudio().metadata.IsEmpty()) {
+
+            if (!file_info["metadata"].is_null()) {
                 std::stringstream ss {};
                 {
                     try {
@@ -174,29 +228,26 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
                 info_text += "Contains no metadata that Signet understands\n";
             }
 
-            info_text += fmt::format("Channels: {}\n", f.GetAudio().num_channels);
-            info_text += fmt::format("Sample Rate: {}\n", f.GetAudio().sample_rate);
-            info_text += fmt::format("Frames: {}\n", f.GetAudio().NumFrames());
-            info_text += fmt::format("Length: {:.2f} seconds\n",
-                                     (double)f.GetAudio().NumFrames() / (double)f.GetAudio().sample_rate);
-            info_text += fmt::format("Bit-depth: {}\n", f.GetAudio().bits_per_sample);
+            info_text += fmt::format("Channels: {}\n", file_info["channels"].get<int>());
+            info_text += fmt::format("Sample Rate: {}\n", file_info["sample_rate"].get<int>());
+            info_text += fmt::format("Frames: {}\n", file_info["frames"].get<size_t>());
+            info_text += fmt::format("Length: {:.2f} seconds\n", file_info["length_seconds"].get<double>());
+            info_text += fmt::format("Bit-depth: {}\n", file_info["bit_depth"].get<int>());
 
-            auto const rms = GetRMS(f.GetAudio().interleaved_samples);
-            auto const peak = GetPeak(f.GetAudio().interleaved_samples);
-            auto const crest_factor = peak / rms;
-            info_text += fmt::format("RMS: {:.2f} dB\n", AmpToDB(rms));
-            info_text += fmt::format("Peak: {:.2f} dB\n", AmpToDB(peak));
+            info_text += fmt::format("RMS: {:.2f} dB\n", file_info["rms_db"].get<double>());
+            info_text += fmt::format("Peak: {:.2f} dB (at frame {})\n", file_info["peak_db"].get<double>(),
+                                     file_info["peak_frame"].get<size_t>());
             info_text +=
-                fmt::format("Crest Factor: {:.2f} dB ({:.2f})\n", AmpToDB(crest_factor), crest_factor);
+                fmt::format("Crest Factor: {:.2f} dB ({:.2f})\n", file_info["crest_factor_db"].get<double>(),
+                            file_info["crest_factor"].get<double>());
 
             if (m_detect_pitch) {
-                const auto pitch = f.GetAudio().DetectPitch();
-                if (pitch) {
-                    const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-
+                if (file_info.contains("detected_pitch_hz")) {
                     info_text += fmt::format("Detected Pitch: {:.2f} Hz ({:.1f} cents from {}, MIDI {})\n",
-                                             *pitch, GetCentsDifference(closest_musical_note.pitch, *pitch),
-                                             closest_musical_note.name, closest_musical_note.midi_note);
+                                             file_info["detected_pitch_hz"].get<double>(),
+                                             file_info["detected_pitch_cents_to_nearest"].get<double>(),
+                                             file_info["detected_pitch_nearest_note"].get<std::string>(),
+                                             file_info["detected_pitch_nearest_note_midi"].get<int>());
                 } else {
                     info_text += "Detected Pitch: No pitch could be found\n";
                 }
@@ -212,52 +263,7 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
         }
 
         for (auto &f : files) {
-            nlohmann::json file_info;
-
-            if (!f.GetAudio().metadata.IsEmpty()) {
-                std::stringstream ss {};
-                try {
-                    cereal::JSONOutputArchive archive(ss);
-                    archive(cereal::make_nvp("Metadata", f.GetAudio().metadata));
-                    ss << "}";
-
-                    // Parse the cereal JSON output and add it to our nlohmann::json object
-                    auto metadata_json = nlohmann::json::parse(ss.str());
-                    if (metadata_json.contains("Metadata")) {
-                        file_info["metadata"] = metadata_json["Metadata"];
-                    }
-                } catch (const std::exception &e) {
-                    ErrorWithNewLine(GetName(), f, "Internal error when writing the metadata: {}", e.what());
-                    file_info["metadata_error"] = e.what();
-                }
-            } else {
-                file_info["metadata"] = nullptr;
-            }
-
-            file_info["channels"] = f.GetAudio().num_channels;
-            file_info["sample_rate"] = f.GetAudio().sample_rate;
-            file_info["frames"] = f.GetAudio().NumFrames();
-            file_info["length_seconds"] = (double)f.GetAudio().NumFrames() / (double)f.GetAudio().sample_rate;
-            file_info["bit_depth"] = f.GetAudio().bits_per_sample;
-
-            auto const rms = GetRMS(f.GetAudio().interleaved_samples);
-            auto const peak = GetPeak(f.GetAudio().interleaved_samples);
-            auto const crest_factor = peak / rms;
-            file_info["rms_db"] = AmpToDB(rms);
-            file_info["peak_db"] = AmpToDB(peak);
-            file_info["crest_factor_db"] = AmpToDB(crest_factor);
-            file_info["crest_factor"] = crest_factor;
-
-            if (m_detect_pitch) {
-                if (auto const pitch = f.GetAudio().DetectPitch()) {
-                    const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-                    file_info["detected_pitch_hz"] = *pitch;
-                    file_info["detected_pitch_nearest_note"] = closest_musical_note.name;
-                    file_info["detected_pitch_nearest_note_midi"] = closest_musical_note.midi_note;
-                    file_info["detected_pitch_cents_to_nearest"] =
-                        GetCentsDifference(closest_musical_note.pitch, *pitch);
-                }
-            }
+            auto file_info = CalculateFileInfo(f);
 
             if (m_field_filter_regex) {
                 std::regex filter_regex(*m_field_filter_regex);

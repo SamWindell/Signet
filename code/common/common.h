@@ -26,10 +26,10 @@ struct fmt::formatter<fs::path> {
     }
 };
 
-void PrintErrorPrefix(std::string_view heading);
-void PrintWarningPrefix(std::string_view heading);
-void PrintMessagePrefix(std::string_view heading);
-void PrintDebugPrefix();
+void PrintErrorPrefix(FILE *f, std::string_view heading);
+void PrintWarningPrefix(FILE *f, std::string_view heading);
+void PrintMessagePrefix(FILE *f, std::string_view heading);
+void PrintDebugPrefix(FILE *f);
 
 struct NoneType {};
 
@@ -40,18 +40,18 @@ struct SignetWarning : public std::runtime_error {
     SignetWarning(const std::string &str) : std::runtime_error(str) {}
 };
 
-void PrintFilename(const EditTrackedAudioFile &f);
-void PrintFilename(fs::path &path);
-void PrintFilename(NoneType n);
+void PrintFilename(FILE *stream, const EditTrackedAudioFile &f);
+void PrintFilename(FILE *stream, fs::path &path);
+void PrintFilename(FILE *stream, NoneType n);
 
 template <typename NameType = NoneType, typename... Args>
 void ErrorWithNewLine(std::string_view heading,
                       const NameType &f,
                       std::string_view format,
                       const Args &...args) {
-    PrintErrorPrefix(heading);
+    PrintErrorPrefix(stdout, heading);
     fmt::vprint(format, fmt::make_format_args(args...));
-    PrintFilename(f);
+    PrintFilename(stdout, f);
     fmt::print("\n");
     throw SignetError("A fatal error occurred");
 }
@@ -61,9 +61,9 @@ void WarningWithNewLine(std::string_view heading,
                         const NameType &f,
                         std::string_view format,
                         Args &&...args) {
-    PrintWarningPrefix(heading);
+    PrintWarningPrefix(stdout, heading);
     fmt::vprint(format, fmt::make_format_args(args...));
-    PrintFilename(f);
+    PrintFilename(stdout, f);
     fmt::print("\n");
     if (g_warnings_as_errors)
         throw SignetWarning("A warning occurred, and warnings are set to be treated as errors");
@@ -75,17 +75,30 @@ void MessageWithNewLine(std::string_view heading,
                         std::string_view format,
                         Args &&...args) {
     if (g_messages_enabled) {
-        PrintMessagePrefix(heading);
+        PrintMessagePrefix(stdout, heading);
         fmt::vprint(format, fmt::make_format_args(args...));
-        PrintFilename(f);
+        PrintFilename(stdout, f);
         fmt::print("\n");
+    }
+}
+
+template <typename NameType = NoneType, typename... Args>
+void StderrMessageWithNewLine(std::string_view heading,
+                              const NameType &f,
+                              std::string_view format,
+                              Args &&...args) {
+    if (g_messages_enabled) {
+        PrintMessagePrefix(stderr, heading);
+        fmt::vprint(stderr, format, fmt::make_format_args(args...));
+        PrintFilename(stderr, f);
+        fmt::print(stderr, "\n");
     }
 }
 
 template <typename... Args>
 void DebugWithNewLine([[maybe_unused]] std::string_view format, [[maybe_unused]] Args &&...args) {
 #if SIGNET_DEBUG
-    PrintDebugPrefix();
+    PrintDebugPrefix(stdout);
     fmt::vprint(format, fmt::make_format_args(args...));
     fmt::print("\n");
 #endif

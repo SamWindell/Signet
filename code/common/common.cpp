@@ -45,35 +45,35 @@ void InitConsole() {
     static Obj obj;
 }
 
-void PrintFilename(const EditTrackedAudioFile &f) {
+void PrintFilename(FILE *stream, const EditTrackedAudioFile &f) {
     InitConsole();
-    fmt::print(": ");
-    fmt::print(fg(fmt::color::navajo_white), "{}", f.OriginalFilename());
+    fmt::print(stream, ": ");
+    fmt::print(stream, fg(fmt::color::navajo_white), "{}", f.OriginalFilename());
 }
-void PrintFilename(const fs::path &path) {
+void PrintFilename(FILE *stream, const fs::path &path) {
     InitConsole();
-    fmt::print(": ");
-    fmt::print(fg(fmt::color::navajo_white), "{}", GetJustFilenameWithNoExtension(path));
+    fmt::print(stream, ": ");
+    fmt::print(stream, fg(fmt::color::navajo_white), "{}", GetJustFilenameWithNoExtension(path));
 }
-void PrintFilename(NoneType) {}
+void PrintFilename(FILE *, NoneType) {}
 
-void PrintErrorPrefix(std::string_view heading) {
+void PrintErrorPrefix(FILE *stream, std::string_view heading) {
     InitConsole();
-    fmt::print(fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[{}] ERROR", heading);
-    fmt::print(": ");
+    fmt::print(stream, fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[{}] ERROR", heading);
+    fmt::print(stream, ": ");
 }
-void PrintWarningPrefix(std::string_view heading) {
+void PrintWarningPrefix(FILE *stream, std::string_view heading) {
     InitConsole();
-    fmt::print(fmt::fg(fmt::color::orange) | fmt::emphasis::bold, "[{}] WARNING", heading);
-    fmt::print(": ");
+    fmt::print(stream, fmt::fg(fmt::color::orange) | fmt::emphasis::bold, "[{}] WARNING", heading);
+    fmt::print(stream, ": ");
 }
-void PrintMessagePrefix(const std::string_view heading) {
+void PrintMessagePrefix(FILE *stream, const std::string_view heading) {
     InitConsole();
-    fmt::print(fmt::fg(fmt::color::cornflower_blue) | fmt::emphasis::bold, "[{}]", heading);
-    fmt::print(": ");
+    fmt::print(stream, fmt::fg(fmt::color::cornflower_blue) | fmt::emphasis::bold, "[{}]", heading);
+    fmt::print(stream, ": ");
 }
 
-void PrintDebugPrefix() { fmt::print(fmt::emphasis::bold, "[DEBUG]: "); }
+void PrintDebugPrefix(FILE *stream) { fmt::print(stream, fmt::emphasis::bold, "[DEBUG]: "); }
 
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,

@@ -280,7 +280,17 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
 
         switch (m_format) {
             case Format::Json: fmt::print("{}\n", output_json.dump(2)); break;
-            case Format::Lua: fmt::print("{}\n", JsonToLuaTable(output_json)); break;
+            case Format::Lua:
+                if (g_signet_invocation_args && g_signet_invocation_args->size()) {
+                    fmt::print("-- {} ",
+                               fs::path((*g_signet_invocation_args)[0]).filename().generic_string());
+                    for (size_t i = 1; i < g_signet_invocation_args->size(); ++i) {
+                        fmt::print("{} ", (*g_signet_invocation_args)[i]);
+                    }
+                    fmt::print("\n");
+                }
+                fmt::print("return {}\n", JsonToLuaTable(output_json));
+                break;
         }
     }
 }

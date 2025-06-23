@@ -58,7 +58,11 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<ZeroCrossOffsetCommand>());
 }
 
+std::optional<tcb::span<const char *>> g_signet_invocation_args;
+
 int SignetInterface::Main(const int argc, const char *const argv[]) {
+    g_signet_invocation_args = tcb::span<const char *>((const char **)argv, (size_t)argc);
+
     CLI::App app {
         R"^^(Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.)^^"};
 

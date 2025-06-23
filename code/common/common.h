@@ -3,6 +3,7 @@
 #include <cmath>
 #include <functional>
 #include <iostream>
+#include <optional>
 #include <stdexcept>
 #include <string_view>
 #include <vector>
@@ -10,7 +11,9 @@
 #include <fmt/core.h>
 
 #include "filesystem.hpp"
+#include "span.hpp"
 
+extern std::optional<tcb::span<const char *>> g_signet_invocation_args;
 extern bool g_messages_enabled;
 extern bool g_warnings_as_errors;
 

@@ -277,9 +277,9 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
             }
 
             if (m_path_as_key) {
-                output_json[f.OriginalPath()] = file_info;
+                output_json[f.OriginalPath().u8string()] = file_info;
             } else {
-                file_info["path"] = f.OriginalPath();
+                file_info["path"] = f.OriginalPath().u8string();
                 output_json.push_back(file_info);
             }
         }

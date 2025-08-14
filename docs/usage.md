@@ -434,6 +434,9 @@ This is the same as --sample-sets, but just takes a single filename for all of t
 `--threshold FLOAT:INT in [-200 - 0]`
 The threshold in decibels to which anything under it should be considered silence.
 
+`--relative-to-peak`
+If set, the threshold will be relative to the peak of the audio file, otherwise it is absolute.
+
 ## :sound: tune
 ### Description:
 Changes the tune of the file(s) by stretching or shrinking them. Uses a high-quality resampling algorithm. Tuning up will result in audio that is shorter in duration, and tuning down will result in longer audio.

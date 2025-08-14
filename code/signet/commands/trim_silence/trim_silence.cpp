@@ -29,6 +29,10 @@ CLI::App *TrimSilenceCommand::CreateCommandCLI(CLI::App &app) {
         ->add_option("--threshold", m_silence_threshold_db,
                      "The threshold in decibels to which anything under it should be considered silence.")
         ->check(CLI::Range(-200, 0));
+
+    trim_silence->add_flag("--relative-to-peak", m_relative_to_peak,
+                           "If set, the threshold will be relative to the peak of the audio file, "
+                           "otherwise it is absolute.");
     return trim_silence;
 }
 
@@ -36,7 +40,15 @@ std::pair<usize, usize> TrimSilenceCommand::GetLoudRegion(EditTrackedAudioFile &
     auto &audio = f.GetAudio();
     usize loud_region_start = 0;
     usize loud_region_end = audio.NumFrames();
-    const auto amp_threshold = DBToAmp(m_silence_threshold_db);
+    double amp_threshold = 0;
+    if (!m_relative_to_peak) {
+        amp_threshold = DBToAmp(m_silence_threshold_db);
+    } else {
+        PeakGainCalculator peak_calculator;
+        peak_calculator.RegisterBufferMagnitudes(f.GetAudio(), {});
+        auto const peak_db = AmpToDB(peak_calculator.GetLargestRegisteredMagnitude());
+        amp_threshold = DBToAmp(peak_db + m_silence_threshold_db);
+    }
 
     if (m_region == Region::Start || m_region == Region::Both) {
         for (usize frame = 0; frame < audio.NumFrames(); ++frame) {

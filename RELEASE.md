@@ -4,6 +4,9 @@ The macOS version is a universal binary, codesigned and notarized.
 
 Changes:
 
+0.4.0:
+- Add `--relative-to-peak` to trim-silence.
+
 0.3.0:
 - Add `--format` option to `print-info` subcommand to output the information in JSON or Lua format. Useful for passing into tools such as `jq` or Floe, for example. Includes `--field-filter` and `--path-as-key` options to control the output.
 - Add `--detect-pitch` option to `print-info`.

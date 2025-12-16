@@ -77,6 +77,7 @@ add_library(
     code/signet/commands/auto_tune/auto_tune.cpp
     code/signet/commands/convert/convert.cpp
     code/signet/commands/detect_pitch/detect_pitch.cpp
+    code/signet/commands/detect_pops/detect_pops.cpp
     code/signet/commands/embed_sampler_info/embed_sampler_info.cpp
     code/signet/commands/fade/fade.cpp
     code/signet/commands/filter/filters.cpp

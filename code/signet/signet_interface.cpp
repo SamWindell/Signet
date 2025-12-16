@@ -10,6 +10,7 @@
 #include "commands/auto_tune/auto_tune.h"
 #include "commands/convert/convert.h"
 #include "commands/detect_pitch/detect_pitch.h"
+#include "commands/detect_pops/detect_pops.h"
 #include "commands/embed_sampler_info/embed_sampler_info.h"
 #include "commands/fade/fade.h"
 #include "commands/filter/filters.h"
@@ -37,6 +38,7 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<AutoTuneCommand>());
     m_commands.push_back(std::make_unique<ConvertCommand>());
     m_commands.push_back(std::make_unique<DetectPitchCommand>());
+    m_commands.push_back(std::make_unique<DetectPopsCommand>());
     m_commands.push_back(std::make_unique<EmbedSamplerInfo>());
     m_commands.push_back(std::make_unique<FadeCommand>());
     m_commands.push_back(std::make_unique<FixPitchDriftCommand>());
@@ -132,7 +134,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 "trim-silence", "tune",      "zcross-offset",
             };
             command_categories["File Data"] = {"convert", "embed-sampler-info"};
-            command_categories["Info"] = {"detect-pitch", "print-info"};
+            command_categories["Info"] = {"detect-pitch", "detect-pops", "print-info"};
             command_categories["Generate"] = {"sample-blend"};
 
             // Sort each command category

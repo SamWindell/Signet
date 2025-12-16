@@ -46,6 +46,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
   - [sample-blend](#sound-sample-blend)
 - [Info Commands](#Info-Commands)
   - [detect-pitch](#sound-detect-pitch)
+  - [detect-pops](#sound-detect-pops)
   - [print-info](#sound-print-info)
 - [Signet Utility Commands](#Signet-Utility-Commands)
   - [clear-backup](#sound-clear-backup)
@@ -787,6 +788,23 @@ Prints out the detected pitch of the file(s).
 
 ### Usage:
   `detect-pitch`
+
+## :sound: detect-pops
+### Description:
+Detects pops (sudden discontinuities) in audio files and prints the frame locations where they occur. Uses second derivative analysis to detect samples that suddenly break from the recent waveform curvature.
+
+### Usage:
+  `detect-pops` `[OPTIONS]`
+
+### OPTIONS:
+`--threshold FLOAT:FLOAT in [0.5 - 100]`
+Sensitivity threshold. A pop is detected when the second derivative (acceleration) of the signal deviates by this many standard deviations from the global average. Higher values = less sensitive. Typical range: 10.0 to 50.0. Default is 30.0.
+
+`--fix`
+Automatically repair detected pops using cubic interpolation. Replaces glitched samples with smoothly interpolated values based on surrounding clean audio.
+
+`--zero-only`
+Only detect pops where the outlier sample value is zero (or within epsilon of zero). Useful for finding glitches where samples are randomly set to 0, without false positives from high-frequency content.
 
 ## :sound: print-info
 ### Description:

@@ -248,11 +248,11 @@ class WaveMetadataToNonSpecificMetadata {
         for (const auto &m : m_wave_metadata) {
             switch (m.type) {
                 case drwav_metadata_type_smpl: {
-                    std::vector<MetadataItems::Loop> loops;
                     for (u32 i = 0; i < m.data.smpl.sampleLoopCount; ++i) {
-                        loops.push_back(CreateSampleLoop(m.data.smpl.pLoops[i]));
+                        if (auto loop = CreateSampleLoop(m.data.smpl.pLoops[i])) {
+                            result.loops.push_back(*loop);
+                        }
                     }
-                    result.loops = loops;
                     break;
                 }
                 case drwav_metadata_type_inst: {
@@ -269,11 +269,11 @@ class WaveMetadataToNonSpecificMetadata {
                     break;
                 }
                 case drwav_metadata_type_cue: {
-                    std::vector<MetadataItems::Marker> markers;
                     for (u32 i = 0; i < m.data.cue.cuePointCount; ++i) {
-                        markers.push_back(CreateMarker(m.data.cue.pCuePoints[i]));
+                        if (auto marker = CreateMarker(m.data.cue.pCuePoints[i])) {
+                            result.markers.push_back(*marker);
+                        }
                     }
-                    result.markers = markers;
                     break;
                 }
                 case drwav_metadata_type_acid: {
@@ -289,7 +289,9 @@ class WaveMetadataToNonSpecificMetadata {
                     break;
                 }
                 case drwav_metadata_type_list_labelled_cue_region: {
-                    result.regions.push_back(CreateRegion(m.data.labelledCueRegion));
+                    if (auto region = CreateRegion(m.data.labelledCueRegion)) {
+                        result.regions.push_back(*region);
+                    }
                     break;
                 }
             }
@@ -299,7 +301,7 @@ class WaveMetadataToNonSpecificMetadata {
     }
 
   private:
-    MetadataItems::Loop CreateSampleLoop(const drwav_smpl_loop &loop) const {
+    std::optional<MetadataItems::Loop> CreateSampleLoop(const drwav_smpl_loop &loop) const {
         MetadataItems::Loop result {};
 
         for (const auto &m : m_wave_metadata) {
@@ -322,14 +324,15 @@ class WaveMetadataToNonSpecificMetadata {
         result.num_frames = end_frame - result.start_frame;
         result.num_times_to_loop = loop.playCount;
 
-        // TODO: handle these cases properly instead of asserting
-        assert(result.start_frame < m_audio.NumFrames());
-        assert(end_frame <= m_audio.NumFrames());
+        if (result.start_frame >= m_audio.NumFrames() || end_frame > m_audio.NumFrames()) {
+            WarningWithNewLine("Wav", {}, "loop point is out of range, skipping");
+            return {};
+        }
 
         return result;
     }
 
-    MetadataItems::Region CreateRegion(const drwav_list_labelled_cue_region &region) const {
+    std::optional<MetadataItems::Region> CreateRegion(const drwav_list_labelled_cue_region &region) const {
         MetadataItems::Region result {};
         if (region.stringLength) result.name = std::string(region.pString);
 
@@ -354,16 +357,16 @@ class WaveMetadataToNonSpecificMetadata {
 
         result.num_frames = region.sampleLength;
 
-        // TODO: handle these cases properly instead of asserting
-        assert(found_cue);
-        assert(result.start_frame < m_audio.NumFrames());
-        assert((result.start_frame + result.num_frames) <= m_audio.NumFrames());
-        (void)found_cue;
+        if (!found_cue || result.start_frame >= m_audio.NumFrames() ||
+            (result.start_frame + result.num_frames) > m_audio.NumFrames()) {
+            WarningWithNewLine("Wav", {}, "region is out of range, skipping");
+            return {};
+        }
 
         return result;
     }
 
-    MetadataItems::Marker CreateMarker(const drwav_cue_point &cue_point) const {
+    std::optional<MetadataItems::Marker> CreateMarker(const drwav_cue_point &cue_point) const {
         MetadataItems::Marker result {};
         for (const auto &m : m_wave_metadata) {
             if (m.type == drwav_metadata_type_list_label) {
@@ -374,8 +377,10 @@ class WaveMetadataToNonSpecificMetadata {
             }
         }
         result.start_frame = cue_point.sampleOffset;
-        // TODO: handle thi cases properly instead of asserting
-        assert(result.start_frame < m_audio.NumFrames());
+        if (result.start_frame > m_audio.NumFrames()) {
+            WarningWithNewLine("Wav", {}, "marker is out of range, skipping");
+            return {};
+        }
         return result;
     }
 

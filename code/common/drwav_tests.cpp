@@ -6,8 +6,8 @@
 
 bool operator==(const drwav_smpl_loop &a, const drwav_smpl_loop &b) {
     return a.cuePointId == b.cuePointId && a.type == b.type &&
-           a.firstSampleByteOffset == b.firstSampleByteOffset &&
-           a.lastSampleByteOffset == b.lastSampleByteOffset && a.sampleFraction == b.sampleFraction &&
+           a.firstSampleOffset == b.firstSampleOffset &&
+           a.lastSampleOffset == b.lastSampleOffset && a.sampleFraction == b.sampleFraction &&
            a.playCount == b.playCount;
 }
 
@@ -42,7 +42,7 @@ bool operator==(const drwav_inst &a, const drwav_inst &b) {
 
 bool operator==(const drwav_cue_point &a, const drwav_cue_point &b) {
     if (!(a.id == b.id && a.playOrderPosition == b.playOrderPosition && a.chunkStart == b.chunkStart &&
-          a.blockStart == b.blockStart && a.sampleByteOffset == b.sampleByteOffset))
+          a.blockStart == b.blockStart && a.sampleOffset == b.sampleOffset))
         return false;
 
     return std::memcmp(a.dataChunkId, b.dataChunkId, sizeof(a.dataChunkId)) == 0;
@@ -151,8 +151,13 @@ bool operator==(const drwav_metadata &a, const drwav_metadata &b) {
 
 static drwav_bool32 OnSeekFile(void *file, int offset, drwav_seek_origin origin) {
     constexpr int fseek_success = 0;
-    if (std::fseek((FILE *)file, offset, (origin == (int)drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
-        fseek_success) {
+    int whence;
+    switch (origin) {
+        case DRWAV_SEEK_CUR: whence = SEEK_CUR; break;
+        case DRWAV_SEEK_END: whence = SEEK_END; break;
+        default: whence = SEEK_SET; break;
+    }
+    if (std::fseek((FILE *)file, offset, whence) == fseek_success) {
         return 1;
     }
     WarningWithNewLine("Wav", {}, "failed to seek file");
@@ -236,8 +241,8 @@ TEST_CASE("drwav: file with every type of metadata") {
     drwav_smpl_loop loops[1] = {};
     loops[0].cuePointId = 1;
     loops[0].type = drwav_smpl_loop_type_pingpong;
-    loops[0].firstSampleByteOffset = 0;
-    loops[0].firstSampleByteOffset = 1;
+    loops[0].firstSampleOffset = 0;
+    loops[0].firstSampleOffset = 1;
     loops[0].sampleFraction = 0;
     loops[0].playCount = 55;
 
@@ -269,7 +274,7 @@ TEST_CASE("drwav: file with every type of metadata") {
     cue_point.dataChunkId[3] = 'a';
     cue_point.chunkStart = 0;
     cue_point.blockStart = 0;
-    cue_point.sampleByteOffset = 0;
+    cue_point.sampleOffset = 0;
 
     meta[1].type = drwav_metadata_type_cue;
     meta[1].data.cue.cuePointCount = 1;

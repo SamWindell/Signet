@@ -54,10 +54,22 @@ static size_t OnReadFile(void *file, void *buffer_out, size_t bytes_to_read) {
     return std::fread(buffer_out, 1, bytes_to_read, (FILE *)file);
 }
 
+static drwav_bool32 OnTellFile(void *file, drwav_int64 *pCursor) {
+    long pos = std::ftell((FILE *)file);
+    if (pos < 0) return DRWAV_FALSE;
+    *pCursor = (drwav_int64)pos;
+    return DRWAV_TRUE;
+}
+
 static drwav_bool32 OnSeekFile(void *file, int offset, drwav_seek_origin origin) {
     constexpr int fseek_success = 0;
-    if (std::fseek((FILE *)file, offset, (origin == (int)drwav_seek_origin_current) ? SEEK_CUR : SEEK_SET) ==
-        fseek_success) {
+    int whence;
+    switch (origin) {
+        case DRWAV_SEEK_CUR: whence = SEEK_CUR; break;
+        case DRWAV_SEEK_END: whence = SEEK_END; break;
+        default: whence = SEEK_SET; break;
+    }
+    if (std::fseek((FILE *)file, offset, whence) == fseek_success) {
         return 1;
     }
     WarningWithNewLine("Wav", {}, "failed to seek file");
@@ -87,8 +99,8 @@ std::ostream &operator<<(std::ostream &os, const drwav_smpl &s) {
         os << "    {\n";
         os << "      cuePointId: " << smpl_loop.cuePointId << "\n";
         os << "      type: " << smpl_loop.type << "\n";
-        os << "      firstSampleByteOffset: " << smpl_loop.firstSampleByteOffset << "\n";
-        os << "      lastSampleByteOffset: " << smpl_loop.lastSampleByteOffset << "\n";
+        os << "      firstSampleOffset: " << smpl_loop.firstSampleOffset << "\n";
+        os << "      lastSampleOffset: " << smpl_loop.lastSampleOffset << "\n";
         os << "      sampleFraction: " << smpl_loop.sampleFraction << "\n";
         os << "      playCount: " << smpl_loop.playCount << "\n";
         os << "    }\n";
@@ -112,7 +124,7 @@ std::ostream &operator<<(std::ostream &os, const drwav_cue &c) {
            << (char)cue.dataChunkId[2] << (char)cue.dataChunkId[3] << "\n";
         os << "      chunkStart: " << cue.chunkStart << "\n";
         os << "      blockStart: " << cue.blockStart << "\n";
-        os << "      sampleByteOffset: " << cue.sampleByteOffset << "\n";
+        os << "      sampleOffset: " << cue.sampleOffset << "\n";
         os << "    }\n";
     }
     os << "  ]\n";
@@ -228,9 +240,6 @@ class WaveMetadataToNonSpecificMetadata {
     Metadata Convert() const {
         Metadata result {};
 
-        // TODO: is this metadata valid if the wave file was compressed, are things like
-        // cue_point.sampleByteOffset valid?
-
         if (const auto root_note = FindMidiRootNote()) {
             result.midi_mapping.emplace();
             result.midi_mapping->root_midi_note = *root_note;
@@ -308,10 +317,8 @@ class WaveMetadataToNonSpecificMetadata {
             default: result.type = MetadataItems::LoopType::Forward;
         }
 
-        result.start_frame =
-            loop.firstSampleByteOffset / (m_audio.bits_per_sample / 8) / m_audio.num_channels;
-        const auto end_frame =
-            (loop.lastSampleByteOffset / (m_audio.bits_per_sample / 8) / m_audio.num_channels) + 1;
+        result.start_frame = loop.firstSampleOffset;
+        const auto end_frame = loop.lastSampleOffset + 1;
         result.num_frames = end_frame - result.start_frame;
         result.num_times_to_loop = loop.playCount;
 
@@ -333,8 +340,7 @@ class WaveMetadataToNonSpecificMetadata {
                 for (u32 i = 0; i < m.data.cue.cuePointCount; ++i) {
                     const auto &cue_point = m.data.cue.pCuePoints[i];
                     if (cue_point.id == region.cuePointId) {
-                        result.start_frame =
-                            cue_point.sampleByteOffset / (m_audio.bits_per_sample / 8) / m_audio.num_channels;
+                        result.start_frame = cue_point.sampleOffset;
                         found_cue = true;
                         break;
                     }
@@ -346,7 +352,7 @@ class WaveMetadataToNonSpecificMetadata {
             }
         }
 
-        result.num_frames = region.sampleLength / m_audio.num_channels;
+        result.num_frames = region.sampleLength;
 
         // TODO: handle these cases properly instead of asserting
         assert(found_cue);
@@ -367,8 +373,7 @@ class WaveMetadataToNonSpecificMetadata {
                 }
             }
         }
-        result.start_frame =
-            cue_point.sampleByteOffset / (m_audio.bits_per_sample / 8) / m_audio.num_channels;
+        result.start_frame = cue_point.sampleOffset;
         // TODO: handle thi cases properly instead of asserting
         assert(result.start_frame < m_audio.NumFrames());
         return result;
@@ -478,7 +483,7 @@ std::optional<AudioData> ReadAudioFile(const fs::path &path) {
         std::vector<float> f32_buf {};
         drwav wav;
 
-        if (!drwav_init_with_metadata(&wav, OnReadFile, OnSeekFile, file.get(), 0, nullptr)) {
+        if (!drwav_init_with_metadata(&wav, OnReadFile, OnSeekFile, OnTellFile, file.get(), 0, nullptr)) {
             WarningWithNewLine("Wav", path, "could not init the WAV file");
             return {};
         }
@@ -635,8 +640,8 @@ static void GetAudioDataConvertedAndScaledToBitDepth(const std::vector<double> f
 
 class NonSpecificMetadataToWaveMetadata {
   public:
-    NonSpecificMetadataToWaveMetadata(const AudioData &audio_data, const unsigned bits_per_sample)
-        : m_audio_data(audio_data), m_bits_per_sample(bits_per_sample) {}
+    NonSpecificMetadataToWaveMetadata(const AudioData &audio_data, const unsigned /*bits_per_sample*/)
+        : m_audio_data(audio_data) {}
 
     const std::vector<drwav_metadata> &BuildMetadata() {
         CopyInfoTextsFromOriginalWaveData();
@@ -683,10 +688,6 @@ class NonSpecificMetadataToWaveMetadata {
         return mem.get()->data();
     }
 
-    u32 FramePosToSampleBytes(size_t frame_pos) {
-        return (u32)(frame_pos * m_audio_data.num_channels * (m_bits_per_sample / 8));
-    }
-
     u32 CreateUniqueCuePointId(std::optional<std::string> name, size_t start_frame) {
         const auto id = (u32)m_cue_points_buffer.size();
         m_cue_points_buffer.push_back({id, name, start_frame});
@@ -728,7 +729,7 @@ class NonSpecificMetadataToWaveMetadata {
                 p.dataChunkId[1] = 'a';
                 p.dataChunkId[2] = 't';
                 p.dataChunkId[3] = 'a';
-                p.sampleByteOffset = FramePosToSampleBytes(cue.frame_position);
+                p.sampleOffset = (u32)cue.frame_position;
                 item.data.cue.pCuePoints[index++] = p;
             }
 
@@ -831,9 +832,8 @@ class NonSpecificMetadataToWaveMetadata {
                         break;
                     default: smpl_loop.type = drwav_smpl_loop_type_forward;
                 }
-                smpl_loop.firstSampleByteOffset = FramePosToSampleBytes(loop.start_frame);
-                smpl_loop.lastSampleByteOffset =
-                    FramePosToSampleBytes(loop.start_frame + loop.num_frames - 1);
+                smpl_loop.firstSampleOffset = (u32)loop.start_frame;
+                smpl_loop.lastSampleOffset = (u32)(loop.start_frame + loop.num_frames - 1);
                 smpl_loop.sampleFraction =
                     0; // Note: we are discarding this value even if we have unchaged the loop
                 smpl_loop.playCount = loop.num_times_to_loop;
@@ -854,7 +854,7 @@ class NonSpecificMetadataToWaveMetadata {
 
             item.data.labelledCueRegion.cuePointId =
                 CreateUniqueCuePointId(r.initial_marker_name, r.start_frame);
-            item.data.labelledCueRegion.sampleLength = (u32)(r.num_frames * m_audio_data.num_channels);
+            item.data.labelledCueRegion.sampleLength = (u32)r.num_frames;
             item.data.labelledCueRegion.purposeId[0] = 'b';
             item.data.labelledCueRegion.purposeId[1] = 'e';
             item.data.labelledCueRegion.purposeId[2] = 'a';
@@ -870,7 +870,6 @@ class NonSpecificMetadataToWaveMetadata {
     }
 
     const AudioData &m_audio_data;
-    unsigned m_bits_per_sample;
 
     struct CuePoint {
         u32 id;

@@ -10,9 +10,10 @@
 #include "dr_wav.h"
 #include "magic_enum.hpp"
 #include <cereal/archives/json.hpp>
-#include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
+
+#include "cereal_optional.hpp"
 
 #include "common.h"
 #include "flac_decoder.h"
@@ -1426,6 +1427,22 @@ TEST_CASE("[AudioData]") {
             auto out_f = ReadAudioFile(out_filename);
             REQUIRE(out_f);
             REQUIRE(out_f->flac_metadata.size() >= 1);
+        }
+
+        SUBCASE("flac with legacy optional metadata format") {
+            // Regression: older Signet versions wrote std::optional fields with
+            // cereal upstream's tagged-union shape. flac_decoder.h migrates that
+            // shape on read so existing files keep working.
+            const fs::path in_filename =
+                TEST_DATA_DIRECTORY "/flac_with_legacy_optional_metadata.flac";
+            auto f = ReadAudioFile(in_filename);
+            REQUIRE(f);
+            REQUIRE(f->metadata.markers.size() == 7);
+            REQUIRE(f->metadata.markers[0].name == "S01 (1 1 1) lp=3");
+            REQUIRE(f->metadata.markers[0].start_frame == 0);
+            REQUIRE(f->metadata.markers[6].name == "S07 (1 4 3) lp=2");
+            REQUIRE(!f->metadata.midi_mapping);
+            REQUIRE(!f->metadata.timing_info);
         }
     }
 

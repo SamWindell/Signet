@@ -5,6 +5,15 @@ The macOS version is a universal binary, codesigned and notarized.
 Changes:
 
 0.4.0:
+- The structure of the JSON and Lua output from `print-info` has tweaked to be cleaner. **Any scripts that read `print-info` output may need updating.** Specifically, this change effects 'optional' values such as marker names:
+  ```
+  old:  "name": { "nullopt": false, "data": "marker 1" }
+  new:  "name": "marker 1"
+
+  old:  "name": { "nullopt": true }
+  new:  "name": null
+  ```
+- Additionally, this `print-info` change affects the metadata that Signet embeds in FLAC files. FLAC files written by previous versions of Signet are still read correctly, although if you have custom tools reading SGNT blocks they will need updating.
 - Add `--relative-to-peak` to trim-silence.
 
 0.3.0:

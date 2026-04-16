@@ -3,11 +3,11 @@
 #include "CLI11.hpp"
 #include "json.hpp"
 #include <cereal/archives/json.hpp>
-#include <cereal/types/optional.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/vector.hpp>
 #include <regex>
 
+#include "cereal_optional.hpp"
 #include "doctest.hpp"
 #include "gain_calculators.h"
 #include "magic_enum.hpp"
@@ -131,18 +131,6 @@ static std::string JsonToLuaTable(const nlohmann::json &j, int indent = 0) {
         oss << "{\n";
         bool first = true;
         for (const auto &[key, value] : j.items()) {
-            // Cereal serializes std::optional as {"nullopt": true} or
-            // {"nullopt": false, "data": value}. Unwrap to the value, or skip if nullopt.
-            const auto *actual_value = &value;
-            if (value.is_object() && value.contains("nullopt") && value["nullopt"].is_boolean()) {
-                if (value["nullopt"].get<bool>()) continue;
-                if (value.contains("data")) {
-                    actual_value = &value["data"];
-                } else {
-                    continue;
-                }
-            }
-
             if (!first) {
                 oss << ",\n";
             }
@@ -154,7 +142,7 @@ static std::string JsonToLuaTable(const nlohmann::json &j, int indent = 0) {
                 oss << nextIndentStr << "[\"" << EscapeLuaString(key) << "\"] = ";
             }
 
-            oss << JsonToLuaTable(*actual_value, indent + 1);
+            oss << JsonToLuaTable(value, indent + 1);
             first = false;
         }
         if (!j.empty()) {

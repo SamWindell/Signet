@@ -6,6 +6,38 @@
 #include "FLAC/stream_decoder.h"
 #include "audio_data.h"
 #include "common.h"
+#include "json.hpp"
+
+// Backward-compatible read of metadata serialized by older versions of Signet.
+// They wrote std::optional via cereal upstream's tagged-union shape; the
+// current code (see cereal_optional.hpp) writes optionals as either the value
+// directly or JSON null. Recursively rewrite the legacy shape so cereal sees
+// the new format. New-format JSON contains no such wrappers, so this is a
+// no-op for it.
+//   {"nullopt": true}                  -> null
+//   {"nullopt": false, "data": value}  -> value
+inline void MigrateLegacyOptionalsInJson(nlohmann::json &j) {
+    if (j.is_array()) {
+        for (auto &e : j) MigrateLegacyOptionalsInJson(e);
+        return;
+    }
+    if (!j.is_object()) return;
+
+    if (auto it = j.find("nullopt"); it != j.end() && it->is_boolean()) {
+        if (it->get<bool>()) {
+            j = nullptr;
+        } else if (auto data_it = j.find("data"); data_it != j.end()) {
+            auto data = std::move(*data_it);
+            MigrateLegacyOptionalsInJson(data);
+            j = std::move(data);
+        } else {
+            j = nullptr;
+        }
+        return;
+    }
+
+    for (auto &member : j.items()) MigrateLegacyOptionalsInJson(member.value());
+}
 
 struct FlacFileDataContext {
     FlacFileDataContext(FILE *f, AudioData &a) : file(f), data(a) {}
@@ -118,8 +150,10 @@ void FlacDecoderMetadataCallback(const FLAC__StreamDecoder *,
                 const auto id_bytes = (FLAC__STREAM_METADATA_APPLICATION_ID_LEN / 8);
                 if (metadata->length > id_bytes) {
                     std::string data {(char *)metadata->data.application.data, metadata->length - id_bytes};
-                    std::stringstream ss(data);
                     try {
+                        auto json_doc = nlohmann::json::parse(data);
+                        MigrateLegacyOptionalsInJson(json_doc);
+                        std::stringstream ss(json_doc.dump());
                         cereal::JSONInputArchive archive(ss);
                         archive(cereal::make_nvp(signet_root_json_object_name, context.data.metadata));
                     } catch (const std::exception &e) {

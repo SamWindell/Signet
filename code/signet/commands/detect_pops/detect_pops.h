@@ -17,6 +17,7 @@ class DetectPopsCommand : public Command {
 
     bool AllowsOutputFolder() const override { return m_fix; }
     bool AllowsSingleOutputFile() const override { return m_fix; }
+    bool IsReadOnly() const override { return !m_fix; }
 
   private:
     double m_threshold = 30.0;

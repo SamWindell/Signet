@@ -7,4 +7,5 @@ class DetectPitchCommand final : public Command {
     CLI::App *CreateCommandCLI(CLI::App &app) override;
     void ProcessFiles(AudioFiles &files) override;
     std::string GetName() const override { return "DetectPitch"; }
+    bool IsReadOnly() const override { return true; }
 };

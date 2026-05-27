@@ -15,6 +15,7 @@ class Command {
 
     virtual bool AllowsOutputFolder() const { return true; }
     virtual bool AllowsSingleOutputFile() const { return true; }
+    virtual bool IsReadOnly() const { return false; }
 
     virtual void GenerateFiles(AudioFiles &, SignetBackup &) {}
     virtual void ProcessFiles(AudioFiles &) {}

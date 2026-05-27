@@ -275,6 +275,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             });
 
     bool printed_input_files_info = false;
+    bool any_writable_command_ran = false;
 
     for (auto &command : m_commands) {
         auto s = command->CreateCommandCLI(app);
@@ -299,6 +300,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             MessageWithNewLine(command->GetName(), {}, "Starting processing");
             command->ProcessFiles(m_input_audio_files);
             command->GenerateFiles(m_input_audio_files, m_backup);
+            if (!command->IsReadOnly()) any_writable_command_ran = true;
 
             int num_audio_edits = 0;
             int num_path_edits = 0;
@@ -403,7 +405,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
 
         if (m_input_audio_files.Size() == 0) {
             return SignetResult::NoFilesMatchingInput;
-        } else if (m_input_audio_files.GetNumFilesProcessed() == 0) {
+        } else if (any_writable_command_ran && m_input_audio_files.GetNumFilesProcessed() == 0) {
             return SignetResult::NoFilesWereProcessed;
         }
 

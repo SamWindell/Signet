@@ -131,6 +131,9 @@ static std::string JsonToLuaTable(const nlohmann::json &j, int indent = 0) {
         oss << "{\n";
         bool first = true;
         for (const auto &[key, value] : j.items()) {
+            // `key = nil` is equivalent to omitting the key in Lua, so skip.
+            if (value.is_null()) continue;
+
             if (!first) {
                 oss << ",\n";
             }
@@ -145,7 +148,7 @@ static std::string JsonToLuaTable(const nlohmann::json &j, int indent = 0) {
             oss << JsonToLuaTable(value, indent + 1);
             first = false;
         }
-        if (!j.empty()) {
+        if (!first) {
             oss << "\n";
         }
         oss << indentStr << "}";

@@ -7,3 +7,6 @@ configure:
 
 build:
     cmake --build build
+
+install: build
+    cmake --install build --prefix ~/.local

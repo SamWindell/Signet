@@ -45,6 +45,7 @@ A C++17 compiler is required. The compiler must also be [compatible with the mag
 
 ## Usage tips
 - If you are going to do multiple operations on files, then first convert the files to 64-bit WAV (`convert file-format wav bit-depth 64`), do all necessary processing, then convert back to your desired format and bit depth. While both WAV and FLAC are lossless, there is the possibility of degradation when working with lower bit-depths when the signal is very quiet.
+- Signet writes progress messages, warnings and errors to stderr, leaving stdout for command output. This means you can safely pipe `print-info --format json` (or `lua`) into tools like `jq` without diagnostics corrupting the parse. To silence the stderr output entirely, use `--silent` or redirect stderr with `2>/dev/null`.
 
 
 ## Examples

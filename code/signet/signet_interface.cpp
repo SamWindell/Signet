@@ -374,7 +374,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     }
 
     const auto PrintSuccess = []() {
-        fmt::print(fmt::fg(fmt::terminal_color::green), "Signet completed successfully.\n");
+        fmt::print(stderr, fmt::fg(fmt::terminal_color::green), "Signet completed successfully.\n");
     };
 
     try {
@@ -412,15 +412,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         PrintSuccess();
         return SignetResult::Success;
     } catch (const CLI::ParseError &e) {
-        if (!success_thrown) PrintSignetHeading();
         if (e.get_exit_code() != 0) {
+            if (!success_thrown) PrintSignetHeading(stderr);
             std::stringstream out;
             std::stringstream error;
             auto result = app.exit(e, out, error);
 
-            fmt::print(fg(fmt::color::red), "ERROR:\n{}{}", out.str(), error.str());
+            fmt::print(stderr, fg(fmt::color::red), "ERROR:\n{}{}", out.str(), error.str());
             return result;
         } else {
+            if (!success_thrown) PrintSignetHeading(stdout);
             std::stringstream help_text_stream;
             const auto result = app.exit(e, help_text_stream);
             fmt::print("{}", help_text_stream.str());
@@ -429,11 +430,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             return SignetResult::Success;
         }
     } catch (const SignetError &e) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::bold,
+        fmt::print(stderr, fg(fmt::color::red) | fmt::emphasis::bold,
                    "{}. Processing has stopped. No files have been changed or saved.\n", e.what());
         return SignetResult::FatalErrorOcurred;
     } catch (const SignetWarning &e) {
-        fmt::print(fg(fmt::color::red) | fmt::emphasis::bold,
+        fmt::print(stderr, fg(fmt::color::red) | fmt::emphasis::bold,
                    "{}. Processing has stopped. No files have been changed or saved.\n", e.what());
         return SignetResult::WarningsAreErrors;
     }

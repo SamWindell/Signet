@@ -5,6 +5,7 @@ The macOS version is a universal binary, codesigned and notarized.
 Changes:
 
 0.4.0:
+- Progress messages, warnings and errors are now written to stderr instead of stdout, so piping the JSON/Lua output of `print-info` into tools like `jq` works cleanly.
 - The structure of the JSON and Lua output from `print-info` has tweaked to be cleaner. **Any scripts that read `print-info` output may need updating.** Specifically, this change effects 'optional' values such as marker names:
   ```
   old:  "name": { "nullopt": false, "data": "marker 1" }

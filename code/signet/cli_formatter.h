@@ -351,12 +351,12 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     OutputMode m_mode;
 };
 
-static void PrintSignetHeading() {
-    fmt::print(fmt::emphasis::bold, "Signet\n");
+static void PrintSignetHeading(FILE *stream) {
+    fmt::print(stream, fmt::emphasis::bold, "Signet\n");
 
     std::array<char, SignetCLIHelpFormatter::wrap_size> divider {};
     std::memset(divider.data(), '=', divider.size() - 1);
-    fmt::print(fg(fmt::color::gray), "{}\n\n", divider.data());
+    fmt::print(stream, fg(fmt::color::gray), "{}\n\n", divider.data());
 }
 
 // Subcommands can have different formatters to their parents, to set all of them, we have to go down

@@ -29,18 +29,7 @@ CLI::App *PrintInfoCommand::CreateCommandCLI(CLI::App &app) {
     printer
         ->add_option_function<PrintInfoCommand::Format>(
             "--format",
-            [this](Format format) {
-                m_format = format;
-                switch (format) {
-                    case Format::Json:
-                    case Format::Lua:
-                        // We want stdout to be uncluttered by messages so the user can easily parse the
-                        // output.
-                        g_messages_enabled = false;
-                        break;
-                    case Format::Text: break;
-                }
-            },
+            [this](Format format) { m_format = format; },
             "Output format for the information. Default is text.")
         ->transform(CLI::CheckedTransformer(format_name_dictionary, CLI::ignore_case));
 
@@ -257,7 +246,10 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
             }
 
             if (EndsWith(info_text, "\n")) info_text.resize(info_text.size() - 1);
-            MessageWithNewLine(GetName(), f, "Info:\n{}", info_text);
+            PrintMessagePrefix(stdout, GetName());
+            fmt::print(stdout, "Info:\n{}", info_text);
+            PrintFilename(stdout, f);
+            fmt::print(stdout, "\n");
         }
     } else {
         auto output_json = nlohmann::json::array();
@@ -288,17 +280,17 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
         }
 
         switch (m_format) {
-            case Format::Json: fmt::print("{}\n", output_json.dump(2)); break;
+            case Format::Json: fmt::print(stdout, "{}\n", output_json.dump(2)); break;
             case Format::Lua:
                 if (g_signet_invocation_args && g_signet_invocation_args->size()) {
-                    fmt::print("-- {} ",
+                    fmt::print(stdout, "-- {} ",
                                fs::path((*g_signet_invocation_args)[0]).filename().generic_string());
                     for (size_t i = 1; i < g_signet_invocation_args->size(); ++i) {
-                        fmt::print("{} ", (*g_signet_invocation_args)[i]);
+                        fmt::print(stdout, "{} ", (*g_signet_invocation_args)[i]);
                     }
-                    fmt::print("\n");
+                    fmt::print(stdout, "\n");
                 }
-                fmt::print("return {}\n", JsonToLuaTable(output_json));
+                fmt::print(stdout, "return {}\n", JsonToLuaTable(output_json));
                 break;
         }
     }

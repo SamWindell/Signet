@@ -52,10 +52,10 @@ void ErrorWithNewLine(std::string_view heading,
                       const NameType &f,
                       std::string_view format,
                       const Args &...args) {
-    PrintErrorPrefix(stdout, heading);
-    fmt::vprint(format, fmt::make_format_args(args...));
-    PrintFilename(stdout, f);
-    fmt::print("\n");
+    PrintErrorPrefix(stderr, heading);
+    fmt::vprint(stderr, format, fmt::make_format_args(args...));
+    PrintFilename(stderr, f);
+    fmt::print(stderr, "\n");
     throw SignetError("A fatal error occurred");
 }
 
@@ -64,10 +64,10 @@ void WarningWithNewLine(std::string_view heading,
                         const NameType &f,
                         std::string_view format,
                         Args &&...args) {
-    PrintWarningPrefix(stdout, heading);
-    fmt::vprint(format, fmt::make_format_args(args...));
-    PrintFilename(stdout, f);
-    fmt::print("\n");
+    PrintWarningPrefix(stderr, heading);
+    fmt::vprint(stderr, format, fmt::make_format_args(args...));
+    PrintFilename(stderr, f);
+    fmt::print(stderr, "\n");
     if (g_warnings_as_errors)
         throw SignetWarning("A warning occurred, and warnings are set to be treated as errors");
 }
@@ -77,19 +77,6 @@ void MessageWithNewLine(std::string_view heading,
                         const NameType &f,
                         std::string_view format,
                         Args &&...args) {
-    if (g_messages_enabled) {
-        PrintMessagePrefix(stdout, heading);
-        fmt::vprint(format, fmt::make_format_args(args...));
-        PrintFilename(stdout, f);
-        fmt::print("\n");
-    }
-}
-
-template <typename NameType = NoneType, typename... Args>
-void StderrMessageWithNewLine(std::string_view heading,
-                              const NameType &f,
-                              std::string_view format,
-                              Args &&...args) {
     if (g_messages_enabled) {
         PrintMessagePrefix(stderr, heading);
         fmt::vprint(stderr, format, fmt::make_format_args(args...));
@@ -101,9 +88,9 @@ void StderrMessageWithNewLine(std::string_view heading,
 template <typename... Args>
 void DebugWithNewLine([[maybe_unused]] std::string_view format, [[maybe_unused]] Args &&...args) {
 #if SIGNET_DEBUG
-    PrintDebugPrefix(stdout);
-    fmt::vprint(format, fmt::make_format_args(args...));
-    fmt::print("\n");
+    PrintDebugPrefix(stderr);
+    fmt::vprint(stderr, format, fmt::make_format_args(args...));
+    fmt::print(stderr, "\n");
 #endif
 }
 

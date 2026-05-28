@@ -170,11 +170,11 @@ std::optional<FilepathSet> FilepathSet::CreateFromPatterns(const std::vector<std
     FilepathSet set {};
     for (const auto &include_part : include_parts) {
         if (include_part.find('*') != std::string::npos) {
-            StderrMessageWithNewLine("Signet", {}, "Searching for files using the pattern {}", include_part);
+            MessageWithNewLine("Signet", {}, "Searching for files using the pattern {}", include_part);
             const auto matching_paths = GetFilepathsThatMatchPattern(include_part);
             set.AddNonExcludedPaths(matching_paths, exclude_paths);
         } else if (fs::is_directory(include_part)) {
-            StderrMessageWithNewLine("Signet", {}, "Searching for files {} in the directory {}",
+            MessageWithNewLine("Signet", {}, "Searching for files {} in the directory {}",
                                      recursive_directory_search ? "recursively" : "non-recursively",
                                      include_part);
             const auto matching_paths = GetAllFilepathsInDirectory(include_part, recursive_directory_search);
@@ -191,7 +191,7 @@ std::optional<FilepathSet> FilepathSet::CreateFromPatterns(const std::vector<std
     }
     if (!recursive_directory_search && include_parts.size() == 1 &&
         fs::is_directory(std::string(include_parts[0]))) {
-        StderrMessageWithNewLine(
+        MessageWithNewLine(
             "Signet", {},
             "Use the option --recursive to search in all subdirecties of the given one as well.");
     }

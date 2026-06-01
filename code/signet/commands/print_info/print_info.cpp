@@ -185,13 +185,14 @@ nlohmann::json PrintInfoCommand::CalculateFileInfo(EditTrackedAudioFile &file) c
     file_info["crest_factor"] = crest_factor;
 
     if (m_detect_pitch) {
-        if (auto const pitch = file.GetAudio().DetectPitch()) {
-            const auto closest_musical_note = FindClosestMidiPitch(*pitch);
-            file_info["detected_pitch_hz"] = *pitch;
+        if (auto const pitch = file.GetAudio().DetectPitchWithConfidence()) {
+            const auto closest_musical_note = FindClosestMidiPitch(pitch->hz);
+            file_info["detected_pitch_hz"] = pitch->hz;
+            file_info["detected_pitch_confidence"] = pitch->confidence;
             file_info["detected_pitch_nearest_note"] = closest_musical_note.name;
             file_info["detected_pitch_nearest_note_midi"] = closest_musical_note.midi_note;
             file_info["detected_pitch_cents_to_nearest"] =
-                GetCentsDifference(closest_musical_note.pitch, *pitch);
+                GetCentsDifference(closest_musical_note.pitch, pitch->hz);
         }
     }
 
@@ -235,11 +236,13 @@ void PrintInfoCommand::ProcessFiles(AudioFiles &files) {
 
             if (m_detect_pitch) {
                 if (file_info.contains("detected_pitch_hz")) {
-                    info_text += fmt::format("Detected Pitch: {:.2f} Hz ({:.1f} cents from {}, MIDI {})\n",
-                                             file_info["detected_pitch_hz"].get<double>(),
-                                             file_info["detected_pitch_cents_to_nearest"].get<double>(),
-                                             file_info["detected_pitch_nearest_note"].get<std::string>(),
-                                             file_info["detected_pitch_nearest_note_midi"].get<int>());
+                    info_text += fmt::format(
+                        "Detected Pitch: {:.2f} Hz ({:.1f} cents from {}, MIDI {}, confidence {:.0f}%)\n",
+                        file_info["detected_pitch_hz"].get<double>(),
+                        file_info["detected_pitch_cents_to_nearest"].get<double>(),
+                        file_info["detected_pitch_nearest_note"].get<std::string>(),
+                        file_info["detected_pitch_nearest_note_midi"].get<int>(),
+                        file_info["detected_pitch_confidence"].get<double>() * 100.0);
                 } else {
                     info_text += "Detected Pitch: No pitch could be found\n";
                 }

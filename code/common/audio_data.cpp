@@ -174,7 +174,7 @@ bool ApproxEqual(double a, double b, double epsilon) {
     return a > (b - epsilon / 2) && a < (b + epsilon / 2);
 }
 
-std::optional<double> AudioData::DetectPitch() const {
+std::optional<AudioData::PitchDetectionResult> AudioData::DetectPitchWithConfidence() const {
     // The pitch detection algorithm that we are using can get it wrong sometimes when the audio is very
     // high pitch or very low pitch. To help with this, we detect the pitch at different octaves and then
     // work out which one is giving us the best results.
@@ -215,7 +215,20 @@ std::optional<double> AudioData::DetectPitch() const {
         return {};
     }
 
-    return GetFreqWithCentDifference(*most_suitable->detected_pitch, -most_suitable->cents);
+    // Each detection always agrees with itself (suitability >= 1 when a pitch was found), and the maximum
+    // is pitches.size() if every octave-shifted re-detection corroborates it. Normalise to 0..1.
+    const auto confidence =
+        (most_suitable->suitability - 1.0) / (double)(pitches.size() - 1);
+
+    return PitchDetectionResult {
+        GetFreqWithCentDifference(*most_suitable->detected_pitch, -most_suitable->cents),
+        std::clamp(confidence, 0.0, 1.0),
+    };
+}
+
+std::optional<double> AudioData::DetectPitch() const {
+    if (auto const result = DetectPitchWithConfidence()) return result->hz;
+    return {};
 }
 
 bool AudioData::IsSilent() const {

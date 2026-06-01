@@ -45,6 +45,12 @@ struct AudioData {
     void AddOther(const AudioData &other);
     void Resample(double new_sample_rate);
     void ChangePitch(double cents);
+
+    struct PitchDetectionResult {
+        double hz;
+        double confidence; // 0..1, based on agreement across octave-shifted re-detections
+    };
+    std::optional<PitchDetectionResult> DetectPitchWithConfidence() const;
     std::optional<double> DetectPitch() const;
     bool IsSilent() const;
 

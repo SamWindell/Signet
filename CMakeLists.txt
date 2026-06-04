@@ -87,7 +87,9 @@ add_library(
     code/signet/commands/gain/gain.cpp
     code/signet/commands/mir_report/mir_analysis.cpp
     code/signet/commands/mir_report/mir_report.cpp
+    code/signet/commands/metadata/metadata_command.cpp
     code/signet/commands/mir_report/mir_svg.cpp
+    code/signet/commands/metadata/metadata_command.cpp
     code/signet/commands/move/move.cpp
     code/signet/commands/normalise/normalise.cpp
     code/signet/commands/pan/pan.cpp

@@ -33,6 +33,9 @@ This is an auto-generated file based on the output of `signet --help`. It contai
     - [root](#root)
     - [note-range](#note-range)
     - [velocity-range](#velocity-range)
+  - [metadata](#sound-metadata)
+    - [export](#export)
+    - [import](#import)
 - [Filepath Commands](#Filepath-Commands)
   - [folderise](#sound-folderise)
   - [move](#sound-move)
@@ -603,6 +606,27 @@ Sets the low velocity to 1 and leaves the high velocity unchanged. If the high v
 DESCRIPTION
 
 2 values must be given. The first one represents the low velocity and the second one represents the high velocity. Each value can be 1 of 3 formats. (1) A number from 1 to 127, (2) a regex pattern containing 1 capture group which is to be used to capture the value from the filename of the audio file (not including the extension). Or (3), the word 'unchanged' which means the value is not changed if it is already embedded in the file; if there is no value already present, it's set to 1 for the low velocity or 127 for the high velocity.
+
+## :sound: metadata
+### Description:
+Export or import the cross-format metadata of the audio file(s) as JSON. Use this to copy metadata between files, or to edit metadata with external tools like jq.
+
+### Usage:
+  `metadata` `COMMAND`
+
+### Commands:
+#### export
+##### Description:
+Write the metadata of each input file to stdout as newline-delimited JSON (NDJSON). Each line is an object of the form {"path":"...","metadata":{...}}. The 'metadata' field is null if the file has no metadata that Signet understands. The output is suitable for piping into jq.
+
+
+#### import
+##### Description:
+Read NDJSON from stdin (or a file) and replace the metadata of each input file. The JSON must be in the same shape as 'metadata export' produces: one object per line with 'path' and 'metadata' fields. The metadata of a file is fully replaced - fields absent from the JSON are cleared. If the JSON contains a single entry, it is applied to every input file (so copying metadata from one file to another just works). If it contains multiple entries, input files are matched to entries by the 'path' field. Note: format-specific metadata not represented in the cross-format model (e.g. WAV INFO chunks) is left untouched.
+
+##### POSITIONALS:
+`json-source TEXT [-] `
+The JSON file to read from. Use '-' or omit to read from stdin.
 
 # Filepath Commands
 ## :sound: folderise

@@ -48,6 +48,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 - [Generate Commands](#Generate-Commands)
   - [sample-blend](#sound-sample-blend)
 - [Info Commands](#Info-Commands)
+  - [detect-duplicates](#sound-detect-duplicates)
   - [detect-pitch](#sound-detect-pitch)
   - [detect-pops](#sound-detect-pops)
   - [mir-report](#sound-mir-report)
@@ -807,6 +808,23 @@ For each generated file, if the 2 files that are being combined are not the same
 ```
 
 # Info Commands
+## :sound: detect-duplicates
+### Description:
+Finds audio files that contain similar or identical material, including cases where one file's audio appears inside another (e.g. a long recording and chops taken from it). Compares every input file against every other input file using spectral landmark fingerprints, so it is robust to differences in volume, sample rate and minor encoding artefacts. Pitch shifts and time-stretches will NOT be detected. Outputs a list of matches sorted by similarity score.
+
+### Usage:
+  `detect-duplicates` `[OPTIONS]`
+
+### OPTIONS:
+`--threshold FLOAT:FLOAT in [0 - 1]`
+Minimum similarity score (0.0 to 1.0) for a match to be reported. The score is the fraction of one file's spectral landmarks that align with the other file at a consistent time offset. Lower values report more (possibly weaker) matches. Default is 0.5.
+
+`--min-overlap-seconds FLOAT:NONNEGATIVE`
+Ignore matches where the aligned region in either file spans less than this duration. Helps suppress short incidental matches between unrelated files. Default is 0.5.
+
+`--matrix`
+Also print a compact pairwise table of all matches that passed the threshold.
+
 ## :sound: detect-pitch
 ### Description:
 Prints out the detected pitch of the file(s).

@@ -17,6 +17,7 @@
 #include "commands/fix_pitch_drift/fix_pitch_drift_command.h"
 #include "commands/folderise/folderise.h"
 #include "commands/gain/gain.h"
+#include "commands/mir_report/mir_report.h"
 #include "commands/move/move.h"
 #include "commands/normalise/normalise.h"
 #include "commands/pan/pan.h"
@@ -46,6 +47,7 @@ SignetInterface::SignetInterface() {
     m_commands.push_back(std::make_unique<GainCommand>());
     m_commands.push_back(std::make_unique<HighpassCommand>());
     m_commands.push_back(std::make_unique<LowpassCommand>());
+    m_commands.push_back(std::make_unique<MirReportCommand>());
     m_commands.push_back(std::make_unique<MoveCommand>());
     m_commands.push_back(std::make_unique<NormaliseCommand>());
     m_commands.push_back(std::make_unique<PanCommand>());
@@ -134,7 +136,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
                 "trim-silence", "tune",      "zcross-offset",
             };
             command_categories["File Data"] = {"convert", "embed-sampler-info"};
-            command_categories["Info"] = {"detect-pitch", "detect-pops", "print-info"};
+            command_categories["Info"] = {"detect-pitch", "detect-pops", "mir-report", "print-info"};
             command_categories["Generate"] = {"sample-blend"};
 
             // Sort each command category

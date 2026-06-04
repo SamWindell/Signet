@@ -85,6 +85,9 @@ add_library(
     code/signet/commands/fix_pitch_drift/pitch_drift_corrector.cpp
     code/signet/commands/folderise/folderise.cpp
     code/signet/commands/gain/gain.cpp
+    code/signet/commands/mir_report/mir_analysis.cpp
+    code/signet/commands/mir_report/mir_report.cpp
+    code/signet/commands/mir_report/mir_svg.cpp
     code/signet/commands/move/move.cpp
     code/signet/commands/normalise/normalise.cpp
     code/signet/commands/pan/pan.cpp

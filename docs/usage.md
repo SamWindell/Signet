@@ -47,6 +47,7 @@ This is an auto-generated file based on the output of `signet --help`. It contai
 - [Info Commands](#Info-Commands)
   - [detect-pitch](#sound-detect-pitch)
   - [detect-pops](#sound-detect-pops)
+  - [mir-report](#sound-mir-report)
   - [print-info](#sound-print-info)
 - [Signet Utility Commands](#Signet-Utility-Commands)
   - [clear-backup](#sound-clear-backup)
@@ -805,6 +806,13 @@ Automatically repair detected pops using cubic interpolation. Replaces glitched 
 
 `--zero-only`
 Only detect pops where the outlier sample value is zero (or within epsilon of zero). Useful for finding glitches where samples are randomly set to 0, without false positives from high-frequency content.
+
+## :sound: mir-report
+### Description:
+Analyses the input audio file(s) and prints a JSON report to stdout containing length, channels, detected pitch (with confidence), phase correlation, an averaged spectral profile, a waveform envelope, and a pitch-over-time track. Intended as input for an AI agent to characterise samples for a library.
+
+### Usage:
+  `mir-report`
 
 ## :sound: print-info
 ### Description:

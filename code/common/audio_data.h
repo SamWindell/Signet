@@ -52,6 +52,18 @@ struct AudioData {
     };
     std::optional<PitchDetectionResult> DetectPitchWithConfidence() const;
     std::optional<double> DetectPitch() const;
+
+    struct PitchTrackEntry {
+        double time_seconds; // centre of the chunk
+        double hz;           // 0 if unvoiced
+        double rms;
+    };
+    // Raw per-chunk pitch track from the underlying detector. Chunks of `chunk_seconds` are
+    // taken contiguously across the file; the returned hz is 0 for chunks the detector marked
+    // unvoiced. Used both as input to DetectPitchWithConfidence and exposed for time-resolved
+    // analysis (MIR reports, pitch-over-time visualisations).
+    std::vector<PitchTrackEntry> DetectPitchTrack(double chunk_seconds = 0.1) const;
+
     bool IsSilent() const;
 
     std::vector<double> MixDownToMono() const;

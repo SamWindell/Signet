@@ -91,31 +91,46 @@ std::vector<double> AudioData::MixDownToMono() const {
     return mono_signal;
 }
 
-static std::optional<double> DetectSinglePitch(const AudioData &audio) {
-    auto mono_signal = audio.MixDownToMono();
+std::vector<AudioData::PitchTrackEntry> AudioData::DetectPitchTrack(double chunk_seconds) const {
+    std::vector<PitchTrackEntry> track;
+    if (NumFrames() == 0 || sample_rate == 0) return track;
+
+    auto mono_signal = MixDownToMono();
     NormaliseToTarget(mono_signal, 1);
 
+    const auto chunk_frames = (usize)(chunk_seconds * sample_rate);
+    if (chunk_frames == 0) return track;
+
+    for (usize frame = 0; frame < NumFrames(); frame += chunk_frames) {
+        const auto chunk_size = (int)std::min(chunk_frames, NumFrames() - frame);
+
+        dywapitchtracker pitch_tracker;
+        dywapitch_inittracking(&pitch_tracker);
+        auto detected_pitch = dywapitch_computepitch(&pitch_tracker, mono_signal.data(),
+                                                     (int)frame, chunk_size);
+        if (sample_rate != 44100) {
+            detected_pitch *= static_cast<double>(sample_rate) / 44100.0;
+        }
+        const double t = ((double)frame + (double)chunk_size * 0.5) / (double)sample_rate;
+        const double rms = GetRMS({mono_signal.data() + frame, (usize)chunk_size});
+        track.push_back({t, detected_pitch, rms});
+    }
+    return track;
+}
+
+static std::optional<double> DetectSinglePitch(const AudioData &audio) {
     struct ChunkData {
         double detected_pitch {};
         double rms {};
         double suitability {};
     };
-    constexpr auto chunk_seconds = 0.1;
 
+    auto pitch_track = audio.DetectPitchTrack();
     std::vector<ChunkData> chunks;
-    const auto chunk_frames = (usize)(chunk_seconds * audio.sample_rate);
-    for (usize frame = 0; frame < audio.NumFrames(); frame += chunk_frames) {
-        const auto chunk_size = (int)std::min(chunk_frames, audio.NumFrames() - frame);
+    chunks.reserve(pitch_track.size());
+    for (const auto &e : pitch_track) chunks.push_back({e.hz, e.rms, 0});
 
-        dywapitchtracker pitch_tracker;
-        dywapitch_inittracking(&pitch_tracker);
-        auto detected_pitch = dywapitch_computepitch(&pitch_tracker, const_cast<double *>(mono_signal.data()),
-                                                     (int)frame, chunk_size);
-        if (audio.sample_rate != 44100) {
-            detected_pitch *= static_cast<double>(audio.sample_rate) / 44100.0;
-        }
-        chunks.push_back({detected_pitch, GetRMS({mono_signal.data() + frame, (usize)chunk_size}), 0});
-    }
+    if (chunks.empty()) return std::nullopt;
 
     for (auto &chunk : chunks) {
         const auto p1 = chunk.detected_pitch;

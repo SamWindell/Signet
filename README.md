@@ -13,7 +13,7 @@
   - [How to get Signet](#how-to-get-signet)
   - [Examples](#examples)
   - [Key Features](#key-features)
-    - [Process files, whole folders or pattern-matching filenames](#process-files-whole-folders-or-pattern-matching-filenames)
+    - [Process files, whole folders, or paths from a pipe](#process-files-whole-folders-or-paths-from-a-pipe)
     - [Comprehensive help text](#comprehensive-help-text)
     - [Undo](#undo)
     - [Commands](#commands)
@@ -59,21 +59,21 @@ Auto-tunes all the audio files in the directory 'untuned-files' to their nearest
 
 ```signet untuned-files auto-tune```
 
-Normalise (to a common gain) all WAV files in the current directory to -3dB:
+Normalise all WAV files in the current directory to -3dB:
 
 ```signet *.wav norm -3```
 
-Normalise (to a common gain) filename1.wav and filename2.flac to -1dB:
+Normalise filename1.wav and filename2.flac to -1dB:
 
 ```signet filename1.wav filename2.flac norm -1```
 
-Offset the start of each file to the nearest zero-crossing within the first 100 milliseconds. Perform this for all WAV files in any subfolder (recursively) of sampler that starts with "session", excluding files in "session 2" that end with "-unprocessed.wav":
+Offset the start of every WAV under `sampler` to the nearest zero-crossing within the first 100 milliseconds:
 
-```signet "sampler/session*/**.wav" "-sampler/session 2/*-unprocessed.wav" zcross-offset 100ms```
+```fd -e wav . sampler | signet zcross-offset 100ms```
 
-Rename any file in any of the folders of "one-shots" that match the regex "(.\*)-a". They shall be renamed to the whatever group 1 of the regex match was, with a -b suffix:
+Rename any file under "one-shots" that matches the regex `(.*)-a`. The new name keeps regex group 1 with a `-b` suffix:
 
-```signet "one-shots/**/.*" rename (.*)-a <1>-b```
+```signet one-shots --recursive rename regex (.*)-a <1>-b```
 
 Convert all audio files in the folder "my_folder" (not recursively) to a sample rate of 44100Hz and a bit-depth of 24:
 
@@ -84,13 +84,10 @@ Non-destructive processing:
 ```signet my_folder --output-folder my_processed_folder script script_file```
 
 ## Key Features
-### Process files, whole folders or pattern-matching filenames
-Signet is flexible in terms of what files to process. You can specify one or more of any of the following input options: 
-- A single file such as `file.wav`.
-- A directory such as `sounds/unprocessed`. In this case Signet will search for all audio files in that directory and process them all. You can specify the option `--recursive` to make this also search subfolders.
-- A glob-style filename pattern. You can use `*` to match any non-slash character and use `**` to match any character. So essentially use `**` to signify recursively searching folders. For example `*.wav` will match any file that has a `.wav` extension in the current folder. `unprocessed/**/*.wav` will match any file with the `.wav` extension in the `unprocessed` folder and any subfolder of it. Some shells, such as bash, already do this pathname expansion prior to calling any command. Signet's implementation of this feature is a little more specific to audio files but largely the same. To use Signet's version instead of your shell's version, put quotes around the argument.
+### Process files, whole folders, or paths from a pipe
+Signet's inputs are plain paths — files, or directories (add `--recursive` to descend into subfolders). Patterns like `*.wav` work if your shell expands them; for anything more involved, pipe paths in from a tool like [`fd`](https://github.com/sharkdp/fd) — signet reads stdin automatically when it's piped.
 
-You can exclude certain files from being processed by prefixing them with a dash. For example `"file.*" "-*.wav"` will match all files in the current directory that start with `file`, except those with the `.wav` extension.
+Unwanted paths can be filtered out with `--exclude` — see `signet --help` for details.
 
 Input files are processed and then saved back to file (overwritten). Signet features a simple undo command that will restore any files that you overwrote in the last call.
 

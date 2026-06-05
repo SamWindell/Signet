@@ -7,10 +7,12 @@
 #include "common.h"
 #include "filepath_set.h"
 
-AudioFiles::AudioFiles(const std::vector<std::string> &path_items, const bool recursive_directory_search) {
+AudioFiles::AudioFiles(const std::vector<std::string> &path_items,
+                       const std::vector<std::string> &exclude_patterns,
+                       const bool recursive_directory_search) {
     std::string parse_error;
-    const auto all_matched_filepaths =
-        FilepathSet::CreateFromPatterns(path_items, recursive_directory_search, &parse_error);
+    const auto all_matched_filepaths = FilepathSet::CreateFromPaths(
+        path_items, exclude_patterns, recursive_directory_search, &parse_error);
     if (!all_matched_filepaths) {
         throw CLI::ValidationError("Input files", parse_error);
     }

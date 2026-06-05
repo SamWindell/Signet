@@ -1,6 +1,17 @@
 #include "signet_interface.h"
 
+#include <cstdio>
 #include <functional>
+
+#ifdef _WIN32
+#include <io.h>
+#define SIGNET_ISATTY _isatty
+#define SIGNET_FILENO _fileno
+#else
+#include <unistd.h>
+#define SIGNET_ISATTY isatty
+#define SIGNET_FILENO fileno
+#endif
 
 #include "doctest.hpp"
 
@@ -65,6 +76,65 @@ SignetInterface::SignetInterface() {
 }
 
 std::optional<tcb::span<const char *>> g_signet_invocation_args;
+
+static bool IsStdinPiped() { return SIGNET_ISATTY(SIGNET_FILENO(stdin)) == 0; }
+
+static std::vector<std::string> ReadPathsFromStdin() {
+    std::string buffer;
+    char chunk[4096];
+    while (true) {
+        const size_t n = std::fread(chunk, 1, sizeof(chunk), stdin);
+        if (n == 0) break;
+        buffer.append(chunk, n);
+    }
+
+    const bool nul_separated = buffer.find('\0') != std::string::npos;
+    const char separator = nul_separated ? '\0' : '\n';
+
+    std::vector<std::string> paths;
+    std::string current;
+    for (char c : buffer) {
+        if (c == separator) {
+            if (!nul_separated && !current.empty() && current.back() == '\r') current.pop_back();
+            if (!current.empty()) paths.push_back(std::move(current));
+            current.clear();
+        } else {
+            current.push_back(c);
+        }
+    }
+    if (!nul_separated && !current.empty() && current.back() == '\r') current.pop_back();
+    if (!current.empty()) paths.push_back(std::move(current));
+    return paths;
+}
+
+void SignetInterface::EnsureInputAudioFilesBuilt() {
+    if (m_input_audio_files_built) return;
+    m_input_audio_files_built = true;
+
+    std::vector<std::string> paths;
+    bool stdin_consumed = false;
+    for (auto &p : m_input_path_strings) {
+        if (p == "-") {
+            if (stdin_consumed) continue;
+            stdin_consumed = true;
+            auto stdin_paths = ReadPathsFromStdin();
+            for (auto &sp : stdin_paths) paths.push_back(std::move(sp));
+        } else {
+            paths.push_back(p);
+        }
+    }
+    if (paths.empty() && !stdin_consumed && IsStdinPiped()) {
+        auto stdin_paths = ReadPathsFromStdin();
+        for (auto &sp : stdin_paths) paths.push_back(std::move(sp));
+    }
+
+    if (paths.empty()) {
+        throw CLI::ValidationError("Input files",
+                                   "no input files given (provide paths as arguments, or pipe them on stdin)");
+    }
+
+    m_input_audio_files = AudioFiles(paths, m_exclude_patterns, m_recursive_directory_search);
+}
 
 int SignetInterface::Main(const int argc, const char *const argv[]) {
     g_signet_invocation_args = tcb::span<const char *>((const char **)argv, (size_t)argc);
@@ -248,12 +318,16 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     app.add_flag("--recursive", m_recursive_directory_search,
                  "When the input is a directory, scan for files in it recursively.");
 
-    auto input_files_option = app.add_option_function<std::vector<std::string>>(
-        "input-files",
-        [&](const std::vector<std::string> &input) {
-            m_input_audio_files = AudioFiles(input, m_recursive_directory_search);
-        },
-        R"aa(The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.)aa");
+    app.add_option(
+           "-E,--exclude", m_exclude_patterns,
+           R"aa(Exclude files whose path matches the given pattern. The pattern is matched against the full path of each file gathered from input-files; it can be a literal path or a glob using * (any non-slash) and ** (any character). May be specified multiple times. e.g. --exclude "*.wav" --exclude "*/draft/*" drops every .wav file and anything under any "draft" folder.)aa")
+        ->type_name("PATTERN")
+        ->type_size(1)
+        ->allow_extra_args(false);
+
+    app.add_option(
+        "input-files", m_input_path_strings,
+        R"aa(The audio files to process. Each input must be a path to an existing file or directory; signet does not do glob expansion itself, so rely on your shell or pipe in paths from a tool like fd. If a directory is given, all audio files directly inside it are processed; use --recursive to also descend into subdirectories. Use - to read paths from stdin (one per line, or NUL-separated). If you pipe paths into signet without specifying any input-files, stdin is read automatically. Use --exclude to drop unwanted paths from the gathered set.)aa");
 
     auto output_folder_option =
         app.add_option(
@@ -270,21 +344,19 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
         app.add_option(
                "--output-file", m_single_output_file,
                "Write to a single output file rather than overwrite the original. Only valid if there's only 1 input file. If the output file already exists it is overwritten. Directories are created. Some commands do not allow this option - such as move.")
-            ->excludes(output_folder_option)
-            ->check([&](const std::string &) -> std::string {
-                if (m_input_audio_files.Size() != 1) {
-                    return "You can only specify one input file when using --output-file";
-                }
-                return {};
-            });
+            ->excludes(output_folder_option);
 
     bool printed_input_files_info = false;
     bool any_writable_command_ran = false;
 
     for (auto &command : m_commands) {
         auto s = command->CreateCommandCLI(app);
-        s->needs(input_files_option);
         s->final_callback([&] {
+            EnsureInputAudioFilesBuilt();
+            if (m_single_output_file && m_input_audio_files.Size() != 1) {
+                throw CLI::ValidationError(
+                    "--output-file", "You can only specify one input file when using --output-file");
+            }
             // We print the input files message here because we want to allow subcommands to set
             // g_messages_enabled to false, in which case this MessageWithNewLine will correctly be a no-op.
             if (!printed_input_files_info) {
@@ -470,11 +542,6 @@ TEST_CASE("[SignetInterface]") {
             REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
         }
 
-        SUBCASE("match all WAVs in a dir by using a wildcard") {
-            const auto args = TestHelpers::StringToArgs {"signet test-folder/*wav norm -3"};
-            REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
-        }
-
         SUBCASE("when input path is a patternless directory scan all files in that") {
             const auto wildcard = test_folder;
             const auto args = TestHelpers::StringToArgs {"signet test-folder norm -3"};
@@ -519,7 +586,8 @@ TEST_CASE("[SignetInterface]") {
             usize trimmed_size_tf1 = 0;
             usize trimmed_size_tf2 = 0;
             {
-                const auto args = TestHelpers::StringToArgs {"signet test-folder/tf*.wav trim start 50%"};
+                const auto args = TestHelpers::StringToArgs {
+                    "signet test-folder/tf1.wav test-folder/tf2.wav trim start 50%"};
                 REQUIRE(signet.Main(args.Size(), args.Args()) == 0);
 
                 {

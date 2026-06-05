@@ -34,7 +34,12 @@ class SignetInterface final {
     SignetBackup m_backup {};
 
     AudioFiles m_input_audio_files {};
+    bool m_input_audio_files_built {};
+    std::vector<std::string> m_input_path_strings {};
+    std::vector<std::string> m_exclude_patterns {};
     bool m_recursive_directory_search {};
+
+    void EnsureInputAudioFilesBuilt();
     fs::path m_make_docs_filepath {};
     fs::path m_script_filepath {};
     std::optional<fs::path> m_output_path {};

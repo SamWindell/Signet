@@ -67,7 +67,7 @@ Signet is a command-line program designed for bulk editing audio files. It has c
 
 ## POSITIONALS:
 `input-files TEXT ...`
-The audio files to process. You can specify more than one of these. Each input-file you specify has to be a file, directory or a glob pattern. You can exclude a pattern by beginning it with a dash. e.g. "-\*.wav" would exclude all .wav files that are in the current directory. If you specify a directory, all files within it will be considered input-files, but subdirectories will not be searched. You can use the --recursive flag to make signet search all subdirectories too.
+The audio files to process. Each input must be a path to an existing file or directory; signet does not do glob expansion itself, so rely on your shell or pipe in paths from a tool like fd. If a directory is given, all audio files directly inside it are processed; use --recursive to also descend into subdirectories. Use - to read paths from stdin (one per line, or NUL-separated). If you pipe paths into signet without specifying any input-files, stdin is read automatically. Use --exclude to drop unwanted paths from the gathered set.
 
 ## OPTIONS:
 `--version`
@@ -81,6 +81,9 @@ Attempt to exit Signet and return a non-zero value as soon as possible if a warn
 
 `--recursive`
 When the input is a directory, scan for files in it recursively.
+
+`-E,--exclude PATTERN ...`
+Exclude files whose path matches the given pattern. The pattern is matched against the full path of each file gathered from input-files; it can be a literal path or a glob using \* (any non-slash) and \*\* (any character). May be specified multiple times. e.g. --exclude "\*.wav" --exclude "\*/draft/\*" drops every .wav file and anything under any "draft" folder.
 
 `--output-folder TEXT Excludes: --output-file`
 Instead of overwriting the input files, processed audio files are put into the given output folder. If your input files are within the current working directory they will be placed inside the output folder with the same structure of subfolders. If not, then the files are put at the top level of the output folder. This option takes 1 argument - the path of the folder where the files should be moved to. You can specify this folder to be the same as any of the input folders, however, you will need to use the rename command to avoid overwriting the files. If the output folder does not already exist it will be created. Some commands do not allow this option - such as move.
@@ -772,7 +775,7 @@ The name of the output file (excluding extension). This should contain substitut
 ### Examples:
 ```
   signet my-folder rename prefix "clarinet-"
-  signet **.wav rename suffix "-root-<detected-midi-note>"
+  signet my-folder --recursive rename suffix "-root-<detected-midi-note>"
   signet session1 rename regex-replace ""
 ```
 

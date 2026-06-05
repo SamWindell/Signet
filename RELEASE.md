@@ -16,6 +16,8 @@ Changes:
   ```
 - Additionally, this `print-info` change affects the metadata that Signet embeds in FLAC files. FLAC files written by previous versions of Signet are still read correctly, although if you have custom tools reading SGNT blocks they will need updating.
 - Add `--relative-to-peak` to trim-silence.
+- Signet now reads paths from stdin when piped, so `fd -e wav | signet norm -3` just works. Added `--exclude` for dropping paths from the gathered set.
+- **Breaking change** (unlikely to affect you, since shells already expand globs): signet no longer expands glob patterns itself. If you used quoted patterns like `signet "sounds/**/*.wav" ...`, replace them with `fd ... | signet ...`.
 
 0.3.0:
 - Add `--format` option to `print-info` subcommand to output the information in JSON or Lua format. Useful for passing into tools such as `jq` or Floe, for example. Includes `--field-filter` and `--path-as-key` options to control the output.

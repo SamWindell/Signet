@@ -11,8 +11,11 @@ class AudioFiles {
   public:
     AudioFiles() {}
 
-    // Passes path_items to FilepathSet to construct the list of audio files
-    AudioFiles(const std::vector<std::string> &path_items, const bool recursive_directory_search);
+    // Passes path_items to FilepathSet to construct the list of audio files.
+    // exclude_patterns is an optional list of glob patterns; any file matching one is dropped.
+    AudioFiles(const std::vector<std::string> &path_items,
+               const std::vector<std::string> &exclude_patterns,
+               const bool recursive_directory_search);
 
     // Simply copies the EditTrackedAudioFile
     AudioFiles(const tcb::span<EditTrackedAudioFile> files);

@@ -12,12 +12,14 @@
 
 class FilepathSet {
   public:
-    // Creates a FilepathSet from a vector of glob patterns, filenames, or directories.
-    // Each part can start with a - to signify that the result should exclude anything that matches it.
-    // e.g. ["*.wav", "file.flac", "-foo*"]
-    static std::optional<FilepathSet> CreateFromPatterns(const std::vector<std::string> &parts,
-                                                         bool recursive_directory_search,
-                                                         std::string *error = nullptr);
+    // Creates a FilepathSet from a vector of file or directory paths.
+    // Any path matching an entry in exclude_patterns (a glob against the path text) is dropped.
+    // e.g. input={"sounds/file.wav", "sounds/folder"}, exclude={"*.bak"}
+    static std::optional<FilepathSet>
+    CreateFromPaths(const std::vector<std::string> &input_paths,
+                    const std::vector<std::string> &exclude_patterns,
+                    bool recursive_directory_search,
+                    std::string *error = nullptr);
 
     auto Size() const { return m_filepaths.size(); }
 

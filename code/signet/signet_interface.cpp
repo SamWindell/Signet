@@ -139,6 +139,15 @@ void SignetInterface::EnsureInputAudioFilesBuilt() {
 int SignetInterface::Main(const int argc, const char *const argv[]) {
     g_signet_invocation_args = tcb::span<const char *>((const char **)argv, (size_t)argc);
 
+    // Colour has to be decided before anything is printed (including help text and output produced while
+    // parsing), so --no-color is checked here rather than waiting for CLI11 to process it.
+    {
+        bool no_color_flag = false;
+        for (int i = 1; i < argc; ++i)
+            if (std::string_view(argv[i]) == "--no-color") no_color_flag = true;
+        SetupConsoleColor(no_color_flag);
+    }
+
     CLI::App app {
         R"^^(Signet is a command-line program designed for bulk editing audio files. It has commands for converting, editing, renaming and moving WAV and FLAC files. It also features commands that generate audio files. Signet was primarily designed for people who make sample libraries, but its features can be useful for any type of bulk audio processing.)^^"};
 
@@ -311,6 +320,10 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     g_messages_enabled = true;
     app.add_flag_callback("--silent", []() { g_messages_enabled = false; }, "Disable all messages");
 
+    // Handled before parsing (see SetupConsoleColor above); registered here so it is accepted and documented.
+    app.add_flag("--no-color",
+                 "Disable coloured output. Colour is also disabled if the NO_COLOR environment variable is set to a non-empty value.");
+
     app.add_flag_callback(
         "--warnings-are-errors", []() { g_warnings_as_errors = true; },
         "Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.");
@@ -450,7 +463,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
     }
 
     const auto PrintSuccess = []() {
-        fmt::print(stderr, fmt::fg(fmt::terminal_color::green), "Signet completed successfully.\n");
+        fmt::print(stderr, Style(fmt::fg(fmt::terminal_color::green)), "Signet completed successfully.\n");
     };
 
     try {
@@ -494,7 +507,7 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             std::stringstream error;
             auto result = app.exit(e, out, error);
 
-            fmt::print(stderr, fg(fmt::color::red), "ERROR:\n{}{}", out.str(), error.str());
+            fmt::print(stderr, Style(fg(fmt::color::red)), "ERROR:\n{}{}", out.str(), error.str());
             return result;
         } else {
             if (!success_thrown) PrintSignetHeading(stdout);
@@ -506,11 +519,11 @@ int SignetInterface::Main(const int argc, const char *const argv[]) {
             return SignetResult::Success;
         }
     } catch (const SignetError &e) {
-        fmt::print(stderr, fg(fmt::color::red) | fmt::emphasis::bold,
+        fmt::print(stderr, Style(fg(fmt::color::red) | fmt::emphasis::bold),
                    "{}. Processing has stopped. No files have been changed or saved.\n", e.what());
         return SignetResult::FatalErrorOcurred;
     } catch (const SignetWarning &e) {
-        fmt::print(stderr, fg(fmt::color::red) | fmt::emphasis::bold,
+        fmt::print(stderr, Style(fg(fmt::color::red) | fmt::emphasis::bold),
                    "{}. Processing has stopped. No files have been changed or saved.\n", e.what());
         return SignetResult::WarningsAreErrors;
     }

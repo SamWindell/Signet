@@ -1,9 +1,10 @@
 #include "common.h"
 
+#include <cstdlib>
 #include <regex>
 #include <system_error>
 
-#if WIN32
+#if _WIN32
 #include <windows.h>
 #endif
 
@@ -17,63 +18,62 @@
 bool g_messages_enabled = true;
 bool g_warnings_as_errors = false;
 
-bool EnableVTMode() {
-#if WIN32
-    // Set output mode to handle virtual terminal sequences
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    if (hOut == INVALID_HANDLE_VALUE) {
-        return false;
-    }
+bool g_color_enabled = true;
 
-    DWORD dwMode = 0;
-    if (!GetConsoleMode(hOut, &dwMode)) {
-        return false;
-    }
+#if _WIN32
+// Returns false only if the handle is a console that cannot be put into virtual terminal mode. Handles that
+// are not consoles (e.g. redirected to a file or pipe) return true since there is nothing to enable.
+static bool EnableVTMode(DWORD std_handle) {
+    HANDLE handle = GetStdHandle(std_handle);
+    if (handle == INVALID_HANDLE_VALUE || handle == nullptr) return true;
 
-    dwMode |= ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-    if (!SetConsoleMode(hOut, dwMode)) {
-        return false;
-    }
-#endif
-    return true;
+    DWORD mode = 0;
+    if (!GetConsoleMode(handle, &mode)) return true;
+    if (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) return true;
+    return SetConsoleMode(handle, mode | ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
 }
+#endif
 
-void InitConsole() {
-    struct Obj {
-        Obj() { EnableVTMode(); }
-    };
-    static Obj obj;
+void SetupConsoleColor(const bool no_color_flag) {
+    const char *no_color_env = std::getenv("NO_COLOR");
+    if (no_color_flag || (no_color_env && no_color_env[0] != '\0')) {
+        g_color_enabled = false;
+        return;
+    }
+
+#if _WIN32
+    const bool stdout_ok = EnableVTMode(STD_OUTPUT_HANDLE);
+    const bool stderr_ok = EnableVTMode(STD_ERROR_HANDLE);
+    g_color_enabled = stdout_ok && stderr_ok;
+#else
+    g_color_enabled = true;
+#endif
 }
 
 void PrintFilename(FILE *stream, const EditTrackedAudioFile &f) {
-    InitConsole();
     fmt::print(stream, ": ");
-    fmt::print(stream, fg(fmt::color::navajo_white), "{}", f.OriginalFilename());
+    fmt::print(stream, Style(fg(fmt::color::navajo_white)), "{}", f.OriginalFilename());
 }
 void PrintFilename(FILE *stream, const fs::path &path) {
-    InitConsole();
     fmt::print(stream, ": ");
-    fmt::print(stream, fg(fmt::color::navajo_white), "{}", GetJustFilenameWithNoExtension(path));
+    fmt::print(stream, Style(fg(fmt::color::navajo_white)), "{}", GetJustFilenameWithNoExtension(path));
 }
 void PrintFilename(FILE *, NoneType) {}
 
 void PrintErrorPrefix(FILE *stream, std::string_view heading) {
-    InitConsole();
-    fmt::print(stream, fmt::fg(fmt::color::red) | fmt::emphasis::bold, "[{}] ERROR", heading);
+    fmt::print(stream, Style(fmt::fg(fmt::color::red) | fmt::emphasis::bold), "[{}] ERROR", heading);
     fmt::print(stream, ": ");
 }
 void PrintWarningPrefix(FILE *stream, std::string_view heading) {
-    InitConsole();
-    fmt::print(stream, fmt::fg(fmt::color::orange) | fmt::emphasis::bold, "[{}] WARNING", heading);
+    fmt::print(stream, Style(fmt::fg(fmt::color::orange) | fmt::emphasis::bold), "[{}] WARNING", heading);
     fmt::print(stream, ": ");
 }
 void PrintMessagePrefix(FILE *stream, const std::string_view heading) {
-    InitConsole();
-    fmt::print(stream, fmt::fg(fmt::color::cornflower_blue) | fmt::emphasis::bold, "[{}]", heading);
+    fmt::print(stream, Style(fmt::fg(fmt::color::cornflower_blue) | fmt::emphasis::bold), "[{}]", heading);
     fmt::print(stream, ": ");
 }
 
-void PrintDebugPrefix(FILE *stream) { fmt::print(stream, fmt::emphasis::bold, "[DEBUG]: "); }
+void PrintDebugPrefix(FILE *stream) { fmt::print(stream, Style(fmt::emphasis::bold), "[DEBUG]: "); }
 
 void ForEachDeinterleavedChannel(
     const std::vector<double> &interleaved_samples,

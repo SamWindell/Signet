@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include <fmt/color.h>
 #include <fmt/core.h>
 
 #include "filesystem.hpp"
@@ -16,6 +17,15 @@
 extern std::optional<tcb::span<const char *>> g_signet_invocation_args;
 extern bool g_messages_enabled;
 extern bool g_warnings_as_errors;
+extern bool g_color_enabled;
+
+// Decides whether coloured output should be used and prepares the console for it. Colour is disabled if
+// no_color_flag is true, if the NO_COLOR environment variable is set to a non-empty value
+// (https://no-color.org/), or if the Windows console does not support ANSI escape sequences.
+void SetupConsoleColor(bool no_color_flag);
+
+// Returns the given style if colour is enabled, otherwise an empty style (which emits no escape codes).
+inline fmt::text_style Style(fmt::text_style style) { return g_color_enabled ? style : fmt::text_style {}; }
 
 struct EditTrackedAudioFile;
 

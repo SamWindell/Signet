@@ -76,6 +76,9 @@ Display the version of Signet
 `--silent`
 Disable all messages
 
+`--no-color`
+Disable coloured output. Colour is also disabled if the NO_COLOR environment variable is set to a non-empty value.
+
 `--warnings-are-errors`
 Attempt to exit Signet and return a non-zero value as soon as possible if a warning occurs.
 

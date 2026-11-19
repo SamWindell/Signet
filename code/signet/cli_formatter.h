@@ -290,7 +290,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     std::string FormatHeading(const std::string &heading) const {
         switch (m_mode) {
             case OutputMode::CommandLine: {
-                return IndentText(fmt::format(fmt::emphasis::bold, "{}", heading), global_formatter_indent);
+                return IndentText(fmt::format(Style(fmt::emphasis::bold), "{}", heading), global_formatter_indent);
             }
             case OutputMode::Markdown: {
                 if (global_formatter_indent) {
@@ -308,7 +308,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     std::string FormatOption(const std::string &option) const {
         switch (m_mode) {
             case OutputMode::CommandLine: {
-                return fmt::format(fg(fmt::color::green) | fmt::emphasis::bold, "{}", option);
+                return fmt::format(Style(fg(fmt::color::green) | fmt::emphasis::bold), "{}", option);
             }
             case OutputMode::Markdown: {
                 return fmt::format("`{}`", option);
@@ -320,7 +320,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     std::string FormatPositional(const std::string &pos) const {
         switch (m_mode) {
             case OutputMode::CommandLine: {
-                return fmt::format(fg(fmt::color::cyan) | fmt::emphasis::bold, "{}", pos);
+                return fmt::format(Style(fg(fmt::color::cyan) | fmt::emphasis::bold), "{}", pos);
             }
             case OutputMode::Markdown: {
                 return fmt::format("`{}`", pos);
@@ -339,7 +339,7 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
     std::string FormatSubcommand(const std::string &sub) const {
         switch (m_mode) {
             case OutputMode::CommandLine: {
-                return fmt::format(fg(fmt::color::yellow) | fmt::emphasis::bold, "{}", sub);
+                return fmt::format(Style(fg(fmt::color::yellow) | fmt::emphasis::bold), "{}", sub);
             }
             case OutputMode::Markdown: {
                 return FormatHeading(sub);
@@ -352,11 +352,11 @@ class SignetCLIHelpFormatter : public CLI::Formatter {
 };
 
 static void PrintSignetHeading(FILE *stream) {
-    fmt::print(stream, fmt::emphasis::bold, "Signet\n");
+    fmt::print(stream, Style(fmt::emphasis::bold), "Signet\n");
 
     std::array<char, SignetCLIHelpFormatter::wrap_size> divider {};
     std::memset(divider.data(), '=', divider.size() - 1);
-    fmt::print(stream, fg(fmt::color::gray), "{}\n\n", divider.data());
+    fmt::print(stream, Style(fg(fmt::color::gray)), "{}\n\n", divider.data());
 }
 
 // Subcommands can have different formatters to their parents, to set all of them, we have to go down
